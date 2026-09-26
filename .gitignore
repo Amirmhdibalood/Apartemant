@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# Capacitor native platforms (generated with `npx cap add android`)
+android/
+ios/
+
+# APK / build artifacts
+*.apk
+*.aab
+
+# logs & editors
+npm-debug.log*
+yarn-debug.log*
+*.log
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.local
+.env

@@ -1,0 +1,46 @@
+/**
+ * تعریف خطاها (Error) — جدا از هشدارها.
+ * خطاها گزینه «دیگر این پیام را نمایش نده» ندارند و تا رفع مشکل تکرار می‌شوند.
+ */
+import { toPersianDigits } from './formatting';
+
+export type AppErrorCode =
+  | 'AMOUNT_MISSING'
+  | 'AMOUNT_INVALID'
+  | 'NO_UNITS'
+  | 'PERSON_COUNT_MISSING'
+  | 'PERSON_COUNT_INVALID'
+  | 'REQUIRED_MISSING'
+  | 'MIN_ONE_YEAR'
+  | 'MIN_ONE_UNIT'
+  | 'STORAGE_FAILED'
+  | 'BILL_NOT_FOUND';
+
+export interface AppError {
+  code: AppErrorCode;
+  message: string;
+}
+
+export const ERROR_TITLE = 'خطا';
+
+export const Errors = {
+  amountMissing: (): AppError => ({ code: 'AMOUNT_MISSING', message: 'مبلغ قبض وارد نشده است.' }),
+  amountInvalid: (): AppError => ({ code: 'AMOUNT_INVALID', message: 'مبلغ قبض نامعتبر است. لطفاً یک عدد صحیح بزرگ‌تر از صفر وارد کنید.' }),
+  noUnits: (): AppError => ({ code: 'NO_UNITS', message: 'هیچ واحدی اضافه نشده است. حداقل یک واحد اضافه کنید.' }),
+  personCountMissing: (unitNumber: number): AppError => ({
+    code: 'PERSON_COUNT_MISSING',
+    message: `تعداد نفرات واحد ${toPersianDigits(unitNumber)} وارد نشده است.`,
+  }),
+  personCountInvalid: (unitNumber: number): AppError => ({
+    code: 'PERSON_COUNT_INVALID',
+    message: `تعداد نفرات واحد ${toPersianDigits(unitNumber)} نامعتبر است (باید عددی بزرگ‌تر از صفر باشد).`,
+  }),
+  requiredMissing: (field: string): AppError => ({
+    code: 'REQUIRED_MISSING',
+    message: `اطلاعات ضروری ناقص است: ${field} انتخاب نشده است.`,
+  }),
+  minOneYear: (): AppError => ({ code: 'MIN_ONE_YEAR', message: 'حداقل یک سال باید فعال بماند.' }),
+  minOneUnit: (): AppError => ({ code: 'MIN_ONE_UNIT', message: 'قبض باید حداقل یک واحد داشته باشد.' }),
+  storageFailed: (): AppError => ({ code: 'STORAGE_FAILED', message: 'ذخیره اطلاعات با مشکل مواجه شد. دوباره تلاش کنید.' }),
+  billNotFound: (): AppError => ({ code: 'BILL_NOT_FOUND', message: 'این قبض پیدا نشد.' }),
+};

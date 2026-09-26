@@ -1,0 +1,127 @@
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { App as CapApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
+import type { BillDraft } from './models/types';
+import type { Route } from './navigation';
+import { TAB_ROUTES } from './navigation';
+import { BottomNav, type TabId } from './components/BottomNav';
+import { useSettings } from './context/SettingsContext';
+import { currentJalali, pickDefaultYear } from './logic/date';
+import { emptyDraft } from './logic/billFactory';
+import { HomeScreen } from './screens/HomeScreen';
+import { NewBillScreen } from './screens/NewBillScreen';
+import { ResultScreen } from './screens/ResultScreen';
+import { RecordsScreen } from './screens/RecordsScreen';
+import { BillDetailsScreen } from './screens/BillDetailsScreen';
+import { TutorialScreen } from './screens/TutorialScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
+
+export default function App() {
+  const { settings, loaded } = useSettings();
+  const [stack, setStack] = useState<Route[]>([{ name: 'home' }]);
+  const [draft, setDraft] = useState<BillDraft | null>(null);
+  const route = stack[stack.length - 1];
+  const stackRef = useRef(stack);
+  stackRef.current = stack;
+
+  const push = useCallback((r: Route) => setStack((s) => [...s, r]), []);
+  const back = useCallback(() => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s)), []);
+  const replaceTop = useCallback((r: Route) => setStack((s) => [...s.slice(0, -1), r]), []);
+  const resetTo = useCallback((r: Route) => setStack(r.name === 'home' ? [r] : [{ name: 'home' }, r]), []);
+
+  // دکمه Back سخت‌افزاری اندروید
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const sub = CapApp.addListener('backButton', () => {
+      if (document.querySelector('.dialog-backdrop')) {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+        return;
+      }
+      if (stackRef.current.length > 1) back();
+      else void CapApp.exitApp();
+    });
+    return () => { void sub.then((h) => h.remove()); };
+  }, [back]);
+
+  // اسکرول به بالا هنگام تغییر صفحه
+  useEffect(() => { window.scrollTo(0, 0); }, [route]);
+
+  const startNewBill = () => {
+    const now = currentJalali();
+    setDraft(emptyDraft(pickDefaultYear(settings.activeYears, now.year), now.month));
+    push({ name: 'newBill' });
+  };
+
+  const onTab = (t: TabId) => {
+    if (t === 'home') setStack([{ name: 'home' }]);
+    else resetTo({ name: t });
+  };
+
+  if (!loaded) return <div className="app-shell" />;
+
+  const showNav = TAB_ROUTES.includes(route.name);
+  let screen: ReactNode = null;
+
+  switch (route.name) {
+    case 'home':
+      screen = <HomeScreen onNewBill={startNewBill} onOpen={(t) => onTab(t)} />;
+      break;
+    case 'newBill':
+      screen = draft && (
+        <NewBillScreen
+          draft={draft}
+          setDraft={setDraft}
+          onBack={back}
+          onCalculated={() => push({ name: 'result' })}
+        />
+      );
+      break;
+    case 'result':
+      screen = draft && (
+        <ResultScreen
+          draft={draft}
+          setDraft={setDraft}
+          onBack={back}
+          onSaved={(saved) => {
+            setDraft(null);
+            // پس از ذخیره، به سوابق همان سال/ماه می‌رویم
+            resetTo({ name: 'records', year: saved.bill.year, month: saved.bill.month });
+          }}
+        />
+      );
+      break;
+    case 'records':
+      screen = (
+        <RecordsScreen
+          year={route.year}
+          month={route.month}
+          onFilterChange={(year, month) => replaceTop({ name: 'records', year, month })}
+          onOpenBill={(billId) => push({ name: 'details', billId })}
+        />
+      );
+      break;
+    case 'details':
+      screen = (
+        <BillDetailsScreen
+          key={route.billId}
+          billId={route.billId}
+          onBack={back}
+          onEdit={(d) => { setDraft(d); push({ name: 'newBill' }); }}
+        />
+      );
+      break;
+    case 'tutorial':
+      screen = <TutorialScreen onBack={back} onDone={() => setStack([{ name: 'home' }])} canGoBack={stack.length > 1} />;
+      break;
+    case 'settings':
+      screen = <SettingsScreen onBack={back} canGoBack={stack.length > 1} />;
+      break;
+  }
+
+  return (
+    <div className={'app-shell' + (showNav ? ' has-nav' : '')}>
+      {screen}
+      {showNav && <BottomNav active={route.name as TabId} onSelect={onTab} />}
+    </div>
+  );
+}
