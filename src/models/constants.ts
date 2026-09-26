@@ -39,13 +39,15 @@ export const EXPENSE_TILE_ROWS: ExpenseType[][] = [
 ];
 
 /** اولین سال قابل انتخاب در تنظیمات */
-export const FIRST_YEAR = 1403;
-/** تعداد سال‌های آینده که در تنظیمات نمایش داده می‌شود */
+export const FIRST_YEAR = 1405;
+/** تعداد سال‌های بعد از FIRST_YEAR که در تنظیمات قابل انتخاب است */
 export const YEARS_AHEAD = 100;
+/** آخرین سال قابل انتخاب (۱۴۰۵ + ۱۰۰ = ۱۵۰۵) */
+export const LAST_YEAR = FIRST_YEAR + YEARS_AHEAD;
 
 export const DEFAULT_SETTINGS: AppSettings = {
   showSaveWarning: true,
-  activeYears: [1404, 1405],
+  activeYears: [FIRST_YEAR],
   dismissedWarnings: [],
 };
 

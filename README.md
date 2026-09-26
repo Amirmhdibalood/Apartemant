@@ -21,14 +21,19 @@
 
 ## ۰) APK آماده
 
-یک فایل **`app-debug.apk`** آماده (ساخته‌شده از همین کد) همراه پروژه تحویل داده شده است. اگر فقط می‌خواهید برنامه را نصب کنید،
-به هیچ‌کدام از مراحل زیر نیاز ندارید:
+دو فایل آماده (ساخته‌شده از همین کد) همراه پروژه تحویل داده شده است:
 
-1. فایل `app-debug.apk` را به گوشی اندروید منتقل کنید (کابل USB، تلگرام، بلوتوث و ...).
+- **`apartemant-release.apk`** ← نسخه **Release امضاشده** (پیشنهادی برای نصب روی همه گوشی‌ها و انتشار در مایکت)
+- `app-debug.apk` ← نسخه دیباگ (فقط برای تست)
+
+اگر فقط می‌خواهید برنامه را نصب کنید، به هیچ‌کدام از مراحل زیر نیاز ندارید:
+
+1. فایل `apartemant-release.apk` را به گوشی اندروید منتقل کنید (کابل USB، تلگرام، بلوتوث و ...).
+   اگر قبلاً نسخه دیباگ را نصب کرده‌اید، **اول آن را حذف کنید** (امضای دو نسخه متفاوت است؛ بخش «رفع اشکال نصب» را ببینید).
 2. روی فایل بزنید. اگر پیام «نصب از منابع ناشناس» آمد، اجازه نصب (Install unknown apps) را برای همان برنامه (مثلاً File Manager) فعال کنید.
 3. «نصب» را بزنید. برنامه با نام «آپارتمانت» و آیکون آسمان و ساختمان‌ها اضافه می‌شود (حداقل اندروید 7.0).
 
-> این APK از نوع Debug است (با کلید دیباگ امضا شده) و برای استفاده شخصی مناسب است. برای انتشار در مارکت‌ها باید نسخه Release امضاشده بسازید.
+> `app-debug.apk` با کلید دیباگ امضا شده و فقط برای تست است؛ برای استفاده عادی و انتشار در مارکت از نسخه Release استفاده کنید (بخش ۶).
 
 اگر کامپیوترتان ضعیف است یا Android Studio ندارید، گزینه **GitHub Actions** (بخش ۵) هم APK را روی سرورهای GitHub می‌سازد.
 
@@ -150,6 +155,68 @@ npm run preview  REM اجرای نسخه build شده
 3. در صفحه مخزن به تب **Actions** بروید، روی آخرین اجرای **Build Android APK** بزنید و پس از پایان (حدود ۵ تا ۱۰ دقیقه)،
    از بخش **Artifacts** فایل **building-charge-debug-apk** را دانلود کنید (یک فایل zip که `app-debug.apk` داخل آن است).
 4. برای اجرای دستی: تب Actions → Build Android APK → **Run workflow**.
+5. **(اختیاری) ساخت Release امضاشده در GitHub**: در مخزن به **Settings → Secrets and variables → Actions → New repository secret** بروید و
+   این چهار Secret را بسازید (رمزها فقط همین‌جا ذخیره می‌شوند و هرگز در کد نیستند):
+
+   | نام Secret | مقدار |
+   | --- | --- |
+   | `ANDROID_KEYSTORE_BASE64` | محتوای فایل `apartemant-release.jks` به صورت base64 — در PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("D:\keys\apartemant-release.jks")) \| Set-Clipboard` |
+   | `ANDROID_KEYSTORE_PASSWORD` | رمز keystore |
+   | `ANDROID_KEY_ALIAS` | `apartemant` |
+   | `ANDROID_KEY_PASSWORD` | رمز کلید (برای این keystore همان رمز keystore) |
+
+   از آن به بعد هر اجرا علاوه بر نسخه دیباگ، Artifact دیگری با نام **apartemant-release-apk** هم می‌سازد. اگر Secretها تعریف نشده باشند، فقط نسخه دیباگ ساخته می‌شود.
+
+---
+
+## ۶) نسخه Release امضاشده، نسخه‌گذاری و انتشار در مایکت
+
+### کلید امضا (keystore) — مهم‌ترین فایل پروژه
+- نسخه Release با یک کلید خصوصی ثابت امضا می‌شود: فایل **`apartemant-release.jks`** (alias: `apartemant`) که رمزهایش در فایل
+  **`KEYSTORE-PASSWORDS.txt`** کنار آن آمده است. این دو فایل جدا از پروژه تحویل داده می‌شوند و **عمداً در git و zip پروژه نیستند**
+  (در `.gitignore` قوانین `keystore/`، `*.jks`، `*.keystore`، `keystore.properties` و ... اضافه شده است).
+- مایکت (و اندروید) فقط به‌روزرسانی‌ای را می‌پذیرد که **با همان کلید** امضا شده باشد.
+  > ⚠️ **اگر keystore یا رمز آن گم شود، انتشار به‌روزرسانی برای برنامه فعلی دیگر ممکن نیست**؛ کاربران باید برنامه را حذف و نسخه جدید (با شناسه/کلید جدید) را نصب کنند.
+  > از `apartemant-release.jks` و `KEYSTORE-PASSWORDS.txt` حداقل **دو نسخه پشتیبان** در جاهای جدا نگه دارید (مثلاً فلش/هارد خارجی + یک فضای ابری رمزدار) و هرگز آن‌ها را در گیت، تلگرام عمومی یا ایمیل رمزنشده نگذارید.
+
+### ساخت APK نسخه Release در ویندوز
+در یک Command Prompt (رمزها را جایگزین کنید؛ آن‌ها را داخل فایل‌های پروژه ننویسید):
+```bat
+cd /d F:\Balood\building-charge
+set ANDROID_KEYSTORE_PATH=D:\keys\apartemant-release.jks
+set ANDROID_KEYSTORE_PASSWORD=<رمز keystore>
+set ANDROID_KEY_ALIAS=apartemant
+set ANDROID_KEY_PASSWORD=<رمز کلید>
+scripts\build-apk.bat release
+```
+خروجی: **`apartemant-release.apk`** در پوشه پروژه. این اسکریپت `gradlew assembleRelease` را اجرا می‌کند و سپس
+`scripts/sign-release.mjs` فایل را با `zipalign` تراز و با `apksigner` (طرح‌های امضای **v1 + v2 + v3**) امضا و در پایان بررسی (verify) می‌کند.
+(اجرای مستقیم مرحله امضا: `npm run android:sign` پس از `gradlew assembleRelease`.)
+
+برای بررسی دستی امضا (مسیر build-tools را با نسخه نصب‌شده خود تطبیق دهید):
+```bat
+"%LOCALAPPDATA%\Android\Sdk\build-tools\36.0.0\apksigner.bat" verify --verbose --print-certs apartemant-release.apk
+```
+
+### نسخه‌گذاری (فقط در یک جا: `package.json`)
+```json
+"version": "1.0.0",
+"versionCode": 1,
+```
+- `version` ← `versionName` اندروید و متن «نسخه ۱.۰.۰» پایین صفحه تنظیمات.
+- `versionCode` ← عدد صحیحی که اندروید و مایکت برای تشخیص نسخه جدیدتر استفاده می‌کنند. **در هر انتشار باید حتماً بیشتر از نسخه قبلی باشد** (۱، ۲، ۳، ...)؛ هرگز کم یا تکراری نشود.
+- اسکریپت برندینگ (بعد از هر `npx cap sync`) این دو مقدار را خودکار در `android\app\build.gradle` می‌نویسد؛ آن فایل را دستی ویرایش نکنید.
+
+### انتشار به‌روزرسانی در مایکت (قدم‌به‌قدم)
+1. تغییرات کد را انجام دهید و `npm test` را اجرا کنید.
+2. در `package.json` مقدار `version` را بالا ببرید (مثلاً `1.0.0` → `1.0.1` یا `1.1.0`) و `versionCode` را **یک واحد افزایش دهید** (مثلاً `1` → `2`).
+3. با **همان keystore قبلی** نسخه Release بسازید: `scripts\build-apk.bat release` (یا GitHub Actions با Secretها).
+4. (اختیاری) امضا را با `apksigner verify --print-certs` بررسی کنید؛ اثر انگشت SHA-256 گواهی باید با نسخه‌های قبلی یکسان باشد.
+5. در پنل توسعه‌دهندگان مایکت (myket.ir) وارد صفحه برنامه شوید، بخش **نسخه جدید / بارگذاری APK** را انتخاب و `apartemant-release.apk` را بارگذاری کنید،
+   تغییرات نسخه را به فارسی بنویسید و برای بررسی ارسال کنید.
+6. تغییرات را در git ثبت کنید (مثلاً `git commit -am "v1.0.1"` و یک tag مثل `v1.0.1`).
+
+> شناسه بسته (`ir.buildingcharge.app`) را هرگز تغییر ندهید؛ تغییر آن یعنی یک برنامه کاملاً جدید در مایکت.
 
 ---
 
@@ -170,7 +237,10 @@ npm run preview  REM اجرای نسخه build شده
 13. **Warningها** (زرد، با «دیگر این پیام را نمایش نده»): هشدار قبل از ذخیره، هشدار قبل از تسویه آخرین واحد (قفل شدن قبض)، هشدار ثبت قبض تکراری (همان نوع در همان ماه/سال)، هشدار گرد شدن مبلغ.
     در تنظیمات دکمه «نمایش دوباره سایر هشدارهای پنهان‌شده» وجود دارد.
 14. **آموزش** ۱۱ مرحله‌ای.
-15. **تنظیمات**: سوییچ هشدار قبل از ذخیره + Chipهای سال از ۱۴۰۳ تا ۱۰۰ سال بعد از سال جاری (آبی = فعال، خاکستری = غیرفعال، با لمس Toggle می‌شود؛ پیش‌فرض ۱۴۰۴ و ۱۴۰۵؛ حداقل یک سال همیشه فعال می‌ماند).
+15. **تنظیمات**: سوییچ هشدار قبل از ذخیره + کشوی «سال‌های فعال»: با لمس باز می‌شود و فهرست قابل اسکرول سال‌های ۱۴۰۵ تا ۱۵۰۵ را با چک‌باکس فعال/غیرفعال نشان می‌دهد
+    (پیش‌فرض فقط ۱۴۰۵ فعال است؛ حداقل یک سال همیشه فعال می‌ماند و در غیر این صورت خطای «حداقل یک سال باید فعال بماند» نمایش داده می‌شود).
+    سال‌های فعال قبلی کمتر از ۱۴۰۵ (مثل ۱۴۰۳/۱۴۰۴ نسخه‌های قبلی) هنگام اجرا خودکار حذف می‌شوند و اگر سالی باقی نماند ۱۴۰۵ فعال می‌شود؛
+    قبض‌های ذخیره‌شده سال‌های قدیمی‌تر پاک نمی‌شوند و همچنان در کشوی سال «سوابق» قابل انتخاب‌اند. شماره نسخه برنامه (مثلاً «نسخه ۱.۰.۰») پایین صفحه تنظیمات نمایش داده می‌شود.
 16. **Bottom Navigation**: خانه، آموزش، سوابق، تنظیمات. دکمه Back گوشی هم پشتیبانی می‌شود.
 17. **ذخیره‌سازی محلی و آفلاین** (جزئیات پایین).
 
@@ -212,7 +282,8 @@ building-charge/
 ├─ capacitor.config.ts        ← appId / appName / webDir: dist
 ├─ vite.config.ts, vitest.config.ts, tsconfig*.json
 ├─ .github/workflows/android-apk.yml   ← ساخت APK روی GitHub
-├─ scripts/build-apk.bat      ← ساخت APK در ویندوز با یک دستور
+├─ scripts/build-apk.bat      ← ساخت APK در ویندوز با یک دستور (دیباگ، یا با آرگومان release نسخه امضاشده)
+├─ scripts/sign-release.mjs   ← zipalign + امضای apksigner (v1/v2/v3) با کلید از متغیرهای محیطی
 ├─ scripts/apply-android-branding.mjs ← اعمال نام، آیکون و اسپلش روی پوشه android (خودکار بعد از cap sync)
 ├─ resources/android/res/     ← آیکون‌ها (adaptive/round/legacy همه تراکم‌ها) و تصاویر اسپلش آماده
 ├─ resources/branding/        ← SVGهای منبع طرح ۱ + generate.mjs (ساخت دوباره PNGها؛ اختیاری)
@@ -222,7 +293,7 @@ building-charge/
    ├─ logic/       calculation · formatting · validation · errors · warnings · settlement · years · billFactory · date · id
    ├─ storage/     kvStore (Capacitor Preferences) · billRepository · settingsRepository
    ├─ context/     SettingsContext · FeedbackContext (مدیریت جدای Error / Warning / Toast)
-   ├─ components/  AppHeader, BottomNav, AmountInput, PersonCountInput, UnitsEditor, ExpenseTypePicker,
+   ├─ components/  AppHeader, BottomNav, YearPicker (کشوی سال‌های فعال), AmountInput, PersonCountInput, UnitsEditor, ExpenseTypePicker,
    │               ErrorDialog, WarningDialog, LockedDialog, ConfirmDialog, Toast, Checkbox, Switch, Icons, Illustrations ...
    ├─ assets/      intro-art.svg / intro-art-landscape.svg (تصویر صفحه ورود)
    ├─ screens/     Intro (صفحه ورود), Home, NewBill (ثبت/ویرایش), Result, Records, BillDetails, Tutorial, Settings
@@ -258,6 +329,19 @@ npm run branding:generate
 ```
 
 ## رفع اشکال‌های رایج
+
+### برنامه روی گوشی نصب نمی‌شود (به‌خصوص شیائومی / پوکو با HyperOS یا MIUI)
+- **تداخل امضا (رایج‌ترین علت)**: اگر نسخه‌ای از برنامه با کلید دیگری قبلاً نصب شده باشد (مثلاً `app-debug.apk` یا APK دیباگی که روی کامپیوتر دیگری ساخته شده)،
+  نصب نسخه جدید با پیام «برنامه نصب نشد» / «App not installed» / «package conflicts» رد می‌شود. **اول برنامه قبلی را کامل حذف کنید** و بعد نصب کنید
+  (توجه: با حذف، داده‌های ذخیره‌شده آن نسخه پاک می‌شوند). بعد از آن، نسخه‌های Release بعدی (با همان keystore و versionCode بزرگ‌تر) بدون حذف روی هم نصب می‌شوند.
+- **versionCode کمتر**: نصب نسخه‌ای با versionCode کوچک‌تر از نسخه نصب‌شده (Downgrade) مجاز نیست.
+- **اجازه نصب از منابع ناشناس**: در HyperOS مسیر «تنظیمات ← برنامه‌ها ← دسترسی‌های ویژه ← نصب برنامه‌های ناشناس» را برای همان برنامه‌ای که فایل را با آن باز می‌کنید
+  (مدیر فایل، تلگرام، مرورگر) فعال کنید.
+- **اسکن امنیتی شیائومی / Google Play Protect**: ممکن است پیام «برنامه ناشناخته / تأییدنشده» یا «Blocked by Play Protect» نمایش دهد؛ «جزئیات بیشتر ← در هر صورت نصب شود» را بزنید.
+  اگر «محافظت پیشرفته» (Enhanced protection) در تنظیمات امنیت فعال است، ممکن است نصب را کاملاً مسدود کند؛ موقتاً آن را غیرفعال کنید.
+- **فایل ناقص یا تغییرنام‌یافته**: مطمئن شوید دانلود کامل شده و حجم فایل با فایل اصلی یکسان است و پسوند آن دقیقاً `.apk` است (نه `.apk.zip` یا `.bin`).
+- **نصب با کابل (adb)**: در شیائومی باید در «گزینه‌های توسعه‌دهنده» علاوه بر USB debugging، گزینه **Install via USB** هم روشن باشد (نیاز به حساب Mi و سیم‌کارت دارد).
+- **فضای کافی / Second space / حالت کودک**: فضای خالی کافی داشته باشید و در فضای دوم یا پروفایل محدود نصب نکنید.
 
 - **`npx cap add android` خطای «platform already exists»**: پوشه `android` از قبل ساخته شده؛ فقط `npx cap sync` بزنید.
 - **`SDK location not found`**: در `android\local.properties` این خط را بگذارید (نام کاربری خود را جایگزین کنید):

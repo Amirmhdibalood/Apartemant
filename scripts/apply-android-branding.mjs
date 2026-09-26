@@ -3,6 +3,8 @@
  * - کپی آیکون‌ها (adaptive + round + legacy) و تصاویر اسپلش از resources/android/res
  * - تنظیم نام برنامه (app_name) در strings.xml
  * - تنظیم اسپلش Android 12+ (SplashScreen API) در styles.xml
+ * - تنظیم versionName / versionCode در android/app/build.gradle از package.json
+ *   (version → versionName، versionCode → versionCode؛ برای انتشار نسخه جدید فقط package.json را تغییر دهید)
  *
  * به‌صورت خودکار بعد از `npx cap add android` / `npx cap sync` / `npx cap copy` اجرا می‌شود
  * (هوک capacitor:copy:after در package.json). اجرای دستی: node scripts/apply-android-branding.mjs
@@ -63,4 +65,21 @@ if (fs.existsSync(stylesPath)) {
   });
   fs.writeFileSync(stylesPath, x, 'utf8');
 }
+// 4) version from package.json
+const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
+const versionName = String(pkg.version ?? '');
+const versionCode = Number(pkg.versionCode);
+if (!/^\d+\.\d+\.\d+$/.test(versionName)) throw new Error(`[branding] invalid package.json version: ${versionName}`);
+if (!Number.isInteger(versionCode) || versionCode < 1 || versionCode > 2100000000) {
+  throw new Error(`[branding] package.json "versionCode" must be a positive integer (got ${pkg.versionCode})`);
+}
+const gradlePath = path.join(ROOT, 'android/app/build.gradle');
+if (fs.existsSync(gradlePath)) {
+  let g = fs.readFileSync(gradlePath, 'utf8');
+  if (!/versionCode\s+\d+/.test(g) || !/versionName\s+"[^"]*"/.test(g)) throw new Error('[branding] versionCode/versionName not found in build.gradle');
+  g = g.replace(/versionCode\s+\d+/, `versionCode ${versionCode}`).replace(/versionName\s+"[^"]*"/, `versionName "${versionName}"`);
+  fs.writeFileSync(gradlePath, g, 'utf8');
+}
+
+console.log(`[branding] version ${versionName} (versionCode ${versionCode})`);
 console.log(`[branding] applied: ${copied} resource files, label «${APP_NAME}», Android 12+ splash.`);

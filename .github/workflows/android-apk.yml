@@ -1,5 +1,8 @@
-# ساخت خودکار APK (Debug) روی GitHub Actions با هر push
-# خروجی: Artifact با نام building-charge-debug-apk (در صفحه Actions → Run → Artifacts)
+# ساخت خودکار APK روی GitHub Actions با هر push
+# خروجی‌ها (صفحه Actions → Run → Artifacts):
+#   building-charge-debug-apk   ← همیشه
+#   apartemant-release-apk      ← فقط اگر Secretهای کلید امضا تعریف شده باشند:
+#     ANDROID_KEYSTORE_BASE64 (محتوای فایل jks به base64)، ANDROID_KEYSTORE_PASSWORD، ANDROID_KEY_ALIAS، ANDROID_KEY_PASSWORD
 name: Build Android APK
 
 on:
@@ -11,6 +14,8 @@ jobs:
   build-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -58,4 +63,30 @@ jobs:
         with:
           name: building-charge-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Build release APK (unsigned)
+        if: env.HAS_KEYSTORE == 'true'
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Sign release APK (zipalign + apksigner v1/v2/v3)
+        if: env.HAS_KEYSTORE == 'true'
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/release.jks"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$ANDROID_KEYSTORE_PATH"
+          node scripts/sign-release.mjs --out apartemant-release.apk
+          rm -f "$ANDROID_KEYSTORE_PATH"
+
+      - name: Upload release APK artifact
+        if: env.HAS_KEYSTORE == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: apartemant-release-apk
+          path: apartemant-release.apk
           if-no-files-found: error

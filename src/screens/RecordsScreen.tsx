@@ -10,6 +10,7 @@ import { billRepository } from '../storage/billRepository';
 import { currentJalali, pickDefaultYear } from '../logic/date';
 import { formatAmount } from '../logic/formatting';
 import { settledCount } from '../logic/settlement';
+import { recordYearOptions } from '../logic/years';
 
 interface Props {
   year?: number;
@@ -22,8 +23,15 @@ interface Props {
 export function RecordsScreen({ year: yearProp, month: monthProp, onFilterChange, onOpenBill }: Props) {
   const { settings } = useSettings();
   const now = currentJalali();
-  const years = settings.activeYears;
-  const year = yearProp && years.includes(yearProp) ? yearProp : pickDefaultYear(years, now.year);
+  // سال‌های فعال + سال‌هایی که قبض ذخیره‌شده دارند (قبض‌های سال‌های قدیمی‌تر همچنان دیده می‌شوند)
+  const [billYears, setBillYears] = useState<number[]>([]);
+  useEffect(() => {
+    let alive = true;
+    billRepository.getAll().then((all) => { if (alive) setBillYears(all.map((b) => b.bill.year)); });
+    return () => { alive = false; };
+  }, []);
+  const years = recordYearOptions(settings.activeYears, billYears);
+  const year = yearProp && years.includes(yearProp) ? yearProp : pickDefaultYear(settings.activeYears, now.year);
   const month = monthProp ?? now.month;
   const [items, setItems] = useState<BillWithUnits[] | null>(null);
 

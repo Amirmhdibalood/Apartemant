@@ -3,16 +3,16 @@ import { Switch } from '../components/Switch';
 import { IconAlertTriangle } from '../components/Icons';
 import { useSettings } from '../context/SettingsContext';
 import { useFeedback } from '../context/FeedbackContext';
-import { FIRST_YEAR, YEARS_AHEAD } from '../models/constants';
-import { currentJalali } from '../logic/date';
-import { toggleYear, yearRange } from '../logic/years';
+import { YearPicker } from '../components/YearPicker';
+import { selectableYears, toggleYear } from '../logic/years';
+import { APP_VERSION_FA } from '../appVersion';
 import { Errors } from '../logic/errors';
 
 /** ۱۵. تنظیمات */
 export function SettingsScreen({ onBack, canGoBack }: { onBack: () => void; canGoBack: boolean }) {
   const { settings, updateSettings } = useSettings();
   const { showErrors, toast } = useFeedback();
-  const years = yearRange(FIRST_YEAR, Math.max(currentJalali().year, FIRST_YEAR) + YEARS_AHEAD);
+  const years = selectableYears();
 
   const onYear = (y: number) => {
     const next = toggleYear(settings.activeYears, y);
@@ -59,26 +59,11 @@ export function SettingsScreen({ onBack, canGoBack }: { onBack: () => void; canG
         <section className="card settings-card">
           <h2 className="card__title">سال‌ها</h2>
           <p className="card__hint">
-            روی هر سال بزنید تا فعال یا غیرفعال شود. فقط سال‌های فعال (آبی) در کشوی سال صفحه «ثبت قبض جدید» و «سوابق» نمایش داده می‌شوند.
+            فهرست را باز کنید و سال‌های مورد نیاز را فعال یا غیرفعال کنید. فقط سال‌های فعال در کشوی سال صفحه «ثبت قبض جدید» و «سوابق» نمایش داده می‌شوند. حداقل یک سال باید فعال بماند.
           </p>
-          <div className="chips">
-            {years.map((y) => {
-              const active = settings.activeYears.includes(y);
-              return (
-                <button
-                  key={y}
-                  type="button"
-                  className={'chip' + (active ? ' is-active' : '')}
-                  aria-pressed={active}
-                  onClick={() => onYear(y)}
-                >
-                  {y}
-                </button>
-              );
-            })}
-          </div>
+          <YearPicker years={years} active={settings.activeYears} onToggle={onYear} />
         </section>
-        <p className="app-version">شارژ ساختمان — نسخه 1.0.0 — کاملاً آفلاین</p>
+        <p className="app-version">آپارتمانت — {APP_VERSION_FA} — کاملاً آفلاین</p>
       </main>
     </>
   );

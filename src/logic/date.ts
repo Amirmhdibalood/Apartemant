@@ -13,7 +13,7 @@ export function currentJalali(now: Date = new Date()): JalaliYM {
   } catch {
     /* ignore */
   }
-  return { year: 1404, month: 1 };
+  return { year: 1405, month: 1 };
 }
 
 /** یک سال پیش‌فرض از بین سال‌های فعال انتخاب می‌کند (سال جاری اگر فعال باشد) */

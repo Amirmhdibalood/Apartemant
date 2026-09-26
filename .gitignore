@@ -25,3 +25,13 @@ Thumbs.db
 .idea/
 *.local
 .env
+
+# signing keys & passwords (NEVER commit)
+keystore/
+*.jks
+*.keystore
+*.p12
+*.pk8
+keystore.properties
+*PASSWORDS*.txt
+release-signing.env

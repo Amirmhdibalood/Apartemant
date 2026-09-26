@@ -31,9 +31,9 @@ describe('validateDraft', () => {
 
 describe('years & warnings', () => {
   it('keeps at least one active year', () => {
-    expect(toggleYear([1404, 1405], 1405)).toEqual([1404]);
-    expect(toggleYear([1404], 1404)).toBeNull();
-    expect(toggleYear([1404], 1410)).toEqual([1404, 1410]);
+    expect(toggleYear([1405, 1406], 1406)).toEqual([1405]);
+    expect(toggleYear([1405], 1405)).toBeNull();
+    expect(toggleYear([1405], 1410)).toEqual([1405, 1410]);
   });
   it('save warning follows the settings toggle; others use dismissed list', () => {
     expect(shouldShowWarning('saveConfirm', DEFAULT_SETTINGS)).toBe(true);

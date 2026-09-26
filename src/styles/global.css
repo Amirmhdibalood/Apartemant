@@ -299,13 +299,45 @@ h1, h2, h3, p { margin: 0; }
 .switch__thumb { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); transition: right 0.2s; }
 .switch.is-on { background: var(--primary); }
 .switch.is-on .switch__thumb { right: 23px; }
-.chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.chip {
-  height: 40px; border-radius: 10px; background: #e7eaf0; color: #4a5266; font-weight: 700; font-size: 14.5px;
-  border: 1px solid #dde1e9; transition: background 0.15s, color 0.15s;
+.app-version { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 18px; }
+
+/* Year picker (کشوی سال‌ها در تنظیمات) */
+.year-picker { border: 1px solid var(--border-2); border-radius: var(--radius); background: #fff; overflow: hidden; }
+.year-picker.is-open { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(47, 116, 240, 0.12); }
+.year-picker__toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 14px; background: transparent; border: 0; text-align: right; color: var(--text); cursor: pointer;
 }
-.chip.is-active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 4px 10px rgba(47, 116, 240, 0.25); }
-.app-version { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; }
+.year-picker__text { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.year-picker__label { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14.5px; }
+.year-picker__count {
+  min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: var(--primary-soft); color: var(--primary);
+  font-size: 12.5px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center;
+}
+.year-picker__value { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.year-picker__chevron { flex-shrink: 0; color: var(--text-2); transition: transform 0.2s; }
+.year-picker.is-open .year-picker__chevron { transform: rotate(180deg); color: var(--primary); }
+.year-picker__list {
+  max-height: 264px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  border-top: 1px solid var(--border); padding: 4px 0;
+}
+.year-row {
+  position: relative; display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 14px; cursor: pointer; user-select: none;
+  border-bottom: 1px solid #f0f3f8;
+}
+.year-row:last-child { border-bottom: 0; }
+.year-row:active { background: var(--soft-panel); }
+.year-row input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.year-row__box {
+  width: 24px; height: 24px; border-radius: 7px; border: 2px solid #c3cad8; background: #fff; color: #fff;
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, border-color 0.15s;
+}
+.year-row.is-active .year-row__box { background: var(--primary); border-color: var(--primary); }
+.year-row input:focus-visible + .year-row__box { box-shadow: 0 0 0 3px rgba(47, 116, 240, 0.25); }
+.year-row__year { flex: 1; font-weight: 700; font-size: 15.5px; color: var(--text-2); }
+.year-row.is-active .year-row__year { color: var(--text); font-weight: 800; }
+.year-row__status { font-size: 12px; font-weight: 700; color: var(--muted); background: #eef1f6; border-radius: 8px; padding: 3px 9px; }
+.year-row.is-active .year-row__status { color: var(--primary); background: var(--primary-soft); }
 
 /* ---------- Bottom nav ---------- */
 .bottom-nav {
