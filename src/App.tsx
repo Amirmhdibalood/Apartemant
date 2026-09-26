@@ -15,11 +15,13 @@ import { RecordsScreen } from './screens/RecordsScreen';
 import { BillDetailsScreen } from './screens/BillDetailsScreen';
 import { TutorialScreen } from './screens/TutorialScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { IntroScreen } from './screens/IntroScreen';
 
 export default function App() {
   const { settings, loaded } = useSettings();
   const [stack, setStack] = useState<Route[]>([{ name: 'home' }]);
   const [draft, setDraft] = useState<BillDraft | null>(null);
+  const [showIntro, setShowIntro] = useState(true);
   const route = stack[stack.length - 1];
   const stackRef = useRef(stack);
   stackRef.current = stack;
@@ -33,6 +35,7 @@ export default function App() {
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     const sub = CapApp.addListener('backButton', () => {
+      if (document.querySelector('.intro')) return;
       if (document.querySelector('.dialog-backdrop')) {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
         return;
@@ -57,7 +60,10 @@ export default function App() {
     else resetTo({ name: t });
   };
 
-  if (!loaded) return <div className="app-shell" />;
+  // صفحه ورود (حدود ۱٫۸ ثانیه) و سپس خانه
+  if (showIntro || !loaded) {
+    return <IntroScreen onDone={() => setShowIntro(false)} />;
+  }
 
   const showNav = TAB_ROUTES.includes(route.name);
   let screen: ReactNode = null;

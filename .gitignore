@@ -7,8 +7,8 @@ dist-ssr/
 *.tsbuildinfo
 
 # Capacitor native platforms (generated with `npx cap add android`)
-android/
-ios/
+/android/
+/ios/
 
 # APK / build artifacts
 *.apk

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" ><defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BFD6FF"/><stop offset=".55" stop-color="#E4EEFF"/><stop offset="1" stop-color="#F7FAFF"/></linearGradient>
+    <linearGradient id="skyS" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#AFCBFF"/><stop offset=".45" stop-color="#DCE8FF"/><stop offset=".8" stop-color="#F3F7FF"/><stop offset="1" stop-color="#FFFFFF"/></linearGradient>
+    <radialGradient id="sun" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFF4CC"/><stop offset=".55" stop-color="#FFE08A" stop-opacity=".9"/><stop offset="1" stop-color="#FFE08A" stop-opacity="0"/></radialGradient>
+    <linearGradient id="bMain" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4A8BFF"/><stop offset="1" stop-color="#2F6FEB"/></linearGradient>
+    <linearGradient id="bSide" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8FB4FA"/><stop offset="1" stop-color="#6B98F2"/></linearGradient>
+    <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6CC794"/><stop offset="1" stop-color="#43A56E"/></linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6CC794"/><stop offset="1" stop-color="#3E9C68"/></linearGradient>
+    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".35"/></linearGradient></defs>
+  <rect width="1024" height="1024" fill="url(#sky)"/>
+  <circle cx="665" cy="420" r="125" fill="url(#sun)"/>
+  
+  <g transform="translate(345 440) scale(0.7)" opacity="0.9" fill="#fff">
+    <ellipse cx="0" cy="0" rx="90" ry="34"/><circle cx="-30" cy="-22" r="36"/><circle cx="26" cy="-30" r="46"/><circle cx="66" cy="-6" r="30"/>
+  </g>
+  <g transform="translate(740 580) scale(0.45)" opacity="0.75" fill="#fff">
+    <ellipse cx="0" cy="0" rx="90" ry="34"/><circle cx="-30" cy="-22" r="36"/><circle cx="26" cy="-30" r="46"/><circle cx="66" cy="-6" r="30"/>
+  </g></svg>

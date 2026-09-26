@@ -1,10 +1,10 @@
-# شارژ ساختمان (Building Charge)
+# آپارتمانت — محاسبه شارژ ساختمان (Building Charge)
 
 اپلیکیشن اندروید **محاسبه شارژ و هزینه‌های ساختمان** — کاملاً فارسی و راست‌به‌چپ، کاملاً آفلاین (بدون سرور و بدون ورود)،
 ساخته‌شده با **React + Vite** و بسته‌بندی‌شده به اپ نیتیو اندروید با **Capacitor**.
 
 - پوشه پروژه روی ویندوز: `F:\Balood\building-charge`
-- شناسه برنامه (appId): `ir.buildingcharge.app` — نام برنامه: «شارژ ساختمان»
+- شناسه برنامه (appId): `ir.buildingcharge.app` — نام برنامه روی گوشی: «آپارتمانت»
 
 | ابزار | نسخه استفاده‌شده |
 | --- | --- |
@@ -26,7 +26,7 @@
 
 1. فایل `app-debug.apk` را به گوشی اندروید منتقل کنید (کابل USB، تلگرام، بلوتوث و ...).
 2. روی فایل بزنید. اگر پیام «نصب از منابع ناشناس» آمد، اجازه نصب (Install unknown apps) را برای همان برنامه (مثلاً File Manager) فعال کنید.
-3. «نصب» را بزنید. برنامه با نام «شارژ ساختمان» اضافه می‌شود (حداقل اندروید 7.0).
+3. «نصب» را بزنید. برنامه با نام «آپارتمانت» و آیکون آسمان و ساختمان‌ها اضافه می‌شود (حداقل اندروید 7.0).
 
 > این APK از نوع Debug است (با کلید دیباگ امضا شده) و برای استفاده شخصی مناسب است. برای انتشار در مارکت‌ها باید نسخه Release امضاشده بسازید.
 
@@ -155,6 +155,8 @@ npm run preview  REM اجرای نسخه build شده
 
 ## امکانات (مطابق مشخصات)
 
+0. **صفحه ورود (اسپلش)**: هنگام باز شدن برنامه، اسپلش بومی اندروید و سپس صفحه ورود داخل برنامه با تصویر آسمان و ساختمان‌ها،
+   عنوان «محاسبه شارژ ساختمان» و نام «آپارتمانت» حدود ۱٫۸ ثانیه نمایش داده می‌شود و خودکار به صفحه اصلی می‌رود (با لمس صفحه زودتر رد می‌شود).
 1. **صفحه اصلی**: تصویر ساختمان، عنوان، توضیح، دکمه «ثبت قبض جدید +» و دکمه‌های سوابق/آموزش/تنظیمات.
 2. **ثبت قبض جدید**: سال (فقط سال‌های فعال)، ماه (فروردین تا اسفند)، نوع هزینه به‌صورت ۵ کاشی رنگی (آب/برق/گاز/شارژ ساختمان/متفرقه)، شماره قبض و توضیحات (اختیاری).
 3. **واحدها**: دکمه‌های + و −، شماره‌گذاری خودکار، تعداد نفرات فقط با تایپ دستی (بدون Spinner)، ستون با عرض ثابت و سربرگ «تعداد نفرات» با آیکون شخص.
@@ -211,6 +213,9 @@ building-charge/
 ├─ vite.config.ts, vitest.config.ts, tsconfig*.json
 ├─ .github/workflows/android-apk.yml   ← ساخت APK روی GitHub
 ├─ scripts/build-apk.bat      ← ساخت APK در ویندوز با یک دستور
+├─ scripts/apply-android-branding.mjs ← اعمال نام، آیکون و اسپلش روی پوشه android (خودکار بعد از cap sync)
+├─ resources/android/res/     ← آیکون‌ها (adaptive/round/legacy همه تراکم‌ها) و تصاویر اسپلش آماده
+├─ resources/branding/        ← SVGهای منبع طرح ۱ + generate.mjs (ساخت دوباره PNGها؛ اختیاری)
 ├─ tests/                     ← تست‌های واحد (Vitest)
 └─ src/
    ├─ models/      types.ts (Bill, Unit, Settings, Draft) · constants.ts (ماه‌ها، انواع هزینه، رنگ‌ها، سال‌ها)
@@ -219,7 +224,8 @@ building-charge/
    ├─ context/     SettingsContext · FeedbackContext (مدیریت جدای Error / Warning / Toast)
    ├─ components/  AppHeader, BottomNav, AmountInput, PersonCountInput, UnitsEditor, ExpenseTypePicker,
    │               ErrorDialog, WarningDialog, LockedDialog, ConfirmDialog, Toast, Checkbox, Switch, Icons, Illustrations ...
-   ├─ screens/     Home, NewBill (ثبت/ویرایش), Result, Records, BillDetails, Tutorial, Settings
+   ├─ assets/      intro-art.svg / intro-art-landscape.svg (تصویر صفحه ورود)
+   ├─ screens/     Intro (صفحه ورود), Home, NewBill (ثبت/ویرایش), Result, Records, BillDetails, Tutorial, Settings
    ├─ styles/      global.css (Design System مطابق تصویر مرجع)
    ├─ App.tsx      ناوبری (Stack) + دکمه Back اندروید
    └─ main.tsx     فونت Vazirmatn محلی (بدون CDN)
@@ -228,13 +234,27 @@ building-charge/
 - فونت **Vazirmatn** از پکیج `@fontsource/vazirmatn` داخل برنامه قرار می‌گیرد؛ هیچ درخواست اینترنتی وجود ندارد.
 - پوشه `android` عمداً در مخزن نیست (با `npx cap add android` ساخته می‌شود) — در `.gitignore` آمده است.
 
-## نام فارسی برنامه در اندروید
+## نام، آیکون و اسپلش برنامه (برندینگ «آپارتمانت» — طرح ۱)
 
-`appName` در `capacitor.config.ts` روی «شارژ ساختمان» تنظیم شده و `npx cap add android` آن را در
-`android\app\src\main\res\values\strings.xml` می‌نویسد (تست شده و مشکلی ندارد). اگر روزی بخواهید نام را دستی تغییر دهید، این دو خط را ویرایش کنید:
-```xml
-<string name="app_name">شارژ ساختمان</string>
-<string name="title_activity_main">شارژ ساختمان</string>
+- **نام برنامه**: `appName` در `capacitor.config.ts` روی «آپارتمانت» است. شناسه بسته همان `ir.buildingcharge.app` باقی مانده است.
+- **آیکون**: آیکون تطبیقی (Adaptive Icon) با دو لایه — پس‌زمینه آسمان/خورشید/ابر و پیش‌زمینه ساختمان‌ها و تپه (محتوای اصلی داخل ناحیه امن ۶۶dp)،
+  لایه تک‌رنگ برای آیکون‌های Themed اندروید ۱۳ به بالا، آیکون گرد (`ic_launcher_round`) و آیکون‌های قدیمی برای همه تراکم‌ها (mdpi تا xxxhdpi).
+- **اسپلش بومی**: اندروید ۱۲ به بالا از SplashScreen API سیستم استفاده می‌کند (پس‌زمینه آبی آسمانی `#DCE8FF` + آیکون برنامه؛
+  محدودیت خود اندروید است که فقط آیکون را نشان می‌دهد). اندروید ۱۱ و پایین‌تر تصویر کامل اسپلش (عمودی/افقی) را نشان می‌دهند.
+  پلاگین `@capacitor/splash-screen` این اسپلش را مدیریت می‌کند و صفحه ورود داخل برنامه به محض بارگذاری آن را پنهان می‌کند.
+
+همه این فایل‌ها در `resources/android/res` هستند و اسکریپت `scripts/apply-android-branding.mjs` آن‌ها را در
+`android\app\src\main\res` کپی می‌کند، `app_name` و `title_activity_main` را در `strings.xml` روی «آپارتمانت» می‌گذارد و
+تنظیمات اسپلش اندروید ۱۲ را به `styles.xml` اضافه می‌کند. این اسکریپت با هوک `capacitor:copy:after` در `package.json`
+**به‌طور خودکار** بعد از هر `npx cap add android` / `npx cap sync` / `npx cap copy` اجرا می‌شود؛ پس مراحل بخش ۲ و GitHub Actions تغییری نکرده‌اند.
+
+> اگر پوشه `android` را قبلاً (با نام قدیمی «شارژ ساختمان») ساخته‌اید، کافی است یک بار `npm install` و سپس `npm run build` و `npx cap sync` بزنید؛
+> نام و آیکون و اسپلش جدید خودکار اعمال می‌شوند. اجرای دستی: `npm run android:brand`.
+> (اگر نام قدیمی روی گوشی ماند، برنامه قبلی را حذف و APK جدید را نصب کنید یا لانچر را ری‌استارت کنید.)
+
+ساخت دوباره تصاویر از SVGهای منبع (اختیاری، فقط اگر طرح را تغییر دادید؛ به Playwright و Chrome نیاز دارد):
+```
+npm run branding:generate
 ```
 
 ## رفع اشکال‌های رایج

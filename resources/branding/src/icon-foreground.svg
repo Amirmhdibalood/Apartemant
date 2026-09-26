@@ -7,15 +7,6 @@
     <linearGradient id="hill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6CC794"/><stop offset="1" stop-color="#43A56E"/></linearGradient>
     <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6CC794"/><stop offset="1" stop-color="#3E9C68"/></linearGradient>
     <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".35"/></linearGradient></defs>
-  <rect width="1024" height="1024" fill="url(#sky)"/>
-  <circle cx="665" cy="420" r="125" fill="url(#sun)"/>
-  
-  <g transform="translate(345 440) scale(0.7)" opacity="0.9" fill="#fff">
-    <ellipse cx="0" cy="0" rx="90" ry="34"/><circle cx="-30" cy="-22" r="36"/><circle cx="26" cy="-30" r="46"/><circle cx="66" cy="-6" r="30"/>
-  </g>
-  <g transform="translate(740 580) scale(0.45)" opacity="0.75" fill="#fff">
-    <ellipse cx="0" cy="0" rx="90" ry="34"/><circle cx="-30" cy="-22" r="36"/><circle cx="26" cy="-30" r="46"/><circle cx="66" cy="-6" r="30"/>
-  </g>
   
   <g transform="translate(512 800) scale(0.8) translate(-512 -800)">
     <g>
