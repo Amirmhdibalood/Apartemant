@@ -4,6 +4,7 @@ import { IconAlertTriangle } from '../components/Icons';
 import { useSettings } from '../context/SettingsContext';
 import { useFeedback } from '../context/FeedbackContext';
 import { YearPicker } from '../components/YearPicker';
+import { BackupSection } from '../components/BackupSection';
 import { selectableYears, toggleYear } from '../logic/years';
 import { APP_VERSION_FA } from '../appVersion';
 import { Errors } from '../logic/errors';
@@ -63,6 +64,8 @@ export function SettingsScreen({ onBack, canGoBack }: { onBack: () => void; canG
           </p>
           <YearPicker years={years} active={settings.activeYears} onToggle={onYear} />
         </section>
+
+        <BackupSection />
         <p className="app-version">آپارتمانت — {APP_VERSION_FA} — کاملاً آفلاین</p>
       </main>
     </>

@@ -37,8 +37,8 @@ describe('بازه سال‌ها (۱۴۰۵ تا ۱۵۰۵)', () => {
   });
 
   it('تنظیمات ذخیره‌شده نسخه قبلی درست مهاجرت می‌کنند و بقیه تنظیمات حفظ می‌شوند', () => {
-    const old = { showSaveWarning: false, activeYears: [1404, 1405], dismissedWarnings: ['rounding'] };
-    expect(sanitizeSettings(old as never)).toEqual({ showSaveWarning: false, activeYears: [1405], dismissedWarnings: ['rounding'] });
+    const old = { showSaveWarning: false, activeYears: [1404, 1405], dismissedWarnings: ['roundingAdjust'] };
+    expect(sanitizeSettings(old as never)).toEqual({ showSaveWarning: false, activeYears: [1405], dismissedWarnings: ['roundingAdjust'] });
     expect(sanitizeSettings({ activeYears: [1403, 1404] }).activeYears).toEqual([1405]);
   });
 

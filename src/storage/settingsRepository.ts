@@ -1,19 +1,11 @@
 /** مخزن تنظیمات برنامه */
 import type { AppSettings } from '../models/types';
-import { DEFAULT_SETTINGS } from '../models/constants';
 import { readJson, writeJson } from './kvStore';
-import { migrateActiveYears } from '../logic/years';
+import { sanitizeSettings } from '../logic/settings';
+
+export { sanitizeSettings };
 
 const SETTINGS_KEY = 'settings';
-
-export function sanitizeSettings(s: Partial<AppSettings> | null | undefined): AppSettings {
-  return {
-    showSaveWarning: typeof s?.showSaveWarning === 'boolean' ? s.showSaveWarning : DEFAULT_SETTINGS.showSaveWarning,
-    // مهاجرت: سال‌های قبل از ۱۴۰۵ حذف می‌شوند؛ اگر چیزی نماند ۱۴۰۵ فعال می‌شود
-    activeYears: Array.isArray(s?.activeYears) ? migrateActiveYears(s!.activeYears) : [...DEFAULT_SETTINGS.activeYears],
-    dismissedWarnings: Array.isArray(s?.dismissedWarnings) ? s!.dismissedWarnings : [],
-  };
-}
 
 export const settingsRepository = {
   async get(): Promise<AppSettings> {

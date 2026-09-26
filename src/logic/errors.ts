@@ -14,7 +14,10 @@ export type AppErrorCode =
   | 'MIN_ONE_YEAR'
   | 'MIN_ONE_UNIT'
   | 'STORAGE_FAILED'
-  | 'BILL_NOT_FOUND';
+  | 'BILL_NOT_FOUND'
+  | 'BACKUP_INVALID'
+  | 'BACKUP_FAILED'
+  | 'RESTORE_FAILED';
 
 export interface AppError {
   code: AppErrorCode;
@@ -43,4 +46,10 @@ export const Errors = {
   minOneUnit: (): AppError => ({ code: 'MIN_ONE_UNIT', message: 'قبض باید حداقل یک واحد داشته باشد.' }),
   storageFailed: (): AppError => ({ code: 'STORAGE_FAILED', message: 'ذخیره اطلاعات با مشکل مواجه شد. دوباره تلاش کنید.' }),
   billNotFound: (): AppError => ({ code: 'BILL_NOT_FOUND', message: 'این قبض پیدا نشد.' }),
+  backupInvalid: (message: string): AppError => ({ code: 'BACKUP_INVALID', message }),
+  backupFailed: (): AppError => ({ code: 'BACKUP_FAILED', message: 'ساخت فایل پشتیبان با مشکل مواجه شد. دوباره تلاش کنید.' }),
+  restoreFailed: (): AppError => ({
+    code: 'RESTORE_FAILED',
+    message: 'بازیابی اطلاعات با مشکل مواجه شد. اطلاعات قبلی شما تغییری نکرده یا از نسخه ایمنی قابل بازگشت است.',
+  }),
 };

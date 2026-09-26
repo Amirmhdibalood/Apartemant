@@ -136,6 +136,26 @@ export const IconCheck = (p: P) => (
     <path d="M20 6 9 17l-5-5" />
   </S>
 );
+export const IconShare = (p: P) => (
+  <S {...p}>
+    <path d="M12 3v12" />
+    <path d="m7 8 5-5 5 5" />
+    <path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />
+  </S>
+);
+export const IconRestore = (p: P) => (
+  <S {...p}>
+    <path d="M3 12a9 9 0 1 0 3-6.7" />
+    <path d="M3 4v5h5" />
+    <path d="M12 8v4l3 2" />
+  </S>
+);
+export const IconShield = (p: P) => (
+  <S {...p}>
+    <path d="M12 3 4.5 6v5.5c0 4.6 3.1 8.3 7.5 9.5 4.4-1.2 7.5-4.9 7.5-9.5V6z" />
+    <path d="m9 12 2 2 4-4" />
+  </S>
+);
 export const IconX = (p: P) => (
   <S {...p}>
     <path d="M18 6 6 18M6 6l12 12" />

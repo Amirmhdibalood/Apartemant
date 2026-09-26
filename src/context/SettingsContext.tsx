@@ -7,6 +7,8 @@ interface SettingsCtx {
   settings: AppSettings;
   loaded: boolean;
   updateSettings: (fn: (s: AppSettings) => AppSettings) => void;
+  /** خواندن دوباره تنظیمات از حافظه (مثلاً بعد از بازیابی پشتیبان) */
+  reloadSettings: () => Promise<void>;
 }
 
 const Ctx = createContext<SettingsCtx | null>(null);
@@ -31,7 +33,13 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     void settingsRepository.save(next);
   }, []);
 
-  return <Ctx.Provider value={{ settings, loaded, updateSettings }}>{children}</Ctx.Provider>;
+  const reloadSettings = useCallback(async () => {
+    const s = await settingsRepository.get();
+    ref.current = s;
+    setSettings(s);
+  }, []);
+
+  return <Ctx.Provider value={{ settings, loaded, updateSettings, reloadSettings }}>{children}</Ctx.Provider>;
 }
 
 export function useSettings(): SettingsCtx {

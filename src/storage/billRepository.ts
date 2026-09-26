@@ -79,6 +79,17 @@ export const billRepository = {
     });
   },
 
+  /** کپی کامل جدول‌ها (برای پشتیبان‌گیری) */
+  async exportTables(): Promise<Tables> {
+    const t = await load();
+    return { bills: t.bills.map((b) => ({ ...b })), units: t.units.map((u) => ({ ...u })) };
+  },
+
+  /** جایگزینی کامل همه قبض‌ها و واحدها (برای بازیابی از پشتیبان) */
+  async replaceAll(bills: Bill[], units: Unit[]): Promise<void> {
+    await persist({ bills: bills.map((b) => ({ ...b })), units: units.map((u) => ({ ...u })) });
+  },
+
   /** فقط برای تست */
   _resetCache(): void {
     cache = null;
