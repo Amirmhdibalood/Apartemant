@@ -50,6 +50,13 @@ export function jalaliIsoDate(date: Date = new Date()): string {
   return `${j.year}-${pad2(j.month)}-${pad2(j.day)}`;
 }
 
+/** تاریخ شمسی کوتاه مثل 1405/07/04 (ارقام انگلیسی، هماهنگ با سایر اعداد برنامه) */
+export function formatJalaliDate(date: Date): string {
+  const j = jalaliDateTime(date);
+  if (!j) return date.toISOString().slice(0, 10);
+  return `${j.year}/${pad2(j.month)}/${pad2(j.day)}`;
+}
+
 /** مثل «۱۴۰۵/۰۷/۰۴ ساعت ۱۴:۳۰» */
 export function formatJalaliDateTimeFa(date: Date): string {
   const j = jalaliDateTime(date);

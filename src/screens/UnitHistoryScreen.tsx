@@ -1,0 +1,115 @@
+import { useEffect, useMemo, useState } from 'react';
+import type { BillWithUnits } from '../models/types';
+import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../models/constants';
+import { AppHeader } from '../components/AppHeader';
+import { ExpenseIcon } from '../components/ExpenseIcon';
+import { billRepository } from '../storage/billRepository';
+import { formatAmount } from '../logic/formatting';
+import { formatJalaliDate } from '../logic/date';
+import { paymentHistory, PAYMENT_GRACE_DAYS, RATING_LABELS, type PaymentEntry } from '../logic/debts';
+
+interface Props {
+  unitNumber: number;
+  onBack: () => void;
+  onOpenBill: (billId: string) => void;
+}
+
+const date = (iso: string) => formatJalaliDate(new Date(iso));
+
+function StatusBadge({ e }: { e: PaymentEntry }) {
+  switch (e.status) {
+    case 'onTime':
+      return <span className="pay-badge is-ok">به‌موقع</span>;
+    case 'late':
+      return <span className="pay-badge is-late"><span className="num">{e.daysLate}</span> روز تأخیر</span>;
+    case 'unknownDate':
+      return <span className="pay-badge is-muted">پرداخت‌شده</span>;
+    default:
+      return (
+        <span className="pay-badge is-due">
+          {e.paid > 0 ? 'پرداخت جزئی' : 'پرداخت‌نشده'}{e.daysLate > 0 && <> · <span className="num">{e.daysLate}</span> روز تأخیر</>}
+        </span>
+      );
+  }
+}
+
+/** سابقه پرداخت یک واحد: تاریخ ثبت قبض در برابر تاریخ پرداخت و روزهای تأخیر */
+export function UnitHistoryScreen({ unitNumber, onBack, onOpenBill }: Props) {
+  const [all, setAll] = useState<BillWithUnits[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    billRepository.getAll().then((r) => { if (alive) setAll(r); });
+    return () => { alive = false; };
+  }, []);
+  const h = useMemo(() => paymentHistory(all ?? [], unitNumber), [all, unitNumber]);
+
+  return (
+    <>
+      <AppHeader title={`سابقه پرداخت واحد ${unitNumber}`} onBack={onBack} />
+      <main className="screen screen--report">
+        {all && h.entries.length === 0 && <div className="empty-state"><p>برای این واحد قبضی ثبت نشده است.</p></div>}
+        {all && h.entries.length > 0 && (
+          <>
+            <section className={'payer-card is-' + h.rating}>
+              <div className="payer-card__top">
+                <span className="payer-card__label">وضعیت پرداخت</span>
+                <span className="payer-card__rating">{RATING_LABELS[h.rating]}</span>
+              </div>
+              <div className="payer-grid">
+                <div><span>جمع سهم</span><b className="num">{formatAmount(h.totalBilled)}</b></div>
+                <div><span>پرداخت‌شده</span><b className="num">{formatAmount(h.totalPaid)}</b></div>
+                <div><span>بدهی</span><b className={'num' + (h.totalOwed > 0 ? ' is-due' : '')}>{formatAmount(h.totalOwed)}</b></div>
+                <div><span>به‌موقع / با تأخیر</span><b><span className="num">{h.onTimeCount}</span> / <span className="num">{h.lateCount}</span></b></div>
+                <div><span>میانگین روز تا پرداخت</span><b className="num">{h.avgDaysToPay ?? '—'}</b></div>
+                <div><span>قبض دارای بدهی</span><b className="num">{h.unpaidCount}</b></div>
+              </div>
+              <p className="payer-card__note">
+                مبالغ به {CURRENCY}. پرداخت تا <span className="num">{PAYMENT_GRACE_DAYS}</span> روز پس از ثبت قبض «به‌موقع» حساب می‌شود.
+                تاریخ پرداخت از نسخه ۱.۲.۰ ثبت می‌شود؛ تسویه‌های قبلی تاریخ ندارند.
+              </p>
+            </section>
+
+            <div className="history-list">
+              {h.entries.map((e) => (
+                <button type="button" key={e.billId} className="history-item" onClick={() => onOpenBill(e.billId)}>
+                  <ExpenseIcon type={e.expenseType} size={36} />
+                  <span className="history-item__main">
+                    <span className="history-item__top">
+                      <span className="history-item__title">{EXPENSE_TYPES[e.expenseType].label} · {MONTHS[e.month - 1]} <span className="num">{e.year}</span></span>
+                      <span className="history-item__amount num">{formatAmount(e.amount)}</span>
+                    </span>
+                    <span className="history-item__dates">
+                      ثبت قبض: <span className="num">{date(e.billCreatedAt)}</span>
+                      {e.payments.length <= 1 && (
+                        <>{' · '}پرداخت: <span className="num">{e.payments[0] ? (e.payments[0].paidAt ? date(e.payments[0].paidAt) : 'نامشخص') : '—'}</span></>
+                      )}
+                    </span>
+                    {(e.payments.length > 1 || (e.paid > 0 && e.remaining > 0)) && (
+                      <span className="history-item__payments">
+                        {e.payments.map((p, k) => (
+                          <span key={k} className="history-pay">
+                            <span className="num">{p.paidAt ? date(p.paidAt) : 'نامشخص'}</span>: <span className="num">{formatAmount(p.amount)}</span>
+                          </span>
+                        ))}
+                        {e.remaining > 0 && <span className="history-pay is-due">مانده: <span className="num">{formatAmount(e.remaining)}</span></span>}
+                      </span>
+                    )}
+                    <span className="history-item__foot">
+                      <StatusBadge e={e} />
+                      {e.days !== null && e.status !== 'unpaid' && (
+                        <span className="history-item__days"><span className="num">{e.days}</span> روز پس از ثبت</span>
+                      )}
+                      {e.status === 'unpaid' && e.days !== null && (
+                        <span className="history-item__days"><span className="num">{e.days}</span> روز از ثبت گذشته</span>
+                      )}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </main>
+    </>
+  );
+}

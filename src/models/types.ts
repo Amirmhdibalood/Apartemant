@@ -1,5 +1,13 @@
-/** انواع هزینه (فقط یکی از این ۵ مورد) */
-export type ExpenseType = 'water' | 'electricity' | 'gas' | 'building' | 'misc';
+/** انواع هزینه (فقط یکی از این ۸ مورد؛ سه مورد آخر از نسخه ۱.۲.۰) */
+export type ExpenseType =
+  | 'water'
+  | 'electricity'
+  | 'gas'
+  | 'building'
+  | 'misc'
+  | 'cleaning'
+  | 'repairs'
+  | 'beautification';
 
 /** Entity: Bill (قبض) */
 export interface Bill {
@@ -25,7 +33,22 @@ export interface Unit {
   personCount: number;
   /** سهم این واحد به تومان (عدد صحیح) */
   shareAmount: number;
+  /** تسویه‌شده = مانده بدهی صفر (همیشه از روی پرداخت‌ها محاسبه می‌شود) */
   isSettled: boolean;
+  /**
+   * پرداخت‌های این واحد برای این قبض (از نسخه ۱.۲.۰؛ امکان چند پرداخت جزئی).
+   * در داده‌های قدیمی وجود ندارد: واحد تسویه‌شده = یک پرداخت کامل با تاریخ نامشخص (logic/payments.ts).
+   */
+  payments?: Payment[];
+}
+
+/** یک پرداخت (کامل یا جزئی) */
+export interface Payment {
+  id: string;
+  /** مبلغ به تومان (عدد صحیح مثبت) */
+  amount: number;
+  /** زمان پرداخت (ISO)، خودکار هنگام ثبت؛ null = نامشخص (تسویه‌های نسخه‌های قبلی) */
+  paidAt: string | null;
 }
 
 /** قبض به‌همراه واحدهایش (برای نمایش) */
@@ -59,4 +82,6 @@ export interface BillDraft {
   amountDigits: string;
   /** تعداد نفرات هر واحد به‌صورت رشته خام (به ترتیب واحد ۱، ۲، ...) */
   personCounts: string[];
+  /** اگر واحدها از الگوی آخرین قبض پر شده باشند: تعداد واحدهای پرشده (فقط برای نمایش راهنما) */
+  prefilledUnits?: number;
 }

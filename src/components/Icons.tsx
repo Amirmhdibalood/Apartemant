@@ -42,6 +42,33 @@ export const IconBuilding = (p: P) => (
     <path d="M9 7h1.5M13.5 7H15M9 11h1.5M13.5 11H15M9 15h1.5M13.5 15H15M3 21h18" />
   </S>
 );
+export const IconBroom = (p: P) => (
+  <S {...p} strokeWidth={2}>
+    <path d="M19.5 3.5 12 11" />
+    <path d="M9.6 9.8 14.2 14.4c-.6 3.3-3.1 6.1-6.6 6.9l-.8.2c-1.1-1.6-2.3-3.2-3.8-4.6 1.4.2 2.6-.1 3.5-.9-1.4-.6-2.5-1.5-3.2-2.7 2.3-.2 4.2-1.3 6.3-3.5z" />
+    <path d="M7.2 16.5 9.5 18.8" />
+  </S>
+);
+export const IconWrench = (p: P) => (
+  <S {...p} strokeWidth={2}>
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+  </S>
+);
+export const IconSparkles = (p: P) => (
+  <S {...p} stroke="none" fill="currentColor">
+    <path d="M10 2.5c.4 3.9 2.1 5.6 6 6-3.9.4-5.6 2.1-6 6-.4-3.9-2.1-5.6-6-6 3.9-.4 5.6-2.1 6-6z" />
+    <path d="M17.5 12.5c.25 2.4 1.3 3.45 3.7 3.7-2.4.25-3.45 1.3-3.7 3.7-.25-2.4-1.3-3.45-3.7-3.7 2.4-.25 3.45-1.3 3.7-3.7z" opacity=".75" />
+    <path d="M5.5 16.5c.15 1.4.75 2 2.2 2.2-1.45.15-2.05.75-2.2 2.2-.15-1.45-.75-2.05-2.2-2.2 1.45-.15 2.05-.75 2.2-2.2z" opacity=".6" />
+  </S>
+);
+export const IconChart = (p: P) => (
+  <S {...p}>
+    <path d="M3.5 20.5h17" />
+    <rect x="5" y="11" width="3.2" height="7" rx="1" />
+    <rect x="10.4" y="6" width="3.2" height="12" rx="1" />
+    <rect x="15.8" y="13.5" width="3.2" height="4.5" rx="1" />
+  </S>
+);
 export const IconDots = (p: P) => (
   <S {...p} stroke="none" fill="currentColor">
     <circle cx="8" cy="8" r="2" />

@@ -1,5 +1,5 @@
 import { BuildingIllustration, CitySkyline } from '../components/Illustrations';
-import { IconBook, IconGear, IconHistory, IconPlus } from '../components/Icons';
+import { IconBook, IconChart, IconGear, IconHistory, IconPlus } from '../components/Icons';
 import type { TabId } from '../components/BottomNav';
 
 interface Props {
@@ -28,6 +28,10 @@ export function HomeScreen({ onNewBill, onOpen }: Props) {
         <button type="button" className="menu-btn" onClick={() => onOpen('records')}>
           <IconHistory size={24} className="menu-btn__icon menu-btn__icon--green" />
           <span>سوابق</span>
+        </button>
+        <button type="button" className="menu-btn" onClick={() => onOpen('report')}>
+          <IconChart size={24} className="menu-btn__icon menu-btn__icon--blue" />
+          <span>گزارش‌ها (هزینه‌های سال، بدهکاران)</span>
         </button>
         <button type="button" className="menu-btn" onClick={() => onOpen('tutorial')}>
           <IconBook size={24} className="menu-btn__icon menu-btn__icon--green" />

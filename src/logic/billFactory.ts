@@ -5,6 +5,7 @@ import type { Bill, BillDraft, BillWithUnits, Unit } from '../models/types';
 import type { CalculationResult } from './calculation';
 import { newId } from './id';
 import { allSettled } from './settlement';
+import { unitPayments, withPayments } from './payments';
 
 export function buildBill(
   draft: BillDraft,
@@ -16,7 +17,7 @@ export function buildBill(
   const units: Unit[] = calc.shares.map((s) => {
     // در حالت ویرایش، وضعیت تسویه واحدهای موجود (بر اساس شماره واحد) حفظ می‌شود
     const prev = existing?.units.find((u) => u.unitNumber === s.unitNumber);
-    return {
+    const unit: Unit = {
       id: prev?.id ?? newId(),
       billId: id,
       unitNumber: s.unitNumber,
@@ -24,6 +25,12 @@ export function buildBill(
       shareAmount: s.shareAmount,
       isSettled: prev?.isSettled ?? false,
     };
+    // در ویرایش، پرداخت‌های قبلی واحد حفظ و وضعیت تسویه با سهم جدید دوباره محاسبه می‌شود
+    if (prev && (prev.payments || prev.isSettled)) {
+      const kept = unitPayments(prev);
+      return kept.length ? withPayments(unit, kept) : { ...unit, isSettled: false };
+    }
+    return unit;
   });
   const bill: Bill = {
     id,
@@ -53,7 +60,15 @@ export function draftFromBill(x: BillWithUnits): BillDraft {
   };
 }
 
-export function emptyDraft(year: number, month: number): BillDraft {
+/** تعداد نفرات پیش‌فرض هر واحد جدید */
+export const DEFAULT_PERSON_COUNT = '1';
+
+/**
+ * فرم خالی قبض جدید. اگر الگوی واحدها (واحدهای آخرین قبض ذخیره‌شده) داده شود،
+ * واحدها و تعداد نفراتشان از همان پر می‌شوند؛ وگرنه یک واحد با ۱ نفر.
+ */
+export function emptyDraft(year: number, month: number, unitTemplate?: number[] | null): BillDraft {
+  const personCounts = unitTemplate && unitTemplate.length > 0 ? unitTemplate.map((n) => String(n)) : [DEFAULT_PERSON_COUNT];
   return {
     editingBillId: null,
     year,
@@ -62,6 +77,7 @@ export function emptyDraft(year: number, month: number): BillDraft {
     billNumber: '',
     description: '',
     amountDigits: '',
-    personCounts: [''],
+    personCounts,
+    prefilledUnits: unitTemplate && unitTemplate.length > 0 ? unitTemplate.length : undefined,
   };
 }

@@ -1,5 +1,6 @@
 import { IconMinus, IconPlus, IconUser } from './Icons';
 import { PersonCountInput } from './PersonCountInput';
+import { DEFAULT_PERSON_COUNT } from '../logic/billFactory';
 
 interface Props {
   personCounts: string[];
@@ -26,7 +27,7 @@ export function UnitsEditor({ personCounts, onChange }: Props) {
             type="button"
             className="square-btn square-btn--green"
             aria-label="افزودن واحد"
-            onClick={() => onChange([...personCounts, ''])}
+            onClick={() => onChange([...personCounts, DEFAULT_PERSON_COUNT])}
           >
             <IconPlus size={18} strokeWidth={3} />
           </button>

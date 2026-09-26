@@ -34,7 +34,7 @@ function sample(): BackupData {
     { id: 'u5', billId: 'b2', unitNumber: 2, personCount: 1, shareAmount: 300000, isSettled: true },
   ];
   const settings: AppSettings = { showSaveWarning: false, activeYears: [1405, 1406], dismissedWarnings: ['roundingAdjust', 'duplicateBill'] };
-  return { bills, units, settings };
+  return { bills, units, settings, unitTemplate: [1, 1, 1] };
 }
 
 const NOW = new Date('2026-09-26T09:00:00Z'); // ۴ مهر ۱۴۰۵
@@ -60,7 +60,7 @@ describe('پشتیبان‌گیری: ساخت فایل', () => {
     expect(o.backupVersion).toBe(BACKUP_VERSION);
     expect(o.appVersion).toBe('1.1.0');
     expect(o.createdAt).toBe(NOW.toISOString());
-    expect(Object.keys(o.data).sort()).toEqual(['bills', 'settings', 'units']);
+    expect(Object.keys(o.data).sort()).toEqual(['bills', 'settings', 'unitTemplate', 'units']);
   });
 });
 
@@ -99,7 +99,8 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
   it('نسخه جدیدتر قالب پشتیبان پذیرفته نمی‌شود', () => {
     const e = errorOf(text((o) => { o.backupVersion = BACKUP_VERSION + 1; }));
     expect(e).toContain('نسخه جدیدتری');
-    expect(e).toContain('۲');
+    expect(e).toContain(String(BACKUP_VERSION + 1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]));
+    expect(BACKUP_VERSION).toBe(2);
   });
 
   it('نسخه نامعتبر قالب', () => {
@@ -122,6 +123,8 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
       ['هیچ واحدی', (o) => { o.data.units = o.data.units.filter((u: Unit) => u.billId !== 'b2'); }],
       ['مبلغ کل', (o) => { o.data.units[0].shareAmount += 1; }],
       ['تاریخ تهیه', (o) => { o.createdAt = 'دیروز'; }],
+      ['الگوی واحدها', (o) => { o.data.unitTemplate = [2, 0, 1]; }],
+      ['الگوی واحدها', (o) => { o.data.unitTemplate = 'x'; }],
     ];
     for (const [needle, mutate] of cases) {
       const e = errorOf(text(mutate));
@@ -133,6 +136,37 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
   it('تنظیمات هنگام بازیابی مهاجرت داده می‌شوند (سال‌های قبل از ۱۴۰۵ و هشدارهای ناشناخته حذف)', () => {
     const r = parseBackup(text((o) => { o.data.settings = { activeYears: [1403, 1404], dismissedWarnings: ['saveConfirm', 'bogus'], showSaveWarning: true }; }));
     expect(r.ok && r.backup.data.settings).toEqual({ showSaveWarning: true, activeYears: [1405], dismissedWarnings: ['saveConfirm'] });
+  });
+
+  it('پشتیبان قدیمی (قالب ۱، نسخه ۱٫۱ برنامه، بدون الگوی واحدها) همچنان بازیابی می‌شود', () => {
+    const r = parseBackup(text((o) => { o.backupVersion = 1; o.appVersion = '1.1.0'; delete o.data.unitTemplate; }));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.backup.data.bills).toHaveLength(2);
+    expect(r.backup.data.unitTemplate).toBeUndefined();
+  });
+
+  it('انواع هزینه جدید (نظافت، تعمیرات، زیبایی ساختمان) پذیرفته می‌شوند', () => {
+    for (const t of ['cleaning', 'repairs', 'beautification']) {
+      const r = parseBackup(text((o) => { o.data.bills[0].expenseType = t; }));
+      expect(r.ok && r.backup.data.bills[0].expenseType).toBe(t);
+    }
+  });
+
+  it('پرداخت‌های واحدها (payments با تاریخ) ذخیره و بازیابی می‌شوند؛ داده نامعتبر رد می‌شود', () => {
+    const pays = [{ id: 'p1', amount: 200000, paidAt: '2026-09-20T10:00:00.000Z' }, { id: 'p2', amount: 133333, paidAt: null }];
+    const r = parseBackup(text((o) => { o.data.units[1].payments = pays; o.data.units[1].isSettled = false; }));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.backup.data.units[1].payments).toEqual(pays);
+    expect(r.backup.data.units[1].isSettled).toBe(true); // جمع پرداخت‌ها = سهم → تسویه
+    expect('payments' in r.backup.data.units[0]).toBe(false); // داده قدیمی بدون payments دست‌نخورده می‌ماند
+    for (const bad of [
+      (o: any) => { o.data.units[0].payments = [{ id: 'x', amount: 0, paidAt: null }]; },
+      (o: any) => { o.data.units[0].payments = [{ id: 'x', amount: 5, paidAt: 'دیروز' }]; },
+      (o: any) => { o.data.units[0].payments = [{ id: 'x', amount: 999999999, paidAt: null }]; },
+      (o: any) => { o.data.units[0].payments = 'x'; },
+    ]) expect(errorOf(text(bad))).toContain('واحد ۱');
   });
 
   it('وضعیت «تسویه کامل» از روی واحدها محاسبه می‌شود', () => {
@@ -162,6 +196,31 @@ describe('مخزن پشتیبان (گرفتن و بازیابی کامل داد�
     const after = await backupRepository.collect();
     expect(after).toEqual(d);
     expect((await billRepository.getById('b1'))?.units).toHaveLength(3);
+  });
+
+  it('الگوی واحدها در پشتیبان ذخیره و بازیابی می‌شود', async () => {
+    const d = { ...sample(), unitTemplate: [2, 3, 1, 4, 2, 2] };
+    await backupRepository.replaceAll(d);
+    const json = serializeBackup(createBackup(await backupRepository.collect(), '1.2.0', NOW));
+    expect(JSON.parse(json).data.unitTemplate).toEqual([2, 3, 1, 4, 2, 2]);
+    mem.clear();
+    billRepository._resetCache();
+    const r = parseBackup(json);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    await backupRepository.replaceAll(r.backup.data);
+    billRepository._resetCache();
+    expect((await backupRepository.collect()).unitTemplate).toEqual([2, 3, 1, 4, 2, 2]);
+  });
+
+  it('بازیابی پشتیبان قدیمی (بدون الگو): الگوی قبلی پاک و از آخرین قبض ساخته می‌شود', async () => {
+    await backupRepository.replaceAll({ ...sample(), unitTemplate: [5, 5] });
+    const old = sample();
+    delete old.unitTemplate;
+    old.units = old.units.map((u) => (u.billId === 'b1' ? { ...u, personCount: u.unitNumber } : u));
+    await backupRepository.replaceAll(old);
+    billRepository._resetCache();
+    expect((await backupRepository.collect()).unitTemplate).toEqual([1, 2, 3]);
   });
 
   it('نسخه ایمنی قبل از جایگزینی ذخیره و قابل برگشت است', async () => {

@@ -3,22 +3,30 @@ import type { BackupData, BackupFile } from '../logic/backup';
 import { createBackup, parseBackup, serializeBackup } from '../logic/backup';
 import { billRepository } from './billRepository';
 import { settingsRepository } from './settingsRepository';
+import { unitTemplateRepository } from './unitTemplateRepository';
 import { readJson, removeKey, writeJson } from './kvStore';
 
 const SAFETY_KEY = 'safetyBackup';
 const LAST_BACKUP_KEY = 'lastBackupAt';
 
 export const backupRepository = {
-  /** همه داده‌ها: قبض‌ها، واحدها، تنظیمات (سال‌ها و هشدارهای «دیگر نمایش نده») */
+  /** همه داده‌ها: قبض‌ها، واحدها، تنظیمات (سال‌ها و هشدارهای «دیگر نمایش نده») و الگوی واحدها */
   async collect(): Promise<BackupData> {
-    const [tables, settings] = await Promise.all([billRepository.exportTables(), settingsRepository.get()]);
-    return { bills: tables.bills, units: tables.units, settings };
+    const [tables, settings, unitTemplate] = await Promise.all([
+      billRepository.exportTables(),
+      settingsRepository.get(),
+      unitTemplateRepository.get(),
+    ]);
+    return { bills: tables.bills, units: tables.units, settings, ...(unitTemplate ? { unitTemplate } : {}) };
   },
 
   /** جایگزینی کامل داده‌های فعلی با داده‌های پشتیبان */
   async replaceAll(data: BackupData): Promise<void> {
     await billRepository.replaceAll(data.bills, data.units);
     await settingsRepository.save(data.settings);
+    // پشتیبان قالب ۱ الگو ندارد: الگو پاک می‌شود تا از آخرین قبض بازیابی‌شده ساخته شود
+    if (data.unitTemplate && data.unitTemplate.length > 0) await unitTemplateRepository.save(data.unitTemplate);
+    else await unitTemplateRepository.clear();
   },
 
   /** نسخه ایمنی خودکار از داده‌های فعلی (قبل از بازیابی) */

@@ -1,11 +1,12 @@
-import { IconBook, IconGear, IconHome, IconCalendar } from './Icons';
+import { IconBook, IconChart, IconGear, IconHome, IconCalendar } from './Icons';
 
-export type TabId = 'home' | 'tutorial' | 'records' | 'settings';
+export type TabId = 'home' | 'tutorial' | 'records' | 'report' | 'settings';
 
 const TABS: { id: TabId; label: string; Icon: typeof IconHome }[] = [
   { id: 'home', label: 'خانه', Icon: IconHome },
   { id: 'tutorial', label: 'آموزش', Icon: IconBook },
   { id: 'records', label: 'سوابق', Icon: IconCalendar },
+  { id: 'report', label: 'گزارش‌ها', Icon: IconChart },
   { id: 'settings', label: 'تنظیمات', Icon: IconGear },
 ];
 

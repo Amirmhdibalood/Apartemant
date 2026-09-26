@@ -9,6 +9,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useFeedback } from '../context/FeedbackContext';
 import { validateDraft } from '../logic/validation';
 import { CURRENCY } from '../models/constants';
+import { DEFAULT_PERSON_COUNT } from '../logic/billFactory';
 
 interface Props {
   draft: BillDraft;
@@ -100,6 +101,22 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
             suffix={CURRENCY}
           />
         </div>
+
+        {!draft.editingBillId && draft.prefilledUnits ? (
+          <div className="prefill-note" role="status">
+            <p className="prefill-note__text">
+              واحدها و تعداد نفرات از آخرین قبض ثبت‌شده وارد شد (<span className="num">{draft.prefilledUnits}</span> واحد). در صورت
+              نیاز برای این قبض تغییر دهید.
+            </p>
+            <button
+              type="button"
+              className="prefill-note__reset"
+              onClick={() => set({ personCounts: [DEFAULT_PERSON_COUNT], prefilledUnits: undefined })}
+            >
+              شروع از صفر
+            </button>
+          </div>
+        ) : null}
 
         <UnitsEditor
           personCounts={draft.personCounts}

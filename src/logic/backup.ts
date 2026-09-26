@@ -2,15 +2,20 @@
  * پشتیبان‌گیری و بازیابی — منطق خالص (بدون وابستگی به پلتفرم):
  * ساخت فایل پشتیبان JSON، نام‌گذاری، اعتبارسنجی کامل فایل ورودی و خلاصه محتوای آن.
  */
-import type { AppSettings, Bill, ExpenseType, Unit } from '../models/types';
+import type { AppSettings, Bill, ExpenseType, Payment, Unit } from '../models/types';
 import { EXPENSE_TYPES } from '../models/constants';
 import { sanitizeSettings } from './settings';
 import { formatJalaliDateTimeFa, jalaliIsoDate } from './date';
 import { toPersianDigits } from './formatting';
+import { sanitizeUnitTemplate } from './unitTemplate';
 
 export const BACKUP_APP_ID = 'apartemant';
-/** نسخه قالب فایل پشتیبان (با تغییر ساختار داده افزایش می‌یابد) */
-export const BACKUP_VERSION = 1;
+/**
+ * نسخه قالب فایل پشتیبان (با تغییر ساختار داده افزایش می‌یابد).
+ * ۱: نسخه ۱٫۱ برنامه (قبض‌ها، واحدها، تنظیمات) — همچنان قابل بازیابی است.
+ * ۲: نسخه ۱٫۲ برنامه (+ الگوی واحدها `unitTemplate`)
+ */
+export const BACKUP_VERSION = 2;
 /** حداکثر حجم قابل قبول فایل پشتیبان */
 export const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
 
@@ -19,6 +24,8 @@ export interface BackupData {
   units: Unit[];
   /** شامل سال‌های فعال و هشدارهای «دیگر نمایش نده» */
   settings: AppSettings;
+  /** الگوی واحدها برای قبض جدید (تعداد نفرات هر واحد)؛ در فایل‌های قالب ۱ وجود ندارد */
+  unitTemplate?: number[] | null;
 }
 
 export interface BackupFile {
@@ -72,8 +79,14 @@ export function createBackup(data: BackupData, appVersion: string, now: Date = n
       bills: data.bills.map((b) => ({ ...b })),
       units: data.units.map((u) => ({ ...u })),
       settings: sanitizeSettings(data.settings),
+      ...withTemplate(data.unitTemplate),
     },
   };
+}
+
+function withTemplate(raw: unknown): { unitTemplate?: number[] } {
+  const t = sanitizeUnitTemplate(raw);
+  return t ? { unitTemplate: t } : {};
 }
 
 export function serializeBackup(backup: BackupFile): string {
@@ -133,6 +146,21 @@ function parseBills(raw: unknown): Bill[] {
   });
 }
 
+/** پرداخت‌های واحد (از قالب ۲، اختیاری). وضعیت تسویه از روی مانده دوباره محاسبه می‌شود. */
+function parsePayments(raw: unknown, share: number, i: number): { payments?: Payment[]; isSettled?: boolean } {
+  if (raw == null) return {};
+  if (!Array.isArray(raw) || raw.length > 1000) return bad(`پرداخت‌های واحد ${nth(i)} نامعتبر است.`);
+  const payments = raw.map((p) => {
+    if (!isObj(p) || !isId(p.id) || !isInt(p.amount, 1) || !(p.paidAt === null || validDate(p.paidAt))) {
+      return bad(`پرداخت‌های واحد ${nth(i)} نامعتبر است.`);
+    }
+    return { id: p.id as string, amount: p.amount as number, paidAt: (p.paidAt as string | null) ?? null };
+  });
+  const sum = payments.reduce((s, p) => s + p.amount, 0);
+  if (sum > share) bad(`جمع پرداخت‌های واحد ${nth(i)} بیشتر از سهم آن است.`);
+  return { payments, isSettled: sum === share };
+}
+
 function parseUnits(raw: unknown, bills: Bill[]): Unit[] {
   if (!Array.isArray(raw)) bad('فهرست واحدها پیدا نشد.');
   const billIds = new Set(bills.map((b) => b.id));
@@ -152,6 +180,7 @@ function parseUnits(raw: unknown, bills: Bill[]): Unit[] {
       personCount: u.personCount as number,
       shareAmount: u.shareAmount as number,
       isSettled: u.isSettled as boolean,
+      ...parsePayments(u.payments, u.shareAmount as number, i),
     };
   });
 }
@@ -186,12 +215,14 @@ export function parseBackup(text: string): ParseBackupResult {
       bill.isFullySettled = own.every((u) => u.isSettled);
     }
     const settings = sanitizeSettings(isObj(data.settings) ? (data.settings as Partial<AppSettings>) : null);
+    // الگوی واحدها (از قالب ۲)؛ نبودنش مشکلی نیست (از آخرین قبض ساخته می‌شود)
+    if (data.unitTemplate != null && !sanitizeUnitTemplate(data.unitTemplate)) bad('الگوی واحدها نامعتبر است.');
     const backup: BackupFile = {
       app: BACKUP_APP_ID,
       backupVersion: json.backupVersion as number,
       appVersion: typeof json.appVersion === 'string' ? json.appVersion : '',
       createdAt: json.createdAt as string,
-      data: { bills, units, settings },
+      data: { bills, units, settings, ...withTemplate(data.unitTemplate) },
     };
     return { ok: true, backup, summary: summarizeBackup(backup) };
   } catch (e) {

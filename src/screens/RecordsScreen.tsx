@@ -17,10 +17,12 @@ interface Props {
   month?: number;
   onFilterChange: (year: number, month: number) => void;
   onOpenBill: (billId: string) => void;
+  /** وقتی از صفحه گزارش باز شده باشد: بازگشت به گزارش */
+  onBack?: () => void;
 }
 
 /** ۸. سوابق: فیلتر سال/ماه + کارت قبض‌ها (از دیتابیس محلی) */
-export function RecordsScreen({ year: yearProp, month: monthProp, onFilterChange, onOpenBill }: Props) {
+export function RecordsScreen({ year: yearProp, month: monthProp, onFilterChange, onOpenBill, onBack }: Props) {
   const { settings } = useSettings();
   const now = currentJalali();
   // سال‌های فعال + سال‌هایی که قبض ذخیره‌شده دارند (قبض‌های سال‌های قدیمی‌تر همچنان دیده می‌شوند)
@@ -43,7 +45,7 @@ export function RecordsScreen({ year: yearProp, month: monthProp, onFilterChange
 
   return (
     <>
-      <AppHeader title="سوابق" start={<span className="header-icon"><IconCalendar size={24} /></span>} />
+      <AppHeader title="سوابق" onBack={onBack} start={<span className="header-icon"><IconCalendar size={24} /></span>} />
       <main className="screen screen--records">
         <div className="filters">
           <SelectField

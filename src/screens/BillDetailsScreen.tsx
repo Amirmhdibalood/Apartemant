@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
-import type { BillDraft, BillWithUnits } from '../models/types';
+import type { BillDraft, BillWithUnits, Unit } from '../models/types';
 import { CURRENCY, EXPENSE_TYPES, monthName } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
 import { ExpenseIcon } from '../components/ExpenseIcon';
-import { Checkbox } from '../components/Checkbox';
-import { IconEdit, IconLock, IconTrash } from '../components/Icons';
+import { PaymentDialog } from '../components/PaymentDialog';
+import { IconCheck, IconEdit, IconLock, IconTrash } from '../components/Icons';
 import { useFeedback } from '../context/FeedbackContext';
 import { billRepository } from '../storage/billRepository';
 import { formatAmount } from '../logic/formatting';
-import { allSettled, wouldCompleteSettlement } from '../logic/settlement';
+import { allSettled } from '../logic/settlement';
+import { addPayment, clearPayments, completesBill, paidAmount, remainingAmount, settleFully } from '../logic/payments';
 import { draftFromBill } from '../logic/billFactory';
 import { Errors } from '../logic/errors';
 
@@ -22,6 +23,7 @@ interface Props {
 export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
   const { showLocked, confirmWarning, confirmDanger, showErrors, toast } = useFeedback();
   const [data, setData] = useState<BillWithUnits | null | undefined>(undefined);
+  const [payUnit, setPayUnit] = useState<Unit | null>(null);
 
   useEffect(() => {
     billRepository.getById(billId).then(setData);
@@ -41,16 +43,24 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
   const type = EXPENSE_TYPES[bill.expenseType];
   const locked = bill.isFullySettled;
 
-  const toggleUnit = async (unitId: string, value: boolean) => {
+  const openPayment = (u: Unit) => {
     if (locked) { showLocked(); return; }
-    if (value && wouldCompleteSettlement(units, unitId)) {
+    setPayUnit(u);
+  };
+
+  /** ذخیره واحد به‌روزشده (پرداخت کامل/جزئی یا حذف پرداخت‌ها). تاریخ پرداخت خودکار ثبت می‌شود و فقط در «گزارش‌ها» نمایش داده می‌شود. */
+  const saveUnit = async (updated: Unit, message: string) => {
+    if (completesBill(units, updated)) {
+      setPayUnit(null);
       if (!(await confirmWarning('lastUnitSettle'))) return;
     }
-    const nextUnits = units.map((u) => (u.id === unitId ? { ...u, isSettled: value } : u));
+    const nextUnits = units.map((u) => (u.id === updated.id ? updated : u));
     const nextBill = { ...bill, isFullySettled: allSettled(nextUnits) };
     try {
       await billRepository.upsert(nextBill, nextUnits);
       setData({ bill: nextBill, units: nextUnits });
+      setPayUnit(null);
+      toast(message);
     } catch {
       showErrors(Errors.storageFailed());
     }
@@ -103,7 +113,7 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
                 <th>واحد</th>
                 <th>تعداد نفرات</th>
                 <th>مبلغ سهم</th>
-                <th>وضعیت تسویه</th>
+                <th>پرداخت</th>
               </tr>
             </thead>
             <tbody>
@@ -113,13 +123,17 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
                   <td className="num">{u.personCount}</td>
                   <td className="num">{formatAmount(u.shareAmount)}</td>
                   <td>
-                    <Checkbox
-                      className="settle-check"
-                      checked={u.isSettled}
-                      onChange={(v) => void toggleUnit(u.id, v)}
-                      label="تسویه"
-                      ariaLabel={`تسویه واحد ${u.unitNumber}`}
-                    />
+                    <button
+                      type="button"
+                      className={'pay-btn' + (u.isSettled ? ' is-settled' : '')}
+                      onClick={() => openPayment(u)}
+                      aria-label={u.isSettled ? `واحد ${u.unitNumber} تسویه شده` : `پرداخت واحد ${u.unitNumber}`}
+                    >
+                      {u.isSettled ? <><IconCheck size={15} /> تسویه</> : 'پرداخت'}
+                    </button>
+                    {!u.isSettled && paidAmount(u) > 0 && (
+                      <div className="pay-remaining">مانده <span className="num">{formatAmount(remainingAmount(u))}</span></div>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -147,6 +161,16 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
           <span>حذف قبض</span>
         </button>
       </main>
+      <PaymentDialog
+        unit={payUnit}
+        onClose={() => setPayUnit(null)}
+        onSettleFully={(u) => void saveUnit(settleFully(u), `واحد ${u.unitNumber} تسویه شد.`)}
+        onPay={(u, amount) => {
+          const next = addPayment(u, amount);
+          void saveUnit(next, next.isSettled ? `واحد ${u.unitNumber} تسویه شد.` : 'پرداخت ثبت شد.');
+        }}
+        onClear={(u) => void saveUnit(clearPayments(u), `پرداخت‌های واحد ${u.unitNumber} حذف شد.`)}
+      />
     </>
   );
 }

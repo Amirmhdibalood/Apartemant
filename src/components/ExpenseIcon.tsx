@@ -1,6 +1,6 @@
 import type { ExpenseType } from '../models/types';
 import { EXPENSE_TYPES } from '../models/constants';
-import { IconBolt, IconBuilding, IconDots, IconDrop, IconFlame } from './Icons';
+import { IconBolt, IconBroom, IconBuilding, IconDots, IconDrop, IconFlame, IconSparkles, IconWrench } from './Icons';
 
 export function ExpenseGlyph({ type, size = 22 }: { type: ExpenseType; size?: number }) {
   const color = EXPENSE_TYPES[type].color;
@@ -10,6 +10,9 @@ export function ExpenseGlyph({ type, size = 22 }: { type: ExpenseType; size?: nu
     case 'electricity': return <IconBolt {...props} />;
     case 'gas': return <IconFlame {...props} />;
     case 'building': return <IconBuilding {...props} />;
+    case 'cleaning': return <IconBroom {...props} />;
+    case 'repairs': return <IconWrench {...props} />;
+    case 'beautification': return <IconSparkles {...props} />;
     default: return <IconDots {...props} />;
   }
 }

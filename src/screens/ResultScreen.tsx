@@ -11,6 +11,7 @@ import { formatAmount } from '../logic/formatting';
 import { buildBill } from '../logic/billFactory';
 import { Errors } from '../logic/errors';
 import { billRepository } from '../storage/billRepository';
+import { unitTemplateRepository } from '../storage/unitTemplateRepository';
 
 interface Props {
   draft: BillDraft;
@@ -80,6 +81,8 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
     try {
       const saved = buildBill(draft, calc, existing);
       await billRepository.upsert(saved.bill, saved.units);
+      // واحدهای این قبض، الگوی پیش‌فرض قبض بعدی می‌شوند
+      await unitTemplateRepository.save(saved.units.map((u) => u.personCount)).catch(() => undefined);
       toast('اطلاعات با موفقیت ذخیره شد.');
       onSaved(saved);
     } catch {

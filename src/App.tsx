@@ -8,10 +8,13 @@ import { BottomNav, type TabId } from './components/BottomNav';
 import { useSettings } from './context/SettingsContext';
 import { currentJalali, pickDefaultYear } from './logic/date';
 import { emptyDraft } from './logic/billFactory';
+import { unitTemplateRepository } from './storage/unitTemplateRepository';
 import { HomeScreen } from './screens/HomeScreen';
 import { NewBillScreen } from './screens/NewBillScreen';
 import { ResultScreen } from './screens/ResultScreen';
 import { RecordsScreen } from './screens/RecordsScreen';
+import { ReportsScreen } from './screens/ReportsScreen';
+import { UnitHistoryScreen } from './screens/UnitHistoryScreen';
 import { BillDetailsScreen } from './screens/BillDetailsScreen';
 import { TutorialScreen } from './screens/TutorialScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
@@ -49,9 +52,11 @@ export default function App() {
   // اسکرول به بالا هنگام تغییر صفحه
   useEffect(() => { window.scrollTo(0, 0); }, [route]);
 
-  const startNewBill = () => {
+  const startNewBill = async () => {
     const now = currentJalali();
-    setDraft(emptyDraft(pickDefaultYear(settings.activeYears, now.year), now.month));
+    // واحدهای آخرین قبض ذخیره‌شده به‌طور خودکار وارد می‌شوند
+    const template = await unitTemplateRepository.get().catch(() => null);
+    setDraft(emptyDraft(pickDefaultYear(settings.activeYears, now.year), now.month, template));
     push({ name: 'newBill' });
   };
 
@@ -102,6 +107,28 @@ export default function App() {
           year={route.year}
           month={route.month}
           onFilterChange={(year, month) => replaceTop({ name: 'records', year, month })}
+          onOpenBill={(billId) => push({ name: 'details', billId })}
+          onBack={stack.length > 1 && stack[stack.length - 2].name === 'report' ? back : undefined}
+        />
+      );
+      break;
+    case 'report':
+      screen = (
+        <ReportsScreen
+          tab={route.tab}
+          year={route.year}
+          onChange={(tab, year) => replaceTop({ name: 'report', tab, year })}
+          onOpenMonth={(year, month) => push({ name: 'records', year, month })}
+          onOpenBill={(billId) => push({ name: 'details', billId })}
+          onOpenUnit={(unitNumber) => push({ name: 'unitHistory', unitNumber })}
+        />
+      );
+      break;
+    case 'unitHistory':
+      screen = (
+        <UnitHistoryScreen
+          unitNumber={route.unitNumber}
+          onBack={back}
           onOpenBill={(billId) => push({ name: 'details', billId })}
         />
       );

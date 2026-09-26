@@ -23,19 +23,25 @@ export const EXPENSE_TYPES: Record<ExpenseType, ExpenseTypeInfo> = {
   electricity: { id: 'electricity', label: 'برق', color: '#F2B01E', bg: '#FFF8E6', iconBg: '#FFEFC2' },
   gas: { id: 'gas', label: 'گاز', color: '#F47A20', bg: '#FFF3EA', iconBg: '#FFE3CF' },
   building: { id: 'building', label: 'شارژ ساختمان', color: '#8B5CF6', bg: '#F4F0FF', iconBg: '#E7DDFF' },
+  cleaning: { id: 'cleaning', label: 'نظافت', color: '#0EA5A4', bg: '#E9FAF8', iconBg: '#CDF3EF' },
+  repairs: { id: 'repairs', label: 'تعمیرات', color: '#E0533D', bg: '#FFF0ED', iconBg: '#FFDCD5' },
+  beautification: { id: 'beautification', label: 'زیبایی ساختمان', color: '#DB2777', bg: '#FDEEF6', iconBg: '#FAD5E8' },
   misc: { id: 'misc', label: 'متفرقه', color: '#5B6478', bg: '#F2F4F8', iconBg: '#E6E9F0' },
 };
 
-/** ترتیب نمایش در لیست‌ها */
-export const EXPENSE_TYPE_ORDER: ExpenseType[] = ['water', 'electricity', 'gas', 'building', 'misc'];
+/** ترتیب نمایش در لیست‌ها و گزارش */
+export const EXPENSE_TYPE_ORDER: ExpenseType[] = [
+  'water', 'electricity', 'gas', 'building', 'cleaning', 'repairs', 'beautification', 'misc',
+];
 
 /**
- * چیدمان کاشی‌های نوع هزینه در فرم، دقیقاً مطابق تصویر مرجع
- * (ردیف اول از راست: گاز، برق، آب — ردیف دوم از راست: متفرقه، شارژ ساختمان)
+ * چیدمان کاشی‌های نوع هزینه در فرم (اولین مورد هر ردیف سمت راست):
+ * ردیف ۱: گاز، برق، آب — ردیف ۲: شارژ ساختمان، نظافت، تعمیرات — ردیف ۳: زیبایی ساختمان، متفرقه
  */
 export const EXPENSE_TILE_ROWS: ExpenseType[][] = [
   ['gas', 'electricity', 'water'],
-  ['misc', 'building'],
+  ['building', 'cleaning', 'repairs'],
+  ['beautification', 'misc'],
 ];
 
 /** اولین سال قابل انتخاب در تنظیمات */
