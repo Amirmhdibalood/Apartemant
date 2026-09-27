@@ -1,4 +1,4 @@
-import type { AppSettings, ExpenseType } from './types';
+import type { AppSettings, ExpenseType, SplitMethod } from './types';
 
 export const MONTHS: readonly string[] = [
   'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
@@ -58,3 +58,10 @@ export const DEFAULT_SETTINGS: AppSettings = {
 };
 
 export const CURRENCY = 'تومان';
+
+/** برچسب نحوه تقسیم */
+export const SPLIT_METHOD_LABELS: Record<SplitMethod, string> = {
+  perPerson: 'بر اساس نفرات',
+  perUnit: 'بر اساس واحد',
+};
+export const DEFAULT_SPLIT_METHOD: SplitMethod = 'perPerson';

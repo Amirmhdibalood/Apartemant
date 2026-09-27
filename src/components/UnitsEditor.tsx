@@ -5,10 +5,12 @@ import { DEFAULT_PERSON_COUNT } from '../logic/billFactory';
 interface Props {
   personCounts: string[];
   onChange: (v: string[]) => void;
+  /** تقسیم «بر اساس واحد»: ورودی نفرات غیرفعال و ۱ نمایش داده می‌شود */
+  perUnit?: boolean;
 }
 
 /** ۳. بخش واحدها: افزودن/حذف واحد، شماره خودکار، تعداد نفرات فقط با تایپ دستی */
-export function UnitsEditor({ personCounts, onChange }: Props) {
+export function UnitsEditor({ personCounts, onChange, perUnit = false }: Props) {
   return (
     <section className="units">
       <div className="section-head">
@@ -39,7 +41,7 @@ export function UnitsEditor({ personCounts, onChange }: Props) {
           <span className="units-row__unit">واحد</span>
           <span className="units-row__count">
             <IconUser size={14} />
-            تعداد نفرات
+            {perUnit ? 'سهم (هر واحد ۱)' : 'تعداد نفرات'}
           </span>
         </div>
         {personCounts.length === 0 && <div className="units-empty">هنوز واحدی اضافه نشده است. با دکمه + واحد اضافه کنید.</div>}
@@ -53,6 +55,7 @@ export function UnitsEditor({ personCounts, onChange }: Props) {
               <PersonCountInput
                 unitNumber={i + 1}
                 value={pc}
+                disabled={perUnit}
                 onChange={(v) => onChange(personCounts.map((x, j) => (j === i ? v : x)))}
               />
             </span>

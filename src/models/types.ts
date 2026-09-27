@@ -9,6 +9,13 @@ export type ExpenseType =
   | 'repairs'
   | 'beautification';
 
+/**
+ * نحوه تقسیم قبض (از نسخه ۱.۳.۰):
+ * - perPerson: بر اساس نفرات (سهم هر واحد متناسب با تعداد نفرات آن)
+ * - perUnit: بر اساس واحد (هر واحد یک سهم برابر، بدون توجه به نفرات)
+ */
+export type SplitMethod = 'perPerson' | 'perUnit';
+
 /** Entity: Bill (قبض) */
 export interface Bill {
   id: string;
@@ -23,6 +30,8 @@ export interface Bill {
   /** ISO timestamp */
   createdAt: string;
   isFullySettled: boolean;
+  /** نحوه تقسیم؛ در قبض‌های نسخه‌های قبلی وجود ندارد = بر اساس نفرات */
+  splitMethod?: SplitMethod;
 }
 
 /** Entity: Unit (واحد) */
@@ -80,8 +89,12 @@ export interface BillDraft {
   description: string;
   /** فقط ارقام انگلیسی بدون جداکننده؛ مثل "12500000" */
   amountDigits: string;
-  /** تعداد نفرات هر واحد به‌صورت رشته خام (به ترتیب واحد ۱، ۲، ...) */
+  /** تعداد نفرات هر واحد به‌صورت رشته خام (به ترتیب واحد ۱، ۲، ...) — در تقسیم «بر اساس واحد» هم دست‌نخورده می‌ماند */
   personCounts: string[];
+  /** نحوه تقسیم */
+  splitMethod: SplitMethod;
+  /** کاربر نحوه تقسیم را خودش انتخاب کرده است (دیگر با تغییر نوع هزینه عوض نمی‌شود) */
+  splitChosen?: boolean;
   /** اگر واحدها از الگوی آخرین قبض پر شده باشند: تعداد واحدهای پرشده (فقط برای نمایش راهنما) */
   prefilledUnits?: number;
 }

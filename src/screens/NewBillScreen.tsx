@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { BillDraft } from '../models/types';
 import { MONTHS } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
@@ -8,7 +9,9 @@ import { UnitsEditor } from '../components/UnitsEditor';
 import { useSettings } from '../context/SettingsContext';
 import { useFeedback } from '../context/FeedbackContext';
 import { validateDraft } from '../logic/validation';
-import { CURRENCY } from '../models/constants';
+import { CURRENCY, SPLIT_METHOD_LABELS } from '../models/constants';
+import { defaultSplitFor, type SplitDefaults } from '../logic/split';
+import { splitDefaultsRepository } from '../storage/splitDefaultsRepository';
 import { DEFAULT_PERSON_COUNT } from '../logic/billFactory';
 
 interface Props {
@@ -23,6 +26,12 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
   const { settings } = useSettings();
   const { showErrors } = useFeedback();
   const set = (patch: Partial<BillDraft>) => setDraft({ ...draft, ...patch });
+  const [splitDefaults, setSplitDefaults] = useState<SplitDefaults>({});
+  useEffect(() => {
+    let alive = true;
+    splitDefaultsRepository.get().then((d) => { if (alive) setSplitDefaults(d); }).catch(() => undefined);
+    return () => { alive = false; };
+  }, []);
 
   // فقط سال‌های فعال (+ سال قبض در حال ویرایش، اگر غیرفعال شده باشد)
   const years = Array.from(new Set([...settings.activeYears, draft.year])).filter(
@@ -59,7 +68,16 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
 
         <div className="field">
           <span className="field__label">نوع هزینه</span>
-          <ExpenseTypePicker value={draft.expenseType} onChange={(expenseType) => set({ expenseType })} />
+          <ExpenseTypePicker
+            value={draft.expenseType}
+            onChange={(expenseType) =>
+              set({
+                expenseType,
+                // تا وقتی کاربر خودش انتخاب نکرده، نحوه تقسیم از آخرین روش همین نوع هزینه پیروی می‌کند
+                ...(draft.editingBillId || draft.splitChosen ? {} : { splitMethod: defaultSplitFor(expenseType, splitDefaults) }),
+              })
+            }
+          />
         </div>
 
         <div className="field">
@@ -118,9 +136,31 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
           </div>
         ) : null}
 
+        <div className="field split-field">
+          <span className="field__label" id="split-label">نحوه تقسیم</span>
+          <div className="seg" role="radiogroup" aria-labelledby="split-label">
+            {(['perPerson', 'perUnit'] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={draft.splitMethod === m}
+                className={'seg__btn' + (draft.splitMethod === m ? ' is-active' : '')}
+                onClick={() => set({ splitMethod: m, splitChosen: true })}
+              >
+                {SPLIT_METHOD_LABELS[m]}
+              </button>
+            ))}
+          </div>
+          {draft.splitMethod === 'perUnit' && (
+            <p className="split-hint">هر واحد یک سهم برابر دارد و تعداد نفرات در محاسبه اثری ندارد (نفرات واحدها حفظ می‌شود).</p>
+          )}
+        </div>
+
         <UnitsEditor
           personCounts={draft.personCounts}
           onChange={(personCounts) => set({ personCounts })}
+          perUnit={draft.splitMethod === 'perUnit'}
         />
       </main>
       <div className="sticky-action">

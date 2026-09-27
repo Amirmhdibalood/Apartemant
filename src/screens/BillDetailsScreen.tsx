@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { BillDraft, BillWithUnits, Unit } from '../models/types';
-import { CURRENCY, EXPENSE_TYPES, monthName } from '../models/constants';
+import { CURRENCY, EXPENSE_TYPES, SPLIT_METHOD_LABELS, monthName } from '../models/constants';
+import { splitMethodOf } from '../logic/split';
 import { AppHeader } from '../components/AppHeader';
 import { ExpenseIcon } from '../components/ExpenseIcon';
 import { PaymentDialog } from '../components/PaymentDialog';
@@ -98,6 +99,7 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
               <div className="kv"><span className="kv__k">شماره قبض:</span><b className="num">{bill.billNumber}</b></div>
             )}
             <div className="kv"><span className="kv__k">مبلغ کل قبض:</span><b className="num">{formatAmount(bill.totalAmount)}</b> {CURRENCY}</div>
+            <div className="kv"><span className="kv__k">نحوه تقسیم:</span><span className={'split-badge is-' + splitMethodOf(bill)}>{SPLIT_METHOD_LABELS[splitMethodOf(bill)]}</span></div>
             {bill.description && (
               <div className="kv kv--desc"><span className="kv__k">توضیحات:</span><span>{bill.description}</span></div>
             )}

@@ -100,7 +100,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     const e = errorOf(text((o) => { o.backupVersion = BACKUP_VERSION + 1; }));
     expect(e).toContain('نسخه جدیدتری');
     expect(e).toContain(String(BACKUP_VERSION + 1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]));
-    expect(BACKUP_VERSION).toBe(2);
+    expect(BACKUP_VERSION).toBe(3);
   });
 
   it('نسخه نامعتبر قالب', () => {
@@ -169,6 +169,24 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     ]) expect(errorOf(text(bad))).toContain('واحد ۱');
   });
 
+  it('نحوه تقسیم (قالب ۳): رفت‌وبرگشت، پیش‌فرض‌های هر نوع هزینه و رد مقدار نامعتبر', () => {
+    const r = parseBackup(text((o) => { o.data.bills[1].splitMethod = 'perUnit'; o.data.splitDefaults = { gas: 'perUnit', water: 'perPerson', phone: 'perUnit', electricity: 'x' }; }));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.backup.data.bills[1].splitMethod).toBe('perUnit');
+    expect('splitMethod' in r.backup.data.bills[0]).toBe(false); // قبض قدیمی = بر اساس نفرات
+    expect(r.backup.data.splitDefaults).toEqual({ gas: 'perUnit', water: 'perPerson' });
+    expect(errorOf(text((o) => { o.data.bills[0].splitMethod = 'perArea'; }))).toContain('قبض ۱');
+  });
+
+  it('پشتیبان قالب ۲ (نسخه ۱٫۲، بدون نحوه تقسیم) همچنان بازیابی می‌شود', () => {
+    const r = parseBackup(text((o) => { o.backupVersion = 2; o.appVersion = '1.2.0'; }));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.backup.data.bills.every((b) => b.splitMethod === undefined)).toBe(true);
+    expect(r.backup.data.splitDefaults).toBeUndefined();
+  });
+
   it('وضعیت «تسویه کامل» از روی واحدها محاسبه می‌شود', () => {
     const r = parseBackup(text((o) => { o.data.bills[0].isFullySettled = true; o.data.bills[1].isFullySettled = false; }));
     expect(r.ok && r.backup.data.bills.map((b) => b.isFullySettled)).toEqual([false, true]);
@@ -221,6 +239,20 @@ describe('مخزن پشتیبان (گرفتن و بازیابی کامل داد�
     await backupRepository.replaceAll(old);
     billRepository._resetCache();
     expect((await backupRepository.collect()).unitTemplate).toEqual([1, 2, 3]);
+  });
+
+  it('پیش‌فرض‌های نحوه تقسیم در پشتیبان ذخیره و بازیابی می‌شوند؛ پشتیبان قدیمی آن‌ها را پاک می‌کند', async () => {
+    await backupRepository.replaceAll({ ...sample(), splitDefaults: { gas: 'perUnit' } });
+    const json = serializeBackup(createBackup(await backupRepository.collect(), '1.3.0', NOW));
+    expect(JSON.parse(json).data.splitDefaults).toEqual({ gas: 'perUnit' });
+    mem.clear();
+    billRepository._resetCache();
+    const r = parseBackup(json);
+    if (!r.ok) throw new Error(r.error);
+    await backupRepository.replaceAll(r.backup.data);
+    expect((await backupRepository.collect()).splitDefaults).toEqual({ gas: 'perUnit' });
+    await backupRepository.replaceAll(sample()); // قالب قدیمی بدون splitDefaults
+    expect((await backupRepository.collect()).splitDefaults).toBeUndefined();
   });
 
   it('نسخه ایمنی قبل از جایگزینی ذخیره و قابل برگشت است', async () => {

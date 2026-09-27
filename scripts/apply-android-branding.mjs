@@ -13,6 +13,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { stripNetworkPermissions } from './manifest-permissions.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const APP_NAME = 'آپارتمانت';
@@ -79,6 +80,14 @@ if (fs.existsSync(gradlePath)) {
   if (!/versionCode\s+\d+/.test(g) || !/versionName\s+"[^"]*"/.test(g)) throw new Error('[branding] versionCode/versionName not found in build.gradle');
   g = g.replace(/versionCode\s+\d+/, `versionCode ${versionCode}`).replace(/versionName\s+"[^"]*"/, `versionName "${versionName}"`);
   fs.writeFileSync(gradlePath, g, 'utf8');
+}
+
+// 5) بدون مجوز اینترنت (برنامه کاملاً آفلاین است)
+const manifestPath = path.join(ROOT, 'android/app/src/main/AndroidManifest.xml');
+if (fs.existsSync(manifestPath)) {
+  const m = fs.readFileSync(manifestPath, 'utf8');
+  fs.writeFileSync(manifestPath, stripNetworkPermissions(m), 'utf8');
+  console.log('[branding] AndroidManifest: INTERNET permission removed (tools:node="remove").');
 }
 
 console.log(`[branding] version ${versionName} (versionCode ${versionCode})`);

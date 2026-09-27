@@ -35,10 +35,15 @@ export function validateDraft(draft: BillDraft): ValidationResult {
   if (draft.personCounts.length === 0) {
     errors.push(Errors.noUnits());
   } else {
+    const perUnit = draft.splitMethod === 'perUnit';
     draft.personCounts.forEach((raw, i) => {
       const unitNumber = i + 1;
       const digits = onlyDigits(raw ?? '');
-      if (raw.trim() === '') {
+      const valid = raw.trim() !== '' && digits === raw.trim() && Number(digits) > 0;
+      if (perUnit) {
+        // «بر اساس واحد»: نفرات در محاسبه اثری ندارد؛ نفرات معتبر حفظ و خالی/نامعتبر با ۱ ذخیره می‌شود
+        personCounts.push(valid ? Number(digits) : 1);
+      } else if (raw.trim() === '') {
         errors.push(Errors.personCountMissing(unitNumber));
       } else if (digits !== raw.trim() || Number(digits) <= 0) {
         errors.push(Errors.personCountInvalid(unitNumber));

@@ -8,14 +8,17 @@ import { sanitizeSettings } from './settings';
 import { formatJalaliDateTimeFa, jalaliIsoDate } from './date';
 import { toPersianDigits } from './formatting';
 import { sanitizeUnitTemplate } from './unitTemplate';
+import { isSplitMethod, sanitizeSplitDefaults, type SplitDefaults } from './split';
 
 export const BACKUP_APP_ID = 'apartemant';
 /**
  * نسخه قالب فایل پشتیبان (با تغییر ساختار داده افزایش می‌یابد).
  * ۱: نسخه ۱٫۱ برنامه (قبض‌ها، واحدها، تنظیمات) — همچنان قابل بازیابی است.
- * ۲: نسخه ۱٫۲ برنامه (+ الگوی واحدها `unitTemplate`)
+ * ۲: نسخه ۱٫۲ برنامه (+ الگوی واحدها `unitTemplate` و پرداخت‌های واحدها `payments`)
+ * ۳: نسخه ۱٫۳ برنامه (+ نحوه تقسیم هر قبض `splitMethod` و پیش‌فرض هر نوع هزینه `splitDefaults`)
+ * همه قالب‌های قدیمی‌تر قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات).
  */
-export const BACKUP_VERSION = 2;
+export const BACKUP_VERSION = 3;
 /** حداکثر حجم قابل قبول فایل پشتیبان */
 export const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
 
@@ -26,6 +29,8 @@ export interface BackupData {
   settings: AppSettings;
   /** الگوی واحدها برای قبض جدید (تعداد نفرات هر واحد)؛ در فایل‌های قالب ۱ وجود ندارد */
   unitTemplate?: number[] | null;
+  /** آخرین نحوه تقسیم هر نوع هزینه (از قالب ۳) */
+  splitDefaults?: SplitDefaults;
 }
 
 export interface BackupFile {
@@ -80,8 +85,14 @@ export function createBackup(data: BackupData, appVersion: string, now: Date = n
       units: data.units.map((u) => ({ ...u })),
       settings: sanitizeSettings(data.settings),
       ...withTemplate(data.unitTemplate),
+      ...withSplitDefaults(data.splitDefaults),
     },
   };
+}
+
+function withSplitDefaults(raw: unknown): { splitDefaults?: SplitDefaults } {
+  const d = sanitizeSplitDefaults(raw);
+  return Object.keys(d).length ? { splitDefaults: d } : {};
 }
 
 function withTemplate(raw: unknown): { unitTemplate?: number[] } {
@@ -128,7 +139,8 @@ function parseBills(raw: unknown): Bill[] {
     const ok = isId(b.id) && isInt(b.year, 1300, 1700) && isInt(b.month, 1, 12)
       && typeof b.expenseType === 'string' && b.expenseType in EXPENSE_TYPES
       && optText(b.billNumber) && optText(b.description)
-      && isInt(b.totalAmount, 1) && validDate(b.createdAt) && typeof b.isFullySettled === 'boolean';
+      && isInt(b.totalAmount, 1) && validDate(b.createdAt) && typeof b.isFullySettled === 'boolean'
+      && (b.splitMethod == null || isSplitMethod(b.splitMethod)); // نحوه تقسیم (از قالب ۳، اختیاری)
     if (!ok) bad(`اطلاعات قبض ${nth(i)} نامعتبر است.`);
     if (ids.has(b.id as string)) bad(`شناسه قبض ${nth(i)} تکراری است.`);
     ids.add(b.id as string);
@@ -142,6 +154,7 @@ function parseBills(raw: unknown): Bill[] {
       totalAmount: b.totalAmount as number,
       createdAt: b.createdAt as string,
       isFullySettled: b.isFullySettled as boolean,
+      ...(isSplitMethod(b.splitMethod) ? { splitMethod: b.splitMethod } : {}),
     };
   });
 }
@@ -222,7 +235,7 @@ export function parseBackup(text: string): ParseBackupResult {
       backupVersion: json.backupVersion as number,
       appVersion: typeof json.appVersion === 'string' ? json.appVersion : '',
       createdAt: json.createdAt as string,
-      data: { bills, units, settings, ...withTemplate(data.unitTemplate) },
+      data: { bills, units, settings, ...withTemplate(data.unitTemplate), ...withSplitDefaults(data.splitDefaults) },
     };
     return { ok: true, backup, summary: summarizeBackup(backup) };
   } catch (e) {

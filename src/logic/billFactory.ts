@@ -5,6 +5,8 @@ import type { Bill, BillDraft, BillWithUnits, Unit } from '../models/types';
 import type { CalculationResult } from './calculation';
 import { newId } from './id';
 import { allSettled } from './settlement';
+import { splitMethodOf } from './split';
+import { DEFAULT_SPLIT_METHOD } from '../models/constants';
 import { unitPayments, withPayments } from './payments';
 
 export function buildBill(
@@ -42,6 +44,7 @@ export function buildBill(
     totalAmount: calc.totalAmount,
     createdAt: existing?.bill.createdAt ?? now.toISOString(),
     isFullySettled: allSettled(units),
+    splitMethod: draft.splitMethod ?? DEFAULT_SPLIT_METHOD,
   };
   return { bill, units };
 }
@@ -57,6 +60,8 @@ export function draftFromBill(x: BillWithUnits): BillDraft {
     description: x.bill.description ?? '',
     amountDigits: String(x.bill.totalAmount),
     personCounts: x.units.map((u) => String(u.personCount)),
+    splitMethod: splitMethodOf(x.bill),
+    splitChosen: true,
   };
 }
 
@@ -78,6 +83,7 @@ export function emptyDraft(year: number, month: number, unitTemplate?: number[] 
     description: '',
     amountDigits: '',
     personCounts,
+    splitMethod: DEFAULT_SPLIT_METHOD,
     prefilledUnits: unitTemplate && unitTemplate.length > 0 ? unitTemplate.length : undefined,
   };
 }

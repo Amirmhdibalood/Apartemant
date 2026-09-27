@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BillDraft, BillWithUnits } from '../models/types';
-import { CURRENCY, EXPENSE_TYPES, monthName } from '../models/constants';
+import { CURRENCY, EXPENSE_TYPES, SPLIT_METHOD_LABELS, monthName } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
 import { ExpenseIcon } from '../components/ExpenseIcon';
 import { IconCalendarSave, IconMinus, IconPlus, IconTrash, IconUser } from '../components/Icons';
 import { useFeedback } from '../context/FeedbackContext';
 import { validateDraft } from '../logic/validation';
-import { calculateShares } from '../logic/calculation';
+import { calculateBySplit } from '../logic/split';
+import { splitDefaultsRepository } from '../storage/splitDefaultsRepository';
 import { formatAmount } from '../logic/formatting';
 import { buildBill } from '../logic/billFactory';
 import { Errors } from '../logic/errors';
@@ -29,11 +30,8 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
   const validation = useMemo(() => validateDraft(draft), [draft]);
   const calc = useMemo(() => {
     if (!validation.ok) return null;
-    return calculateShares(
-      validation.value.totalAmount,
-      validation.value.personCounts.map((personCount, i) => ({ unitNumber: i + 1, personCount })),
-    );
-  }, [validation]);
+    return calculateBySplit(validation.value.totalAmount, validation.value.personCounts, draft.splitMethod);
+  }, [validation, draft.splitMethod]);
 
   // اگر فرم نامعتبر شد (مثلاً همه واحدها حذف شدند) به فرم برگرد
   useEffect(() => {
@@ -43,7 +41,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
   // هشدار گرد کردن (فقط یک‌بار برای هر ترکیب مبلغ/نفرات)
   useEffect(() => {
     if (!calc || calc.remainder === 0) return;
-    const key = `${calc.totalAmount}|${calc.shares.map((s) => s.personCount).join(',')}`;
+    const key = `${calc.totalAmount}|${calc.splitMethod}|${calc.shares.map((s) => s.personCount).join(',')}`;
     if (roundingShownFor.current === key) return;
     roundingShownFor.current = key;
     void confirmWarning('roundingAdjust');
@@ -83,6 +81,8 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
       await billRepository.upsert(saved.bill, saved.units);
       // واحدهای این قبض، الگوی پیش‌فرض قبض بعدی می‌شوند
       await unitTemplateRepository.save(saved.units.map((u) => u.personCount)).catch(() => undefined);
+      // نحوه تقسیم، پیش‌فرض قبض‌های بعدی همین نوع هزینه می‌شود
+      await splitDefaultsRepository.remember(saved.bill.expenseType, calc.splitMethod).catch(() => undefined);
       toast('اطلاعات با موفقیت ذخیره شد.');
       onSaved(saved);
     } catch {
@@ -92,6 +92,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
     }
   };
 
+  const perUnit = calc.splitMethod === 'perUnit';
   const perPerson = calc.isExact
     ? formatAmount(calc.perPersonExact)
     : '≈ ' + formatAmount(Math.round(calc.perPersonExact));
@@ -106,8 +107,18 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
               {type.label} - {monthName(draft.month)} {draft.year}
             </h2>
             <div className="kv"><span className="kv__k">مبلغ کل قبض:</span><b className="num">{formatAmount(calc.totalAmount)}</b> {CURRENCY}</div>
-            <div className="kv"><span className="kv__k">مجموع نفرات:</span><b className="num">{calc.totalPersons}</b> نفر</div>
-            <div className="kv"><span className="kv__k">هزینه هر نفر:</span><b className="num">{perPerson}</b> {CURRENCY}</div>
+            <div className="kv"><span className="kv__k">نحوه تقسیم:</span><span className={'split-badge is-' + calc.splitMethod}>{SPLIT_METHOD_LABELS[calc.splitMethod]}</span></div>
+            {perUnit ? (
+              <>
+                <div className="kv"><span className="kv__k">تعداد واحدها:</span><b className="num">{calc.totalPersons}</b> واحد</div>
+                <div className="kv"><span className="kv__k">سهم هر واحد:</span><b className="num">{perPerson}</b> {CURRENCY}</div>
+              </>
+            ) : (
+              <>
+                <div className="kv"><span className="kv__k">مجموع نفرات:</span><b className="num">{calc.totalPersons}</b> نفر</div>
+                <div className="kv"><span className="kv__k">هزینه هر نفر:</span><b className="num">{perPerson}</b> {CURRENCY}</div>
+              </>
+            )}
           </div>
           <ExpenseIcon type={draft.expenseType} size={46} plain />
         </section>
@@ -129,7 +140,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
             <thead>
               <tr>
                 <th className="col-unit">واحد</th>
-                <th className="col-count">تعداد نفرات</th>
+                {!perUnit && <th className="col-count">تعداد نفرات</th>}
                 <th>مبلغ سهم</th>
                 <th className="col-action" aria-label="حذف" />
               </tr>
@@ -143,7 +154,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
                       واحد {s.unitNumber}
                     </span>
                   </td>
-                  <td className="col-count num">{s.personCount}</td>
+                  {!perUnit && <td className="col-count num">{s.personCount}</td>}
                   <td className="num strong">{formatAmount(s.shareAmount)}</td>
                   <td className="col-action">
                     <button type="button" className="icon-btn icon-btn--danger" aria-label={`حذف واحد ${s.unitNumber}`} onClick={() => removeUnit(i)}>

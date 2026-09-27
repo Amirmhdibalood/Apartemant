@@ -200,16 +200,16 @@ scripts\build-apk.bat release
 
 ### نسخه‌گذاری (فقط در یک جا: `package.json`)
 ```json
-"version": "1.2.0",
-"versionCode": 3,
+"version": "1.3.0",
+"versionCode": 4,
 ```
-- `version` ← `versionName` اندروید و متن «نسخه ۱.۲.۰» پایین صفحه تنظیمات.
+- `version` ← `versionName` اندروید و متن «نسخه ۱.۳.۰» پایین صفحه تنظیمات.
 - `versionCode` ← عدد صحیحی که اندروید و مایکت برای تشخیص نسخه جدیدتر استفاده می‌کنند. **در هر انتشار باید حتماً بیشتر از نسخه قبلی باشد** (۱، ۲، ۳، ...)؛ هرگز کم یا تکراری نشود.
 - اسکریپت برندینگ (بعد از هر `npx cap sync`) این دو مقدار را خودکار در `android\app\build.gradle` می‌نویسد؛ آن فایل را دستی ویرایش نکنید.
 
 ### انتشار به‌روزرسانی در مایکت (قدم‌به‌قدم)
 1. تغییرات کد را انجام دهید و `npm test` را اجرا کنید.
-2. در `package.json` مقدار `version` را بالا ببرید (مثلاً `1.2.0` → `1.2.1` یا `1.3.0`) و `versionCode` را **یک واحد افزایش دهید** (مثلاً `3` → `4`).
+2. در `package.json` مقدار `version` را بالا ببرید (مثلاً `1.3.0` → `1.3.1` یا `1.4.0`) و `versionCode` را **یک واحد افزایش دهید** (مثلاً `4` → `5`).
 3. با **همان keystore قبلی** نسخه Release بسازید: `scripts\build-apk.bat release` (یا GitHub Actions با Secretها).
 4. (اختیاری) امضا را با `apksigner verify --print-certs` بررسی کنید؛ اثر انگشت SHA-256 گواهی باید با نسخه‌های قبلی یکسان باشد.
 5. در پنل توسعه‌دهندگان مایکت (myket.ir) وارد صفحه برنامه شوید، بخش **نسخه جدید / بارگذاری APK** را انتخاب و `apartemant-release.apk` را بارگذاری کنید،
@@ -232,6 +232,12 @@ scripts\build-apk.bat release
    «ثبت قبض جدید» بعدی خودکار با همان واحدها پر می‌شود (کادر سبز «واحدها و تعداد نفرات از آخرین قبض ثبت‌شده وارد شد» + دکمه «شروع از صفر»).
    برای هر قبض می‌توان واحدها را ویرایش، اضافه یا حذف کرد؛ آخرین مجموعه ذخیره‌شده، پیش‌فرض قبض بعدی می‌شود.
    (برنامه برای واحدها نام جداگانه ندارد و واحدها خودکار شماره‌گذاری می‌شوند؛ بنابراین الگو شامل تعداد واحدها و تعداد نفرات هر واحد است.)
+3b. **نحوه تقسیم** (از نسخه ۱.۳.۰): کنترل دوحالته «نحوه تقسیم» بالای بخش واحدها:
+   - **«بر اساس نفرات»** (پیش‌فرض، رفتار قبلی): سهم هر واحد متناسب با تعداد نفرات آن؛
+   - **«بر اساس واحد»**: وزن هر واحد ۱ است و مبلغ به‌طور مساوی بین واحدها تقسیم می‌شود (مثلاً گاز). ورودی‌های نفرات غیرفعال و ۱ کم‌رنگ نمایش داده می‌شوند،
+     اما تعداد نفرات واقعی واحدها (و الگوی واحدها) دست‌نخورده می‌ماند و با برگشت به «بر اساس نفرات» دوباره نمایش داده می‌شود.
+   نحوه تقسیم روی قبض ذخیره و در صفحه نتیجه و جزئیات قبض (برچسب کوتاه) نمایش داده می‌شود؛ در حالت «بر اساس واحد» صفحه نتیجه «تعداد واحدها» و «سهم هر واحد» را نشان می‌دهد.
+   آخرین روش استفاده‌شده برای هر نوع هزینه، پیش‌فرض قبض‌های بعدی همان نوع می‌شود (مثلاً گاز پس از یک‌بار «بر اساس واحد»)؛ قبض‌های قدیمی «بر اساس نفرات» هستند.
 4. **مبلغ قبض**: جداکننده هزارگان زنده با ارقام انگلیسی؛ هر تعداد رقم قابل تایپ است و ارقام فارسی/عربی کیبورد خودکار به انگلیسی تبدیل می‌شوند.
 5. **محاسبه** و ۶. **صفحه نتیجه** با جدول واحدها، جمع کل و دکمه سبز «ذخیره» با آیکون تقویم.
 7. **هشدار «توجه» قبل از ذخیره** با «دیگر این پیام را نمایش نده» (در تنظیمات هم قابل روشن/خاموش کردن).
@@ -323,8 +329,8 @@ scripts\build-apk.bat release
 ```json
 {
   "app": "apartemant",
-  "backupVersion": 2,
-  "appVersion": "1.2.0",
+  "backupVersion": 3,
+  "appVersion": "1.3.0",
   "createdAt": "2026-09-26T16:30:00.000Z",
   "data": {
     "bills": [ ... ], "units": [ ... ],
@@ -333,6 +339,7 @@ scripts\build-apk.bat release
   }
 }
 ```
+- قالب ۳ (نسخه ۱.۳.۰) نحوه تقسیم هر قبض (`splitMethod`: `perPerson` / `perUnit`) و آخرین روش هر نوع هزینه (`splitDefaults`) را هم دارد؛ قبض بدون `splitMethod` = بر اساس نفرات. فایل قالب ۳ در نسخه‌های ۱.۲ و قبل پذیرفته نمی‌شود (پیام به‌روزرسانی).
 - قالب ۱ (نسخه ۱.۱.۰) و قالب ۲ (نسخه ۱.۲.۰، با `unitTemplate` = تعداد نفرات واحدهای الگو برای قبض جدید) هر دو قابل بازیابی‌اند.
   با بازیابی فایل قدیمی (بدون `unitTemplate`)، الگو از آخرین قبض بازیابی‌شده ساخته می‌شود. در قالب ۲ هر واحد می‌تواند فهرست `payments` (`[{ id, amount, paidAt }]`، پرداخت‌های کامل/جزئی با تاریخ) داشته باشد؛ در فایل‌های قدیمی وجود ندارد و واحد تسویه‌شده یک پرداخت کامل با تاریخ نامشخص حساب می‌شود. وضعیت تسویه از روی مانده دوباره محاسبه و جمع پرداخت بیشتر از سهم رد می‌شود. فایل قالب ۲ در نسخه ۱.۱.۰ برنامه پذیرفته نمی‌شود (پیام به‌روزرسانی برنامه).
 - `backupVersion` نسخه قالب فایل است؛ اگر روزی ساختار داده تغییر کند افزایش می‌یابد. نسخه‌های جدیدتر برنامه فایل‌های قدیمی را می‌خوانند،
@@ -347,9 +354,10 @@ scripts\build-apk.bat release
 - لایه `src/storage` از پلاگین رسمی `@capacitor/preferences` استفاده می‌کند (روی اندروید: SharedPreferences؛ در مرورگر: localStorage).
   داده‌ها با بستن برنامه یا ری‌استارت گوشی پاک نمی‌شوند (فقط با حذف برنامه یا Clear data).
 - دو «جدول» جدا مطابق Entityها:
-  - `Bill { id, year, month, expenseType, billNumber?, description?, totalAmount, createdAt, isFullySettled }`
+  - `Bill { id, year, month, expenseType, billNumber?, description?, totalAmount, createdAt, isFullySettled, splitMethod? }` — `splitMethod` از نسخه ۱.۳.۰ (نبودن = بر اساس نفرات)
   - `Unit { id, billId, unitNumber, personCount, shareAmount, isSettled, payments? }` — `payments: [{ id, amount, paidAt }]` پرداخت‌های کامل/جزئی (از نسخه ۱.۲.۰؛ اختیاری)
 - تنظیمات: `{ showSaveWarning, activeYears, dismissedWarnings }`
+- آخرین نحوه تقسیم هر نوع هزینه (کلید `splitDefaults`): `{ gas: "perUnit", ... }`
 - الگوی واحدها (کلید `unitTemplate`): `{ personCounts: number[], updatedAt }` — پس از هر ذخیره قبض به‌روز می‌شود؛ اگر نباشد (کاربران نسخه‌های قبلی) از جدیدترین قبض ساخته می‌شود.
 - همه سوابق از همین دیتابیس خوانده و بر اساس سال و ماه فیلتر می‌شوند.
 
@@ -363,14 +371,15 @@ building-charge/
 ├─ .github/workflows/android-apk.yml   ← ساخت APK روی GitHub
 ├─ scripts/build-apk.bat      ← ساخت APK در ویندوز با یک دستور (دیباگ، یا با آرگومان release نسخه امضاشده)
 ├─ scripts/sign-release.mjs   ← zipalign + امضای apksigner (v1/v2/v3) با کلید از متغیرهای محیطی
-├─ scripts/apply-android-branding.mjs ← اعمال نام، آیکون و اسپلش روی پوشه android (خودکار بعد از cap sync)
+├─ scripts/apply-android-branding.mjs ← اعمال نام، آیکون، اسپلش، نسخه و حذف مجوز اینترنت روی پوشه android (خودکار بعد از cap sync)
+├─ scripts/manifest-permissions.mjs ← حذف INTERNET از AndroidManifest (tools:node="remove")
 ├─ resources/android/res/     ← آیکون‌ها (adaptive/round/legacy همه تراکم‌ها) و تصاویر اسپلش آماده
 ├─ resources/branding/        ← SVGهای منبع طرح ۱ + generate.mjs (ساخت دوباره PNGها؛ اختیاری)
 ├─ tests/                     ← تست‌های واحد (Vitest)
 └─ src/
    ├─ models/      types.ts (Bill, Unit, Settings, Draft) · constants.ts (ماه‌ها، انواع هزینه، رنگ‌ها، سال‌ها)
-   ├─ logic/       calculation · formatting · validation · errors · warnings · settlement · years · settings · backup · report (گزارش سالانه) · debts (بدهکاران و سابقه پرداخت) · payments (پرداخت کامل/جزئی) · unitTemplate (الگوی واحدها) · billFactory · date · id
-   ├─ storage/     kvStore (Capacitor Preferences) · billRepository · settingsRepository · backupRepository · unitTemplateRepository
+   ├─ logic/       calculation · formatting · validation · errors · warnings · settlement · years · settings · backup · split (نحوه تقسیم) · report (گزارش سالانه) · debts (بدهکاران و سابقه پرداخت) · payments (پرداخت کامل/جزئی) · unitTemplate (الگوی واحدها) · billFactory · date · id
+   ├─ storage/     kvStore (Capacitor Preferences) · billRepository · settingsRepository · backupRepository · unitTemplateRepository · splitDefaultsRepository
    ├─ services/    backupFile (اشتراک‌گذاری/ذخیره فایل پشتیبان روی اندروید، دانلود در وب)
    ├─ context/     SettingsContext · FeedbackContext (مدیریت جدای Error / Warning / Toast)
    ├─ components/  AppHeader, BottomNav, YearPicker (کشوی سال‌های فعال), PaymentDialog (پرداخت کامل/جزئی), BackupSection, RestoreConfirmDialog, AmountInput, PersonCountInput, UnitsEditor, ExpenseTypePicker,
@@ -383,6 +392,8 @@ building-charge/
 ```
 
 - فونت **Vazirmatn** از پکیج `@fontsource/vazirmatn` داخل برنامه قرار می‌گیرد؛ هیچ درخواست اینترنتی وجود ندارد.
+- از نسخه ۱.۳.۰ برنامه **هیچ مجوز اینترنتی ندارد**: اسکریپت برندینگ خط `INTERNET` قالب Capacitor را حذف و `tools:node="remove"` اضافه می‌کند تا در Manifest نهایی هم نباشد
+  (بررسی: `aapt dump permissions app-release.apk`). WebView فایل‌های برنامه را از داخل APK می‌خواند و به شبکه نیاز ندارد.
 - پوشه `android` عمداً در مخزن نیست (با `npx cap add android` ساخته می‌شود) — در `.gitignore` آمده است.
 
 ## نام، آیکون و اسپلش برنامه (برندینگ «آپارتمانت» — طرح ۱)

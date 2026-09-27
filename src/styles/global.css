@@ -621,3 +621,11 @@ h1, h2, h3, p { margin: 0; }
 .history-item__payments { display: flex; flex-wrap: wrap; gap: 4px 6px; }
 .history-pay { font-size: 11.5px; background: #f1f4f9; color: var(--text-2); border-radius: 8px; padding: 1px 8px; }
 .history-pay.is-due { background: var(--danger-soft); color: #d64533; }
+
+/* ---------- نحوه تقسیم (بر اساس نفرات / بر اساس واحد) ---------- */
+.split-field { margin-top: 14px; }
+.split-field .seg { margin: 0; }
+.split-hint { font-size: 12.5px; color: var(--muted); line-height: 1.8; margin-top: 6px; }
+.input--count.is-weight { background: #f1f4f9; color: #a3abbd; border-color: #e4e9f2; -webkit-text-fill-color: #a3abbd; opacity: 1; }
+.split-badge { display: inline-block; font-size: 12.5px; font-weight: 700; padding: 1px 10px; border-radius: 20px; background: var(--primary-soft); color: var(--primary); }
+.split-badge.is-perUnit { background: #f3e8ff; color: #7c3aed; }
