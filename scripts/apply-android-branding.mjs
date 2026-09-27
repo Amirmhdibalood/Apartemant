@@ -3,6 +3,7 @@
  * - کپی آیکون‌ها (adaptive + round + legacy) و تصاویر اسپلش از resources/android/res
  * - تنظیم نام برنامه (app_name) در strings.xml
  * - تنظیم اسپلش Android 12+ (SplashScreen API) در styles.xml
+ * - کپی کدهای بومی (resources/android/java → android/app/src/main/java): MainActivity (edge-to-edge) و افزونه GallerySaver
  * - تنظیم versionName / versionCode در android/app/build.gradle از package.json
  *   (version → versionName، versionCode → versionCode؛ برای انتشار نسخه جدید فقط package.json را تغییر دهید)
  *
@@ -88,6 +89,22 @@ if (fs.existsSync(manifestPath)) {
   const m = fs.readFileSync(manifestPath, 'utf8');
   fs.writeFileSync(manifestPath, stripNetworkPermissions(m), 'utf8');
   console.log('[branding] AndroidManifest: INTERNET permission removed (tools:node="remove").');
+}
+
+// 6) کدهای بومی برنامه (MainActivity با edge-to-edge در همه نسخه‌های اندروید + افزونه GallerySaver برای «ذخیره در گالری»)
+const JAVA_SRC = path.join(ROOT, 'resources/android/java');
+const JAVA_DST = path.join(ROOT, 'android/app/src/main/java');
+let javaCopied = 0;
+if (fs.existsSync(JAVA_SRC) && fs.existsSync(JAVA_DST)) {
+  (function copyJava(src, dst) {
+    fs.mkdirSync(dst, { recursive: true });
+    for (const e of fs.readdirSync(src, { withFileTypes: true })) {
+      const s = path.join(src, e.name), d = path.join(dst, e.name);
+      if (e.isDirectory()) copyJava(s, d);
+      else { fs.copyFileSync(s, d); javaCopied++; }
+    }
+  })(JAVA_SRC, JAVA_DST);
+  console.log(`[branding] native sources: ${javaCopied} Java files (MainActivity edge-to-edge, GallerySaver plugin).`);
 }
 
 console.log(`[branding] version ${versionName} (versionCode ${versionCode})`);

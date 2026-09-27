@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
-import type { BillDraft } from './models/types';
+import type { BillDraft, BillWithUnits } from './models/types';
 import type { Route } from './navigation';
 import { TAB_ROUTES } from './navigation';
 import { BottomNav, type TabId } from './components/BottomNav';
@@ -19,12 +19,15 @@ import { BillDetailsScreen } from './screens/BillDetailsScreen';
 import { TutorialScreen } from './screens/TutorialScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { IntroScreen } from './screens/IntroScreen';
+import { BillSavedDialog } from './components/BillSavedDialog';
 
 export default function App() {
   const { settings, loaded } = useSettings();
   const [stack, setStack] = useState<Route[]>([{ name: 'home' }]);
   const [draft, setDraft] = useState<BillDraft | null>(null);
   const [showIntro, setShowIntro] = useState(true);
+  /** مرحله موفقیت پس از ذخیره قبض (پیش‌نمایش و خروجی تصویر) */
+  const [justSaved, setJustSaved] = useState<BillWithUnits | null>(null);
   const route = stack[stack.length - 1];
   const stackRef = useRef(stack);
   stackRef.current = stack;
@@ -97,6 +100,7 @@ export default function App() {
             setDraft(null);
             // پس از ذخیره، به سوابق همان سال/ماه می‌رویم
             resetTo({ name: 'records', year: saved.bill.year, month: saved.bill.month });
+            setJustSaved(saved);
           }}
         />
       );
@@ -155,6 +159,7 @@ export default function App() {
     <div className={'app-shell' + (showNav ? ' has-nav' : '')}>
       {screen}
       {showNav && <BottomNav active={route.name as TabId} onSelect={onTab} />}
+      <BillSavedDialog saved={justSaved} onClose={() => setJustSaved(null)} />
     </div>
   );
 }

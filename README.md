@@ -200,8 +200,8 @@ scripts\build-apk.bat release
 
 ### نسخه‌گذاری (فقط در یک جا: `package.json`)
 ```json
-"version": "1.3.0",
-"versionCode": 4,
+"version": "1.4.0",
+"versionCode": 5,
 ```
 - `version` ← `versionName` اندروید و متن «نسخه ۱.۳.۰» پایین صفحه تنظیمات.
 - `versionCode` ← عدد صحیحی که اندروید و مایکت برای تشخیص نسخه جدیدتر استفاده می‌کنند. **در هر انتشار باید حتماً بیشتر از نسخه قبلی باشد** (۱، ۲، ۳، ...)؛ هرگز کم یا تکراری نشود.
@@ -209,7 +209,7 @@ scripts\build-apk.bat release
 
 ### انتشار به‌روزرسانی در مایکت (قدم‌به‌قدم)
 1. تغییرات کد را انجام دهید و `npm test` را اجرا کنید.
-2. در `package.json` مقدار `version` را بالا ببرید (مثلاً `1.3.0` → `1.3.1` یا `1.4.0`) و `versionCode` را **یک واحد افزایش دهید** (مثلاً `4` → `5`).
+2. در `package.json` مقدار `version` را بالا ببرید (مثلاً `1.4.0` → `1.4.1` یا `1.5.0`) و `versionCode` را **یک واحد افزایش دهید** (مثلاً `5` → `6`).
 3. با **همان keystore قبلی** نسخه Release بسازید: `scripts\build-apk.bat release` (یا GitHub Actions با Secretها).
 4. (اختیاری) امضا را با `apksigner verify --print-certs` بررسی کنید؛ اثر انگشت SHA-256 گواهی باید با نسخه‌های قبلی یکسان باشد.
 5. در پنل توسعه‌دهندگان مایکت (myket.ir) وارد صفحه برنامه شوید، بخش **نسخه جدید / بارگذاری APK** را انتخاب و `apartemant-release.apk` را بارگذاری کنید،
@@ -261,6 +261,7 @@ scripts\build-apk.bat release
     سال‌های فعال قبلی کمتر از ۱۴۰۵ (مثل ۱۴۰۳/۱۴۰۴ نسخه‌های قبلی) هنگام اجرا خودکار حذف می‌شوند و اگر سالی باقی نماند ۱۴۰۵ فعال می‌شود؛
     قبض‌های ذخیره‌شده سال‌های قدیمی‌تر پاک نمی‌شوند و همچنان در کشوی سال «سوابق» قابل انتخاب‌اند. شماره نسخه برنامه (مثلاً «نسخه ۱.۰.۰») پایین صفحه تنظیمات نمایش داده می‌شود.
 16. **Bottom Navigation**: خانه، آموزش، سوابق، گزارش‌ها، تنظیمات. دکمه Back گوشی هم پشتیبانی می‌شود.
+    از نسخه ۱.۴.۰ نوار پایین دقیقاً بالای نوار سیستمی اندروید (دکمه‌ها/ژست) قرار می‌گیرد و فاصله سفید اضافه زیر آن حذف شده است (بخش «رفع اشکال‌ها» را ببینید).
 17. **ذخیره‌سازی محلی و آفلاین** (جزئیات پایین).
 18. **پشتیبان‌گیری و بازیابی** (از نسخه ۱.۱.۰) در تنظیمات — جزئیات در بخش «پشتیبان‌گیری و بازیابی اطلاعات» پایین.
 19. **گزارش‌ها** (از نسخه ۱.۲.۰) — از زبانه **«گزارش‌ها»** در نوار پایین یا دکمه **«گزارش‌ها (هزینه‌های سال، بدهکاران)»** در صفحه اصلی.
@@ -282,6 +283,16 @@ scripts\build-apk.bat release
     این تاریخ‌ها **فقط در بخش گزارش‌ها** نمایش داده می‌شوند. تاریخ تسویه = تاریخ آخرین پرداخت. تسویه‌های نسخه‌های قبلی تاریخ ندارند و «نامشخص» نمایش داده می‌شوند.
     مبالغ مثل بقیه برنامه با جداکننده هزارگان و به تومان نمایش داده می‌شوند.
     کد: `src/logic/report.ts` و `src/logic/debts.ts` (تست‌شده)، `src/screens/reports/YearlyReportView.tsx`، `src/screens/reports/DebtorsView.tsx`، `src/screens/UnitHistoryScreen.tsx`.
+
+20. **تصویر قبض برای گروه ساختمان** (از نسخه ۱.۴.۰): پس از ذخیره قبض پنجره «قبض با موفقیت ذخیره شد» با **پیش‌نمایش تصویر قبض** باز می‌شود
+    و در **جزئیات قبض** هم دو دکمه وجود دارد:
+    - **«اشتراک‌گذاری تصویر»**: پنجره اشتراک‌گذاری اندروید با فایل PNG (تلگرام، واتس‌اپ، ...)؛
+    - **«ذخیره در گالری»**: ذخیره در پوشه `Pictures/Apartemant` گالری (اندروید ۱۰ تا ۱۶ از طریق MediaStore و **بدون هیچ مجوز حافظه**؛
+      در اندروید ۹ و قدیمی‌تر که ذخیره بدون مجوز ممکن نیست، پنجره اشتراک‌گذاری باز می‌شود تا «ذخیره» را انتخاب کنید). در مرورگر فایل دانلود می‌شود.
+    تصویر (عرض ۱۰۸۰ پیکسل، فارسی راست‌به‌چپ با فونت Vazirmatn داخل برنامه، کاملاً آفلاین) شامل لوگو و نام کوچک برنامه، نوع هزینه، ماه و سال، مبلغ کل،
+    نحوه تقسیم، سهم هر نفر/واحد، جدول واحدها (شماره واحد، تعداد نفرات فقط در «بر اساس نفرات»، سهم، و وضعیت پرداخت «تسویه / مانده ... / پرداخت‌نشده» وقتی پرداختی ثبت شده باشد)،
+    جمع و تاریخ است. رسم با canvas (`src/services/billImage.tsx`)، مدل داده تست‌شده در `src/logic/billImage.ts`، خروجی در `src/services/billImageExport.ts`
+    و افزونه بومی کوچک `GallerySaver` در `resources/android/java` (اسکریپت برندینگ آن را در پروژه اندروید کپی می‌کند). نمونه: `screenshots/46-bill-image-sample.png`.
 
 ## منطق محاسبه و گرد کردن
 
@@ -330,7 +341,7 @@ scripts\build-apk.bat release
 {
   "app": "apartemant",
   "backupVersion": 3,
-  "appVersion": "1.3.0",
+  "appVersion": "1.4.0",
   "createdAt": "2026-09-26T16:30:00.000Z",
   "data": {
     "bills": [ ... ], "units": [ ... ],
@@ -371,16 +382,17 @@ building-charge/
 ├─ .github/workflows/android-apk.yml   ← ساخت APK روی GitHub
 ├─ scripts/build-apk.bat      ← ساخت APK در ویندوز با یک دستور (دیباگ، یا با آرگومان release نسخه امضاشده)
 ├─ scripts/sign-release.mjs   ← zipalign + امضای apksigner (v1/v2/v3) با کلید از متغیرهای محیطی
-├─ scripts/apply-android-branding.mjs ← اعمال نام، آیکون، اسپلش، نسخه و حذف مجوز اینترنت روی پوشه android (خودکار بعد از cap sync)
+├─ scripts/apply-android-branding.mjs ← اعمال نام، آیکون، اسپلش، نسخه، کد بومی (MainActivity/GallerySaver) و حذف مجوز اینترنت روی پوشه android (خودکار بعد از cap sync)
 ├─ scripts/manifest-permissions.mjs ← حذف INTERNET از AndroidManifest (tools:node="remove")
 ├─ resources/android/res/     ← آیکون‌ها (adaptive/round/legacy همه تراکم‌ها) و تصاویر اسپلش آماده
+├─ resources/android/java/    ← کد بومی: MainActivity (edge-to-edge در همه نسخه‌ها) + افزونه GallerySaver (ذخیره تصویر در گالری با MediaStore)
 ├─ resources/branding/        ← SVGهای منبع طرح ۱ + generate.mjs (ساخت دوباره PNGها؛ اختیاری)
 ├─ tests/                     ← تست‌های واحد (Vitest)
 └─ src/
    ├─ models/      types.ts (Bill, Unit, Settings, Draft) · constants.ts (ماه‌ها، انواع هزینه، رنگ‌ها، سال‌ها)
    ├─ logic/       calculation · formatting · validation · errors · warnings · settlement · years · settings · backup · split (نحوه تقسیم) · report (گزارش سالانه) · debts (بدهکاران و سابقه پرداخت) · payments (پرداخت کامل/جزئی) · unitTemplate (الگوی واحدها) · billFactory · date · id
    ├─ storage/     kvStore (Capacitor Preferences) · billRepository · settingsRepository · backupRepository · unitTemplateRepository · splitDefaultsRepository
-   ├─ services/    backupFile (اشتراک‌گذاری/ذخیره فایل پشتیبان روی اندروید، دانلود در وب)
+   ├─ services/    backupFile (اشتراک‌گذاری/ذخیره فایل پشتیبان روی اندروید، دانلود در وب) · billImage (رسم تصویر قبض با canvas) · billImageExport (اشتراک‌گذاری / ذخیره در گالری)
    ├─ context/     SettingsContext · FeedbackContext (مدیریت جدای Error / Warning / Toast)
    ├─ components/  AppHeader, BottomNav, YearPicker (کشوی سال‌های فعال), PaymentDialog (پرداخت کامل/جزئی), BackupSection, RestoreConfirmDialog, AmountInput, PersonCountInput, UnitsEditor, ExpenseTypePicker,
    │               ErrorDialog, WarningDialog, LockedDialog, ConfirmDialog, Toast, Checkbox, Switch, Icons, Illustrations ...
@@ -433,6 +445,14 @@ npm run branding:generate
 - **فایل ناقص یا تغییرنام‌یافته**: مطمئن شوید دانلود کامل شده و حجم فایل با فایل اصلی یکسان است و پسوند آن دقیقاً `.apk` است (نه `.apk.zip` یا `.bin`).
 - **نصب با کابل (adb)**: در شیائومی باید در «گزینه‌های توسعه‌دهنده» علاوه بر USB debugging، گزینه **Install via USB** هم روشن باشد (نیاز به حساب Mi و سیم‌کارت دارد).
 - **فضای کافی / Second space / حالت کودک**: فضای خالی کافی داشته باشید و در فضای دوم یا پروفایل محدود نصب نکنید.
+
+### نوار سفید خالی زیر نوار پایین برنامه (رفع‌شده در نسخه ۱.۴.۰)
+در نسخه ۱.۳.۰ روی بعضی گوشی‌ها با اندروید ۱۴ و قدیمی‌تر (مثلاً POCO X5 Pro با HyperOS) زیر نوار پایین برنامه یک نوار سفید خالی به ارتفاع نوار سیستمی دیده می‌شد.
+**علت**: افزونه SystemBars در Capacitor 8 (با `insetsHandling: 'css'` و `viewport-fit=cover`، WebView نسخه ۱۴۰ به بالا) ارتفاع واقعی نوار وضعیت و نوار ناوبری را
+به‌صورت `--safe-area-inset-*` به صفحه می‌دهد و فرض می‌کند برنامه **edge-to-edge** است (زیر نوارهای سیستم کشیده می‌شود) — که فقط در اندروید ۱۵+ اجباری است.
+در اندروید ۱۴ و قدیمی‌تر پنجره edge-to-edge نبود و خود سیستم محتوا را بالای نوار ناوبری نگه می‌داشت؛ پس CSS همان ارتفاع را **دوباره** به‌عنوان فاصله زیر نوار پایین اضافه می‌کرد.
+**رفع**: `MainActivity` (در `resources/android/java`) با `EdgeToEdge.enable` پنجره را در همه نسخه‌های اندروید edge-to-edge می‌کند (نوارهای سیستم شفاف با آیکون تیره)،
+تا رفتار اندروید ۷ تا ۱۴ با اندروید ۱۵+ یکسان شود: فاصله CSS دقیقاً پشت نوار سیستم قرار می‌گیرد، نوار پایین مستقیم بالای نوار سیستم است و با آن هم‌پوشانی ندارد.
 
 - **`npx cap add android` خطای «platform already exists»**: پوشه `android` از قبل ساخته شده؛ فقط `npx cap sync` بزنید.
 - **`SDK location not found`**: در `android\local.properties` این خط را بگذارید (نام کاربری خود را جایگزین کنید):

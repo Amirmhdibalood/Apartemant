@@ -1,8 +1,8 @@
 {
   "name": "building-charge",
   "private": true,
-  "version": "1.3.0",
-  "versionCode": 4,
+  "version": "1.4.0",
+  "versionCode": 5,
   "description": "محاسبه شارژ ساختمان - React + Vite + Capacitor (Android, offline)",
   "type": "module",
   "scripts": {

@@ -23,7 +23,7 @@ interface Props {
 
 /** ۵، ۶ و ۷. نتیجه محاسبه + ذخیره */
 export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
-  const { showErrors, confirmWarning, toast } = useFeedback();
+  const { showErrors, confirmWarning } = useFeedback();
   const [saving, setSaving] = useState(false);
   const roundingShownFor = useRef<string>('');
 
@@ -83,7 +83,6 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
       await unitTemplateRepository.save(saved.units.map((u) => u.personCount)).catch(() => undefined);
       // نحوه تقسیم، پیش‌فرض قبض‌های بعدی همین نوع هزینه می‌شود
       await splitDefaultsRepository.remember(saved.bill.expenseType, calc.splitMethod).catch(() => undefined);
-      toast('اطلاعات با موفقیت ذخیره شد.');
       onSaved(saved);
     } catch {
       showErrors(Errors.storageFailed());

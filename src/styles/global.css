@@ -629,3 +629,20 @@ h1, h2, h3, p { margin: 0; }
 .input--count.is-weight { background: #f1f4f9; color: #a3abbd; border-color: #e4e9f2; -webkit-text-fill-color: #a3abbd; opacity: 1; }
 .split-badge { display: inline-block; font-size: 12.5px; font-weight: 700; padding: 1px 10px; border-radius: 20px; background: var(--primary-soft); color: var(--primary); }
 .split-badge.is-perUnit { background: #f3e8ff; color: #7c3aed; }
+
+/* ---------- تصویر قبض (اشتراک‌گذاری / ذخیره در گالری) — نسخه ۱.۴.۰ ---------- */
+.dialog { max-height: calc(100dvh - 48px); overflow-y: auto; }
+.image-actions { display: flex; gap: 10px; margin: 4px 0 12px; }
+.image-actions .btn { flex: 1; min-width: 0; padding: 0 10px; font-size: 14px; gap: 6px; white-space: nowrap; }
+.image-actions--compact { margin: 0; }
+.image-actions--compact .btn { font-size: 13.5px; padding: 0 6px; }
+.image-actions .btn:disabled { opacity: 0.75; }
+.dialog__text--sm { font-size: 13.5px; line-height: 1.9; }
+.bill-preview {
+  background: var(--summary); border: 1px solid var(--border); border-radius: 14px; padding: 6px;
+  margin: 10px 0 14px; max-height: 36vh; overflow-y: auto;
+}
+.bill-preview img { display: block; width: 100%; height: auto; border-radius: 10px; }
+.bill-preview__loading { height: 140px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
+.saved-close { margin-top: 10px; }
+.section-title--export { margin-top: 18px; }

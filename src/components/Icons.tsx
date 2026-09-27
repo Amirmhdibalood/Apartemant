@@ -207,3 +207,13 @@ export const IconSuccessCircle = ({ size = 26 }: { size?: number }) => (
     <path d="m7 12.3 3.2 3.2L17.2 8.6" stroke="#fff" strokeWidth="2.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
+/** ذخیره تصویر در گالری */
+export const IconImageDown = (p: P) => (
+  <S {...p}>
+    <path d="M21 12.5V18a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h6" />
+    <path d="m3.5 17 4.8-4.8a1.6 1.6 0 0 1 2.3 0L16 17.5" />
+    <path d="m14 15 1.6-1.6a1.6 1.6 0 0 1 2.3 0L21 16.5" />
+    <path d="M18 3v7" />
+    <path d="m15 7.2 3 3 3-3" />
+  </S>
+);

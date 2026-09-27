@@ -5,6 +5,7 @@ import { splitMethodOf } from '../logic/split';
 import { AppHeader } from '../components/AppHeader';
 import { ExpenseIcon } from '../components/ExpenseIcon';
 import { PaymentDialog } from '../components/PaymentDialog';
+import { BillImageActions } from '../components/BillImageActions';
 import { IconCheck, IconEdit, IconLock, IconTrash } from '../components/Icons';
 import { useFeedback } from '../context/FeedbackContext';
 import { billRepository } from '../storage/billRepository';
@@ -147,6 +148,8 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
           <span className="status-box__k">وضعیت کلی:</span>
           <b>{locked ? 'تسویه شده' : 'تسویه نشده'}</b>
         </div>
+
+        <BillImageActions data={data} />
 
         <button
           type="button"
