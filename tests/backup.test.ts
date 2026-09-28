@@ -28,14 +28,15 @@ function sample(): BackupData {
     { id: 'b2', year: 1404, month: 12, expenseType: 'gas', billNumber: null, description: null, totalAmount: 900000, createdAt: '2026-03-01T08:00:00.000Z', isFullySettled: true, billPaid: false, billPaidDate: null, dueDate: null, deletedAt: null },
   ];
   const units: Unit[] = [
-    { id: 'u1', billId: 'b1', unitNumber: 1, personCount: 1, shareAmount: 333334, isSettled: true },
+    { id: 'u1', billId: 'b1', unitNumber: 1, personCount: 1, alias: 'آقای رضایی', shareAmount: 333334, isSettled: true },
     { id: 'u2', billId: 'b1', unitNumber: 2, personCount: 1, shareAmount: 333333, isSettled: false },
     { id: 'u3', billId: 'b1', unitNumber: 3, personCount: 1, shareAmount: 333333, isSettled: false },
     { id: 'u4', billId: 'b2', unitNumber: 1, personCount: 2, shareAmount: 600000, isSettled: true },
     { id: 'u5', billId: 'b2', unitNumber: 2, personCount: 1, shareAmount: 300000, isSettled: true },
   ];
   const settings: AppSettings = { showSaveWarning: false, activeYears: [1405, 1406], dismissedWarnings: ['roundingAdjust', 'duplicateBill'] };
-  return { bills, units, settings, unitTemplate: [1, 1, 1] };
+  const building = { units: [{ alias: 'آقای رضایی', defaultPersons: 1 }, { alias: null, defaultPersons: 1 }, { alias: null, defaultPersons: 0 }] };
+  return { bills, units, settings, building };
 }
 
 const NOW = new Date('2026-09-26T09:00:00Z'); // ۴ مهر ۱۴۰۵
@@ -61,7 +62,7 @@ describe('پشتیبان‌گیری: ساخت فایل', () => {
     expect(o.backupVersion).toBe(BACKUP_VERSION);
     expect(o.appVersion).toBe('1.1.0');
     expect(o.createdAt).toBe(NOW.toISOString());
-    expect(Object.keys(o.data).sort()).toEqual(['bills', 'settings', 'unitTemplate', 'units']);
+    expect(Object.keys(o.data).sort()).toEqual(['bills', 'building', 'settings', 'units']);
   });
 });
 
@@ -101,7 +102,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     const e = errorOf(text((o) => { o.backupVersion = BACKUP_VERSION + 1; }));
     expect(e).toContain('نسخه جدیدتری');
     expect(e).toContain(String(BACKUP_VERSION + 1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]));
-    expect(BACKUP_VERSION).toBe(4);
+    expect(BACKUP_VERSION).toBe(5);
   });
 
   it('نسخه نامعتبر قالب', () => {
@@ -119,7 +120,10 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
       ['قبض ۲', (o) => { o.data.bills[1].expenseType = 'phone'; }],
       ['قبض ۱', (o) => { o.data.bills[0].totalAmount = -5; }],
       ['تکراری', (o) => { o.data.bills[1].id = 'b1'; }],
-      ['واحد ۳', (o) => { o.data.units[2].personCount = 0; }],
+      ['واحد ۳', (o) => { o.data.units[2].personCount = -1; }],
+      ['واحد ۲', (o) => { o.data.units[1].alias = 42; }],
+      ['تنظیمات ساختمان', (o) => { o.data.building = { units: [] }; }],
+      ['تنظیمات ساختمان', (o) => { o.data.building = { units: [{ alias: null, defaultPersons: -2 }] }; }],
       ['هیچ قبضی', (o) => { o.data.units[0].billId = 'missing'; }],
       ['هیچ واحدی', (o) => { o.data.units = o.data.units.filter((u: Unit) => u.billId !== 'b2'); }],
       ['مبلغ کل', (o) => { o.data.units[0].shareAmount += 1; }],
@@ -192,7 +196,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     const r = parseBackup(text((o) => { o.data.bills[1].billPaid = true; o.data.bills[1].billPaidDate = '1404-12-20'; }));
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    expect(r.backup.backupVersion).toBe(4);
+    expect(r.backup.backupVersion).toBe(BACKUP_VERSION);
     expect(r.backup.data.bills[1]).toMatchObject({ billPaid: true, billPaidDate: '1404-12-20' });
     // برچسب زمانی ISO (داده آزمایشی قدیمی) به تاریخ شمسی همان روز تبدیل می‌شود
     const iso = parseBackup(text((o) => { o.data.bills[1].billPaid = true; o.data.bills[1].billPaidDate = '2026-03-05T10:00:00.000Z'; }));
@@ -207,7 +211,9 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
       const r = parseBackup(text((o) => {
         o.backupVersion = v;
         for (const b of o.data.bills) { delete b.billPaid; delete b.billPaidDate; delete b.dueDate; delete b.deletedAt; }
-        if (v === 1) delete o.data.unitTemplate;
+        for (const u of o.data.units) delete u.alias;
+        delete o.data.building;
+        if (v > 1) o.data.unitTemplate = [1, 1, 1];
       }));
       expect(r.ok).toBe(true);
       if (!r.ok) return;
@@ -226,6 +232,34 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     expect(errorOf(text((o) => { o.data.bills[0].dueDate = '1405/07/12'; }))).toContain('قبض ۱');
     expect(errorOf(text((o) => { o.data.bills[1].deletedAt = 'دیروز'; }))).toContain('قبض ۲');
     expect(errorOf(text((o) => { o.data.bills[0].dueDate = '1405-07-40'; }))).toContain('قبض ۱');
+  });
+
+  it('قالب ۵: تنظیمات ساختمان و اسم مستعار واحدها رفت‌وبرگشت؛ واحد خالی (۰ نفر، سهم ۰) مجاز است', () => {
+    const r = parseBackup(text((o) => {
+      o.data.units[0].shareAmount -= 1; o.data.units[1].shareAmount += 1; // مجموع ثابت
+      o.data.units[2].personCount = 0;
+      o.data.units[1].alias = '  خانم   احمدی ';
+    }));
+    if (!r.ok) throw new Error(r.error);
+    expect(r.backup.data.building).toEqual(sample().building);
+    expect(r.backup.data.units.slice(0, 3).map((u) => [u.alias, u.personCount])).toEqual([['آقای رضایی', 1], ['خانم احمدی', 1], [undefined, 0]]);
+  });
+
+  it('بازیابی قالب‌های ۱ تا ۴: تنظیمات ساختمان از جدیدترین قبض حذف‌نشده ساخته می‌شود', () => {
+    for (const v of [1, 2, 3, 4]) {
+      const r = parseBackup(text((o) => {
+        o.backupVersion = v;
+        delete o.data.building;
+        for (const u of o.data.units) { delete u.alias; if (u.billId === 'b1') u.personCount = u.unitNumber; }
+        if (v > 1) o.data.unitTemplate = [7, 7];
+      }));
+      if (!r.ok) throw new Error(r.error);
+      expect(r.backup.data.building).toEqual({ units: [1, 2, 3].map((n) => ({ alias: null, defaultPersons: n })) });
+    }
+    // جدیدترین قبض حذف شده باشد → قبض بعدی
+    const del = parseBackup(text((o) => { o.backupVersion = 4; delete o.data.building; o.data.bills[0].deletedAt = '2026-09-27T08:00:00.000Z'; }));
+    if (!del.ok) throw new Error(del.error);
+    expect(del.backup.data.building).toEqual({ units: [{ alias: null, defaultPersons: 2 }, { alias: null, defaultPersons: 1 }] });
   });
 
   it('تاریخ پرداخت بدون تیک «پرداخت شد» نادیده گرفته می‌شود', () => {
@@ -262,29 +296,31 @@ describe('مخزن پشتیبان (گرفتن و بازیابی کامل داد�
     expect((await billRepository.getById('b1'))?.units).toHaveLength(3);
   });
 
-  it('الگوی واحدها در پشتیبان ذخیره و بازیابی می‌شود', async () => {
-    const d = { ...sample(), unitTemplate: [2, 3, 1, 4, 2, 2] };
-    await backupRepository.replaceAll(d);
-    const json = serializeBackup(createBackup(await backupRepository.collect(), '1.2.0', NOW));
-    expect(JSON.parse(json).data.unitTemplate).toEqual([2, 3, 1, 4, 2, 2]);
+  it('تنظیمات ساختمان در پشتیبان ذخیره و بازیابی می‌شود', async () => {
+    const building = { units: [{ alias: 'آقای رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 0 }] };
+    await backupRepository.replaceAll({ ...sample(), building });
+    const json = serializeBackup(createBackup(await backupRepository.collect(), '1.6.0', NOW));
+    expect(JSON.parse(json).data.building).toEqual(building);
+    expect(JSON.parse(json).data.unitTemplate).toBeUndefined();
     mem.clear();
     billRepository._resetCache();
     const r = parseBackup(json);
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
+    if (!r.ok) throw new Error(r.error);
     await backupRepository.replaceAll(r.backup.data);
     billRepository._resetCache();
-    expect((await backupRepository.collect()).unitTemplate).toEqual([2, 3, 1, 4, 2, 2]);
+    expect((await backupRepository.collect()).building).toEqual(building);
   });
 
-  it('بازیابی پشتیبان قدیمی (بدون الگو): الگوی قبلی پاک و از آخرین قبض ساخته می‌شود', async () => {
-    await backupRepository.replaceAll({ ...sample(), unitTemplate: [5, 5] });
+  it('بازیابی پشتیبان قدیمی (بدون تنظیمات ساختمان): از آخرین قبض، وگرنه از الگوی قدیمی ساخته می‌شود', async () => {
+    await backupRepository.replaceAll({ ...sample(), building: { units: [{ alias: 'x', defaultPersons: 5 }] } });
     const old = sample();
-    delete old.unitTemplate;
-    old.units = old.units.map((u) => (u.billId === 'b1' ? { ...u, personCount: u.unitNumber } : u));
+    delete old.building;
+    old.units = old.units.map((u) => (u.billId === 'b1' ? { ...u, personCount: u.unitNumber, alias: undefined } : u));
     await backupRepository.replaceAll(old);
     billRepository._resetCache();
-    expect((await backupRepository.collect()).unitTemplate).toEqual([1, 2, 3]);
+    expect((await backupRepository.collect()).building).toEqual({ units: [1, 2, 3].map((n) => ({ alias: null, defaultPersons: n })) });
+    await backupRepository.replaceAll({ bills: [], units: [], settings: old.settings, unitTemplate: [4, 2] });
+    expect((await backupRepository.collect()).building).toEqual({ units: [{ alias: null, defaultPersons: 4 }, { alias: null, defaultPersons: 2 }] });
   });
 
   it('پیش‌فرض‌های نحوه تقسیم در پشتیبان ذخیره و بازیابی می‌شوند؛ پشتیبان قدیمی آن‌ها را پاک می‌کند', async () => {

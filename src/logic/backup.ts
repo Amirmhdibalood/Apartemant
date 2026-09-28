@@ -2,12 +2,13 @@
  * پشتیبان‌گیری و بازیابی — منطق خالص (بدون وابستگی به پلتفرم):
  * ساخت فایل پشتیبان JSON، نام‌گذاری، اعتبارسنجی کامل فایل ورودی و خلاصه محتوای آن.
  */
-import type { AppSettings, Bill, ExpenseType, Payment, Unit } from '../models/types';
+import type { AppSettings, Bill, BuildingSettings, ExpenseType, Payment, Unit } from '../models/types';
 import { EXPENSE_TYPES } from '../models/constants';
 import { sanitizeSettings } from './settings';
 import { formatJalaliDateTimeFa, jalaliIsoDate } from './date';
 import { toPersianDigits } from './formatting';
 import { sanitizeUnitTemplate } from './unitTemplate';
+import { buildingFromBills, sanitizeAlias, sanitizeBuilding } from './building';
 import { isSplitMethod, sanitizeSplitDefaults, type SplitDefaults } from './split';
 import { isBillDeleted, migrateBill, normalizePaidDate } from './billPaid';
 import { parseJalaliKey } from './jalali';
@@ -19,10 +20,13 @@ export const BACKUP_APP_ID = 'apartemant';
  * ۲: نسخه ۱٫۲ برنامه (+ الگوی واحدها `unitTemplate` و پرداخت‌های واحدها `payments`)
  * ۳: نسخه ۱٫۳ برنامه (+ نحوه تقسیم هر قبض `splitMethod` و پیش‌فرض هر نوع هزینه `splitDefaults`)
  * ۴: نسخه ۱٫۵ برنامه (+ «پرداخت شد» خودِ قبض `billPaid`/`billPaidDate`، «مهلت پرداخت» `dueDate` (شمسی) و حذف نرم `deletedAt`)
- * همه قالب‌های قدیمی‌تر (۱ تا ۳) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
+ * ۵: نسخه ۱٫۶ برنامه (+ تنظیمات «ساختمان» `building` و اسم مستعار هر واحد در قبض `alias`؛ نفرات ۰ = واحد خالی)
+ *    `unitTemplate` دیگر نوشته نمی‌شود؛ هنگام بازیابی فایل‌های ۱ تا ۴، تنظیمات ساختمان از جدیدترین قبض حذف‌نشده
+ *    (وگرنه از unitTemplate، وگرنه ۱ واحد با ۱ نفر) ساخته می‌شود.
+ * همه قالب‌های قدیمی‌تر (۱ تا ۴) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
  * بدون dueDate = بدون مهلت پرداخت، بدون deletedAt = حذف‌نشده).
  */
-export const BACKUP_VERSION = 4;
+export const BACKUP_VERSION = 5;
 /** حداکثر حجم قابل قبول فایل پشتیبان */
 export const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
 
@@ -31,8 +35,10 @@ export interface BackupData {
   units: Unit[];
   /** شامل سال‌های فعال و هشدارهای «دیگر نمایش نده» */
   settings: AppSettings;
-  /** الگوی واحدها برای قبض جدید (تعداد نفرات هر واحد)؛ در فایل‌های قالب ۱ وجود ندارد */
+  /** الگوی واحدهای قالب‌های ۲ تا ۴ (فقط خوانده می‌شود، برای ساخت تنظیمات ساختمان) */
   unitTemplate?: number[] | null;
+  /** تنظیمات «ساختمان» (از قالب ۵)؛ پس از parseBackup همیشه پر است */
+  building?: BuildingSettings;
   /** آخرین نحوه تقسیم هر نوع هزینه (از قالب ۳) */
   splitDefaults?: SplitDefaults;
 }
@@ -90,10 +96,15 @@ export function createBackup(data: BackupData, appVersion: string, now: Date = n
       bills: data.bills.map(migrateBill),
       units: data.units.map((u) => ({ ...u })),
       settings: sanitizeSettings(data.settings),
-      ...withTemplate(data.unitTemplate),
+      ...withBuilding(data.building),
       ...withSplitDefaults(data.splitDefaults),
     },
   };
+}
+
+function withBuilding(raw: unknown): { building?: BuildingSettings } {
+  const b = sanitizeBuilding(raw);
+  return b ? { building: b } : {};
 }
 
 function withSplitDefaults(raw: unknown): { splitDefaults?: SplitDefaults } {
@@ -195,8 +206,9 @@ function parseUnits(raw: unknown, bills: Bill[]): Unit[] {
   const ids = new Set<string>();
   return (raw as unknown[]).map((u, i) => {
     if (!isObj(u)) return bad(`اطلاعات واحد ${nth(i)} نامعتبر است.`);
-    const ok = isId(u.id) && isId(u.billId) && isInt(u.unitNumber, 1, 100000) && isInt(u.personCount, 1, 1000000)
-      && isInt(u.shareAmount, 0) && typeof u.isSettled === 'boolean';
+    const ok = isId(u.id) && isId(u.billId) && isInt(u.unitNumber, 1, 100000) && isInt(u.personCount, 0, 1000000)
+      && isInt(u.shareAmount, 0) && typeof u.isSettled === 'boolean'
+      && (u.alias == null || (typeof u.alias === 'string' && u.alias.length <= 200)); // اسم مستعار (از قالب ۵، اختیاری)
     if (!ok) bad(`اطلاعات واحد ${nth(i)} نامعتبر است.`);
     if (!billIds.has(u.billId as string)) bad(`واحد ${nth(i)} به هیچ قبضی تعلق ندارد.`);
     if (ids.has(u.id as string)) bad(`شناسه واحد ${nth(i)} تکراری است.`);
@@ -206,6 +218,7 @@ function parseUnits(raw: unknown, bills: Bill[]): Unit[] {
       billId: u.billId as string,
       unitNumber: u.unitNumber as number,
       personCount: u.personCount as number,
+      ...(u.alias !== undefined ? { alias: sanitizeAlias(u.alias) } : {}),
       shareAmount: u.shareAmount as number,
       isSettled: u.isSettled as boolean,
       ...parsePayments(u.payments, u.shareAmount as number, i),
@@ -245,12 +258,16 @@ export function parseBackup(text: string): ParseBackupResult {
     const settings = sanitizeSettings(isObj(data.settings) ? (data.settings as Partial<AppSettings>) : null);
     // الگوی واحدها (از قالب ۲)؛ نبودنش مشکلی نیست (از آخرین قبض ساخته می‌شود)
     if (data.unitTemplate != null && !sanitizeUnitTemplate(data.unitTemplate)) bad('الگوی واحدها نامعتبر است.');
+    // تنظیمات ساختمان (از قالب ۵)؛ در فایل‌های قدیمی از جدیدترین قبض حذف‌نشده ساخته می‌شود
+    if (data.building != null && !sanitizeBuilding(data.building)) bad('تنظیمات ساختمان نامعتبر است.');
+    const building = sanitizeBuilding(data.building)
+      ?? buildingFromBills(bills.map((bill) => ({ bill, units: units.filter((u) => u.billId === bill.id) })), data.unitTemplate);
     const backup: BackupFile = {
       app: BACKUP_APP_ID,
       backupVersion: json.backupVersion as number,
       appVersion: typeof json.appVersion === 'string' ? json.appVersion : '',
       createdAt: json.createdAt as string,
-      data: { bills, units, settings, ...withTemplate(data.unitTemplate), ...withSplitDefaults(data.splitDefaults) },
+      data: { bills, units, settings, ...withTemplate(data.unitTemplate), building, ...withSplitDefaults(data.splitDefaults) },
     };
     return { ok: true, backup, summary: summarizeBackup(backup) };
   } catch (e) {

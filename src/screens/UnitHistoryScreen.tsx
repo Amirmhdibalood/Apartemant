@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { unitLabel } from '../logic/building';
 import type { BillWithUnits } from '../models/types';
 import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
@@ -45,7 +46,7 @@ export function UnitHistoryScreen({ unitNumber, onBack, onOpenBill }: Props) {
 
   return (
     <>
-      <AppHeader title={`سابقه پرداخت واحد ${unitNumber}`} onBack={onBack} />
+      <AppHeader title={`سابقه پرداخت ${unitLabel(unitNumber, h.alias)}`} onBack={onBack} />
       <main className="screen screen--report">
         {all && h.entries.length === 0 && <div className="empty-state"><p>برای این واحد قبضی ثبت نشده است.</p></div>}
         {all && h.entries.length > 0 && (

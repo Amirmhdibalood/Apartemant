@@ -8,6 +8,7 @@ import { formatAmount, toPersianDigits } from './formatting';
 import { splitMethodOf } from './split';
 import { paidAmount, remainingAmount } from './payments';
 import { jalaliDateTime, jalaliIsoDate } from './date';
+import { sanitizeAlias, unitShortLabel } from './building';
 
 export const APP_NAME_FA = 'آپارتمانت';
 
@@ -16,6 +17,10 @@ export type UnitStatusKind = 'settled' | 'partial' | 'unpaid';
 export interface BillImageRow {
   /** شماره واحد (ارقام فارسی) */
   unit: string;
+  /** اسم مستعار واحد در همین قبض (عکس لحظه‌ای) یا null */
+  alias: string | null;
+  /** برچسب کامل ستون واحد: «۱» یا «۱ - آقای رضایی» */
+  unitLabel: string;
   /** تعداد نفرات (ارقام فارسی) — فقط در تقسیم «بر اساس نفرات» نمایش داده می‌شود */
   occupants: string;
   /** سهم واحد (ارقام فارسی با جداکننده) */
@@ -41,6 +46,8 @@ export interface BillImageModel {
   /** ستون «وضعیت» نمایش داده شود؟ (فقط وقتی حداقل یک پرداخت ثبت شده) */
   showStatus: boolean;
   rows: BillImageRow[];
+  /** حداقل یک واحد اسم مستعار دارد (ستون واحد پهن‌تر می‌شود) */
+  hasAliases: boolean;
   /** جمع نفرات یا تعداد واحدها (ارقام فارسی) */
   totalPersons: string;
   unitCount: string;
@@ -79,11 +86,14 @@ export function buildBillImageModel({ bill, units }: BillWithUnits, now: Date = 
     const paid = paidAmount(u);
     const remaining = remainingAmount(u);
     let status: BillImageRow['status'];
-    if (u.shareAmount === 0 || remaining === 0) status = { kind: 'settled', text: 'تسویه' };
+    if (u.shareAmount === 0) status = { kind: 'settled', text: 'بدون سهم' };
+    else if (remaining === 0) status = { kind: 'settled', text: 'تسویه' };
     else if (paid > 0) status = { kind: 'partial', text: `مانده ${faAmount(remaining)}` };
     else status = { kind: 'unpaid', text: 'پرداخت‌نشده' };
     return {
       unit: toPersianDigits(u.unitNumber),
+      alias: sanitizeAlias(u.alias),
+      unitLabel: unitShortLabel(u.unitNumber, u.alias),
       occupants: toPersianDigits(u.personCount),
       share: faAmount(u.shareAmount),
       status,
@@ -115,6 +125,7 @@ export function buildBillImageModel({ bill, units }: BillWithUnits, now: Date = 
     showOccupants: method === 'perPerson',
     showStatus: anyPayment,
     rows,
+    hasAliases: rows.some((r) => r.alias !== null),
     totalPersons: toPersianDigits(persons),
     unitCount: toPersianDigits(sorted.length),
     perShareLine,

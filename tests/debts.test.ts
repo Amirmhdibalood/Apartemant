@@ -114,3 +114,27 @@ describe('پرداخت‌ها هنگام ویرایش قبض حفظ می‌شو�
     expect(rebuilt.units.map((u) => u.isSettled)).toEqual([true, true, false]);
   });
 });
+
+describe('اسم مستعار واحدها در گزارش‌ها و واحد خالی (نسخه ۱.۶.۰)', () => {
+  const withAliases: BillWithUnits[] = [
+    bill('a1', 1405, 5, 'water', day(2), [{ alias: 'قدیمی' }, { alias: null }]),
+    bill('a2', 1405, 6, 'gas', day(12), [{ alias: 'آقای رضایی' }, { personCount: 0, shareAmount: 0, isSettled: true }]),
+  ];
+
+  it('بدهکاران: اسم هر واحد از جدیدترین قبض و اسم هر ردیف از عکس لحظه‌ای همان قبض', () => {
+    const r = debtorsReport(withAliases, NOW);
+    const u1 = r.units.find((u) => u.unitNumber === 1)!;
+    expect(u1.alias).toBe('آقای رضایی');
+    expect(u1.items.map((i) => i.alias)).toEqual(['قدیمی', 'آقای رضایی']);
+    expect(r.aliases).toEqual({ 1: 'آقای رضایی', 2: null });
+    // واحد خالی (سهم ۰) بدهی ندارد
+    expect(r.units.find((u) => u.unitNumber === 2)!.items.map((i) => i.billId)).toEqual(['a1']);
+  });
+
+  it('سابقه پرداخت: اسم از جدیدترین قبض؛ قبضی که واحد در آن سهم نداشته حساب نمی‌شود', () => {
+    const h = paymentHistory(withAliases, 2, NOW);
+    expect(h.alias).toBeNull();
+    expect(h.entries.map((e) => e.billId)).toEqual(['a1']);
+    expect(paymentHistory(withAliases, 1, NOW).alias).toBe('آقای رضایی');
+  });
+});

@@ -3,7 +3,8 @@ import type { BackupData, BackupFile } from '../logic/backup';
 import { createBackup, parseBackup, serializeBackup } from '../logic/backup';
 import { billRepository } from './billRepository';
 import { settingsRepository } from './settingsRepository';
-import { unitTemplateRepository } from './unitTemplateRepository';
+import { buildingRepository } from './buildingRepository';
+import { buildingFromBills } from '../logic/building';
 import { splitDefaultsRepository } from './splitDefaultsRepository';
 import { readJson, removeKey, writeJson } from './kvStore';
 
@@ -11,19 +12,19 @@ const SAFETY_KEY = 'safetyBackup';
 const LAST_BACKUP_KEY = 'lastBackupAt';
 
 export const backupRepository = {
-  /** همه داده‌ها: قبض‌ها، واحدها، تنظیمات (سال‌ها و هشدارهای «دیگر نمایش نده») و الگوی واحدها */
+  /** همه داده‌ها: قبض‌ها، واحدها، تنظیمات (سال‌ها و هشدارهای «دیگر نمایش نده»)، تنظیمات ساختمان و پیش‌فرض نحوه تقسیم */
   async collect(): Promise<BackupData> {
-    const [tables, settings, unitTemplate, splitDefaults] = await Promise.all([
+    const [tables, settings, building, splitDefaults] = await Promise.all([
       billRepository.exportTables(),
       settingsRepository.get(),
-      unitTemplateRepository.get(),
+      buildingRepository.get(),
       splitDefaultsRepository.get(),
     ]);
     return {
       bills: tables.bills,
       units: tables.units,
       settings,
-      ...(unitTemplate ? { unitTemplate } : {}),
+      building,
       ...(Object.keys(splitDefaults).length ? { splitDefaults } : {}),
     };
   },
@@ -32,9 +33,10 @@ export const backupRepository = {
   async replaceAll(data: BackupData): Promise<void> {
     await billRepository.replaceAll(data.bills, data.units);
     await settingsRepository.save(data.settings);
-    // پشتیبان قالب ۱ الگو ندارد: الگو پاک می‌شود تا از آخرین قبض بازیابی‌شده ساخته شود
-    if (data.unitTemplate && data.unitTemplate.length > 0) await unitTemplateRepository.save(data.unitTemplate);
-    else await unitTemplateRepository.clear();
+    // تنظیمات ساختمان (قالب‌های ۱ تا ۴ ندارند: از جدیدترین قبض حذف‌نشده، وگرنه unitTemplate، وگرنه ۱ واحد)
+    const building = data.building
+      ?? buildingFromBills(data.bills.map((bill) => ({ bill, units: data.units.filter((u) => u.billId === bill.id) })), data.unitTemplate);
+    await buildingRepository.replace(building);
     // پشتیبان‌های قدیمی پیش‌فرض نحوه تقسیم ندارند (همه بر اساس نفرات)
     await splitDefaultsRepository.replace(data.splitDefaults ?? {});
   },

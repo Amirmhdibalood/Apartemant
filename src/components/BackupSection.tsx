@@ -31,7 +31,7 @@ interface Pending {
 }
 
 /** بخش «پشتیبان‌گیری و بازیابی» در تنظیمات */
-export function BackupSection() {
+export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) {
   const { reloadSettings } = useSettings();
   const { showErrors, toast } = useFeedback();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -116,6 +116,7 @@ export function BackupSection() {
       await backupRepository.replaceAll(p.backup.data);
       await reloadSettings();
       await refresh();
+      onRestored?.();
       toast(
         p.kind === 'undo'
           ? 'اطلاعات قبل از آخرین بازیابی برگردانده شد.'

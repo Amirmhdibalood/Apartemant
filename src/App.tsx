@@ -8,7 +8,7 @@ import { BottomNav, type TabId } from './components/BottomNav';
 import { useSettings } from './context/SettingsContext';
 import { currentJalali, pickDefaultYear } from './logic/date';
 import { emptyDraft } from './logic/billFactory';
-import { unitTemplateRepository } from './storage/unitTemplateRepository';
+import { buildingRepository } from './storage/buildingRepository';
 import { HomeScreen } from './screens/HomeScreen';
 import { NewBillScreen } from './screens/NewBillScreen';
 import { ResultScreen } from './screens/ResultScreen';
@@ -59,11 +59,14 @@ export default function App() {
   // اسکرول به بالا هنگام تغییر صفحه
   useEffect(() => { window.scrollTo(0, 0); }, [route]);
 
+  // مهاجرت نسخه ۱.۶.۰: در اولین اجرا تنظیمات «ساختمان» از واحدهای جدیدترین قبض ساخته می‌شود
+  useEffect(() => { buildingRepository.get().catch(() => undefined); }, []);
+
   const startNewBill = async () => {
     const now = currentJalali();
-    // واحدهای آخرین قبض ذخیره‌شده به‌طور خودکار وارد می‌شوند
-    const template = await unitTemplateRepository.get().catch(() => null);
-    setDraft(emptyDraft(pickDefaultYear(settings.activeYears, now.year), now.month, template));
+    // واحدها (تعداد، اسم مستعار و نفرات پیش‌فرض) از تنظیمات «ساختمان» وارد می‌شوند
+    const building = await buildingRepository.get().catch(() => null);
+    setDraft(emptyDraft(pickDefaultYear(settings.activeYears, now.year), now.month, building));
     push({ name: 'newBill' });
   };
 

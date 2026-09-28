@@ -48,12 +48,14 @@ export function calculateShares(totalAmount: number, units: UnitInput[]): Calcul
   }
   if (units.length === 0) throw new Error('at least one unit is required');
   for (const u of units) {
-    if (!Number.isInteger(u.personCount) || u.personCount <= 0) {
+    // از نسخه ۱.۶.۰ واحد خالی (۰ نفر) مجاز است: سهمش صفر است و هیچ‌وقت ۱ تومان باقیمانده نمی‌گیرد
+    if (!Number.isInteger(u.personCount) || u.personCount < 0) {
       throw new Error(`invalid personCount for unit ${u.unitNumber}`);
     }
   }
 
   const totalPersons = sumPersons(units);
+  if (totalPersons <= 0) throw new Error('at least one person is required');
   const T = BigInt(totalAmount);
   const P = BigInt(totalPersons);
 
@@ -75,7 +77,8 @@ export function calculateShares(totalAmount: number, units: UnitInput[]): Calcul
     return a.unit.unitNumber - b.unit.unitNumber;
   });
   const bonus = new Set<number>();
-  for (let i = 0; i < order.length && i < remainder; i++) bonus.add(order[i].index);
+  const eligible = order.filter((r) => r.unit.personCount > 0);
+  for (let i = 0; i < eligible.length && i < remainder; i++) bonus.add(eligible[i].index);
 
   const shares: UnitShare[] = rows.map((r) => ({
     unitNumber: r.unit.unitNumber,

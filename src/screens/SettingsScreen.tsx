@@ -5,6 +5,8 @@ import { useSettings } from '../context/SettingsContext';
 import { useFeedback } from '../context/FeedbackContext';
 import { YearPicker } from '../components/YearPicker';
 import { BackupSection } from '../components/BackupSection';
+import { BuildingSection } from '../components/BuildingSection';
+import { useState } from 'react';
 import { selectableYears, toggleYear } from '../logic/years';
 import { APP_VERSION_FA, DEVELOPER_EMAIL, DEVELOPER_NAME } from '../appVersion';
 import { Errors } from '../logic/errors';
@@ -14,6 +16,7 @@ export function SettingsScreen({ onBack, canGoBack }: { onBack: () => void; canG
   const { settings, updateSettings } = useSettings();
   const { showErrors, toast } = useFeedback();
   const years = selectableYears();
+  const [restoreKey, setRestoreKey] = useState(0);
 
   const onYear = (y: number) => {
     const next = toggleYear(settings.activeYears, y);
@@ -28,6 +31,8 @@ export function SettingsScreen({ onBack, canGoBack }: { onBack: () => void; canG
     <>
       <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} />
       <main className="screen screen--settings">
+        <BuildingSection reloadKey={restoreKey} />
+
         <section className="card settings-card">
           <h2 className="card__title">هشدارها</h2>
           <div className="setting-row">
@@ -65,7 +70,7 @@ export function SettingsScreen({ onBack, canGoBack }: { onBack: () => void; canG
           <YearPicker years={years} active={settings.activeYears} onToggle={onYear} />
         </section>
 
-        <BackupSection />
+        <BackupSection onRestored={() => setRestoreKey((k) => k + 1)} />
         <p className="app-version">آپارتمانت — {APP_VERSION_FA} — کاملاً آفلاین</p>
         <p className="app-credit">
           سازنده: <span dir="ltr">{DEVELOPER_NAME}</span>

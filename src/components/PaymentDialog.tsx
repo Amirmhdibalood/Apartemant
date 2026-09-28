@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { UnitName } from './UnitName';
 import type { Unit } from '../models/types';
 import { CURRENCY } from '../models/constants';
 import { Dialog } from './Dialog';
@@ -40,7 +41,7 @@ export function PaymentDialog({ unit, onClose, onSettleFully, onPay, onClear }: 
 
   return (
     <Dialog open onClose={onClose} labelledBy="pay-title">
-      <h2 id="pay-title" className="dialog__title">پرداخت واحد <span className="num">{unit.unitNumber}</span></h2>
+      <h2 id="pay-title" className="dialog__title">پرداخت <UnitName n={unit.unitNumber} alias={unit.alias} /></h2>
       <div className="pay-summary">
         <div><span>سهم واحد</span><b className="num">{formatAmount(unit.shareAmount)}</b></div>
         <div><span>پرداخت‌شده</span><b className="num">{formatAmount(paid)}</b></div>

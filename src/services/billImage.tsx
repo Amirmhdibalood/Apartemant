@@ -224,7 +224,8 @@ function paint(ctx: CanvasRenderingContext2D, m: BillImageModel, a: Assets, draw
 
   // --- جدول واحدها
   type Col = { key: 'unit' | 'occupants' | 'share' | 'status'; title: string; w: number };
-  const cols: Col[] = [{ key: 'unit', title: 'واحد', w: 1 }];
+  // با اسم مستعار، ستون واحد پهن‌تر می‌شود (برچسب‌های بلند با «…» کوتاه می‌شوند)
+  const cols: Col[] = [{ key: 'unit', title: 'واحد', w: m.hasAliases ? 2.6 : 1 }];
   if (m.showOccupants) cols.push({ key: 'occupants', title: 'نفرات', w: 1 });
   cols.push({ key: 'share', title: 'سهم (تومان)', w: 2 });
   if (m.showStatus) cols.push({ key: 'status', title: 'وضعیت', w: 2 });
@@ -253,7 +254,17 @@ function paint(ctx: CanvasRenderingContext2D, m: BillImageModel, a: Assets, draw
     cols.forEach((c, i) => {
       const mid = (colX[i].x0 + colX[i].x1) / 2;
       const cy = y + rowH / 2 + 1;
-      if (c.key === 'unit') text(r.unit, mid, cy, font(700, 15), C.text, 'center');
+      if (c.key === 'unit') {
+        const f = font(700, m.hasAliases ? 14 : 15);
+        const maxW = colX[i].x1 - colX[i].x0 - 12;
+        let label = r.unitLabel;
+        if (width(label, f) > maxW) {
+          const chars = Array.from(label);
+          while (chars.length > 1 && width(chars.join('') + '…', f) > maxW) chars.pop();
+          label = chars.join('').trim() + '…';
+        }
+        text(label, mid, cy, f, C.text, 'center');
+      }
       else if (c.key === 'occupants') text(r.occupants, mid, cy, font(500, 15), C.text2, 'center');
       else if (c.key === 'share') text(r.share, mid, cy, font(700, 15), C.text, 'center');
       else {

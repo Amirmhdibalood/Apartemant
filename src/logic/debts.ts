@@ -4,6 +4,7 @@
  */
 import type { BillWithUnits, ExpenseType } from '../models/types';
 import { lastPaidAt, paidAmount, remainingAmount, unitPayments } from './payments';
+import { latestAliases, sanitizeAlias } from './building';
 
 /**
  * مهلت پرداخت پس از ثبت قبض (روز). پرداخت بعد از این مهلت «با تأخیر» حساب می‌شود.
@@ -36,10 +37,14 @@ export interface DebtItem {
   billCreatedAt: string;
   /** روزهای گذشته از ثبت قبض تا امروز */
   daysOutstanding: number;
+  /** اسم مستعار واحد در همین قبض (عکس لحظه‌ای) */
+  alias: string | null;
 }
 
 export interface UnitDebt {
   unitNumber: number;
+  /** اسم مستعار از جدیدترین قبض دارای این واحد */
+  alias: string | null;
   total: number;
   /** به ترتیب قدیمی‌ترین دوره (سال/ماه) اول */
   items: DebtItem[];
@@ -52,6 +57,8 @@ export interface DebtorsReport {
   openBills: number;
   /** همه شماره واحدهایی که در قبض‌ها وجود دارند (برای دسترسی به سابقه پرداخت) */
   allUnitNumbers: number[];
+  /** اسم مستعار هر شماره واحد (از جدیدترین قبض دارای آن واحد) */
+  aliases: Record<number, string | null>;
 }
 
 const byPeriod = (a: { year: number; month: number }, b: { year: number; month: number }) =>
@@ -68,7 +75,7 @@ export function debtorsReport(bills: BillWithUnits[], now: Date = new Date()): D
       const remaining = remainingAmount(u);
       if (remaining <= 0) continue;
       open = true;
-      const d = map.get(u.unitNumber) ?? { unitNumber: u.unitNumber, total: 0, items: [] };
+      const d = map.get(u.unitNumber) ?? { unitNumber: u.unitNumber, alias: null, total: 0, items: [] };
       d.total += remaining;
       d.items.push({
         billId: bill.id,
@@ -80,19 +87,22 @@ export function debtorsReport(bills: BillWithUnits[], now: Date = new Date()): D
         paid: paidAmount(u),
         billCreatedAt: bill.createdAt,
         daysOutstanding: daysBetween(bill.createdAt, now),
+        alias: sanitizeAlias(u.alias),
       });
       map.set(u.unitNumber, d);
     }
     if (open) openBills += 1;
   }
+  const names = latestAliases(bills);
   const units = [...map.values()]
-    .map((d) => ({ ...d, items: [...d.items].sort((a, b) => byPeriod(a, b) || a.billCreatedAt.localeCompare(b.billCreatedAt)) }))
+    .map((d) => ({ ...d, alias: names.get(d.unitNumber) ?? null, items: [...d.items].sort((a, b) => byPeriod(a, b) || a.billCreatedAt.localeCompare(b.billCreatedAt)) }))
     .sort((a, b) => b.total - a.total || a.unitNumber - b.unitNumber);
   return {
     units,
     grandTotal: units.reduce((s, u) => s + u.total, 0),
     openBills,
     allUnitNumbers: [...all].sort((a, b) => a - b),
+    aliases: Object.fromEntries([...all].map((n) => [n, names.get(n) ?? null])),
   };
 }
 
@@ -123,6 +133,8 @@ export type PayerRating = 'good' | 'average' | 'bad' | 'unknown';
 
 export interface PaymentHistory {
   unitNumber: number;
+  /** اسم مستعار از جدیدترین قبض دارای این واحد */
+  alias: string | null;
   /** جدیدترین دوره اول */
   entries: PaymentEntry[];
   totalBilled: number;
@@ -141,7 +153,8 @@ export function paymentHistory(bills: BillWithUnits[], unitNumber: number, now: 
   const entries: PaymentEntry[] = [];
   for (const { bill, units } of bills) {
     const u = units.find((x) => x.unitNumber === unitNumber);
-    if (!u) continue;
+    // واحد بدون سهم (واحد خالی در آن قبض) در سابقه پرداخت حساب نمی‌شود
+    if (!u || u.shareAmount === 0) continue;
     let status: PaymentStatus;
     let days: number | null;
     const remaining = remainingAmount(u);
@@ -195,6 +208,7 @@ export function paymentHistory(bills: BillWithUnits[], unitNumber: number, now: 
 
   return {
     unitNumber,
+    alias: latestAliases(bills).get(unitNumber) ?? null,
     entries,
     totalBilled,
     totalPaid,

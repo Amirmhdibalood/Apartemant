@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { unitLabel } from '../logic/building';
 import type { Bill, BillDraft, BillWithUnits, Unit } from '../models/types';
 import { CURRENCY, EXPENSE_TYPES, SPLIT_METHOD_LABELS, monthName } from '../models/constants';
 import { splitMethodOf } from '../logic/split';
@@ -260,21 +261,28 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
             <tbody>
               {units.map((u) => (
                 <tr key={u.id}>
-                  <td className="num">{u.unitNumber}</td>
+                  <td className="unit-td">
+                    <span className="num">{u.unitNumber}</span>
+                    {u.alias && <span className="unit-td__alias">{u.alias}</span>}
+                  </td>
                   <td className="num">{u.personCount}</td>
                   <td className="num">{formatAmount(u.shareAmount)}</td>
                   <td>
+                    {u.shareAmount === 0 ? (
+                      <span className="no-share">بدون سهم</span>
+                    ) : (<>
                     <button
                       type="button"
                       className={'pay-btn' + (u.isSettled ? ' is-settled' : '') + (deleted ? ' is-muted' : '')}
                       onClick={() => openPayment(u)}
-                      aria-label={u.isSettled ? `واحد ${u.unitNumber} تسویه شده` : `پرداخت واحد ${u.unitNumber}`}
+                      aria-label={u.isSettled ? `${unitLabel(u.unitNumber, u.alias)} تسویه شده` : `پرداخت ${unitLabel(u.unitNumber, u.alias)}`}
                     >
                       {u.isSettled ? <><IconCheck size={15} /> تسویه</> : 'پرداخت'}
                     </button>
                     {!u.isSettled && paidAmount(u) > 0 && (
                       <div className="pay-remaining">مانده <span className="num">{formatAmount(remainingAmount(u))}</span></div>
                     )}
+                    </>)}
                   </td>
                 </tr>
               ))}
@@ -329,12 +337,12 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
       <PaymentDialog
         unit={payUnit}
         onClose={() => setPayUnit(null)}
-        onSettleFully={(u) => void saveUnit(settleFully(u), `واحد ${u.unitNumber} تسویه شد.`)}
+        onSettleFully={(u) => void saveUnit(settleFully(u), `${unitLabel(u.unitNumber, u.alias)} تسویه شد.`)}
         onPay={(u, amount) => {
           const next = addPayment(u, amount);
-          void saveUnit(next, next.isSettled ? `واحد ${u.unitNumber} تسویه شد.` : 'پرداخت ثبت شد.');
+          void saveUnit(next, next.isSettled ? `${unitLabel(u.unitNumber, u.alias)} تسویه شد.` : 'پرداخت ثبت شد.');
         }}
-        onClear={(u) => void saveUnit(clearPayments(u), `پرداخت‌های واحد ${u.unitNumber} حذف شد.`)}
+        onClear={(u) => void saveUnit(clearPayments(u), `پرداخت‌های ${unitLabel(u.unitNumber, u.alias)} حذف شد.`)}
       />
       <Dialog open={dueEdit !== undefined} onClose={() => setDueEdit(undefined)} labelledBy="due-title">
         <div className="dialog__icon dialog__icon--restore"><IconCalendar size={28} /></div>

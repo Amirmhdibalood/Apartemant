@@ -10,10 +10,10 @@ import { validateDraft } from '../logic/validation';
 import { calculateBySplit } from '../logic/split';
 import { splitDefaultsRepository } from '../storage/splitDefaultsRepository';
 import { formatAmount } from '../logic/formatting';
-import { buildBill } from '../logic/billFactory';
+import { addDraftUnit, buildBill, draftAliases, removeDraftUnit } from '../logic/billFactory';
+import { unitLabel } from '../logic/building';
 import { Errors } from '../logic/errors';
 import { billRepository } from '../storage/billRepository';
-import { unitTemplateRepository } from '../storage/unitTemplateRepository';
 
 interface Props {
   draft: BillDraft;
@@ -56,12 +56,12 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
       showErrors(Errors.minOneUnit());
       return;
     }
-    setDraft({ ...draft, personCounts: draft.personCounts.filter((_, i) => i !== index) });
+    setDraft(removeDraftUnit(draft, index));
   };
 
   const addUnit = () => {
     // برای واحد جدید باید تعداد نفرات تایپ شود، پس به فرم برمی‌گردیم
-    setDraft({ ...draft, personCounts: [...draft.personCounts, ''] });
+    setDraft(addDraftUnit(draft, ''));
     onBack();
   };
 
@@ -80,8 +80,6 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
     try {
       const saved = buildBill(draft, calc, existing);
       await billRepository.upsert(saved.bill, saved.units);
-      // واحدهای این قبض، الگوی پیش‌فرض قبض بعدی می‌شوند
-      await unitTemplateRepository.save(saved.units.map((u) => u.personCount)).catch(() => undefined);
       // نحوه تقسیم، پیش‌فرض قبض‌های بعدی همین نوع هزینه می‌شود
       await splitDefaultsRepository.remember(saved.bill.expenseType, calc.splitMethod).catch(() => undefined);
       onSaved(saved);
@@ -93,6 +91,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
   };
 
   const perUnit = calc.splitMethod === 'perUnit';
+  const aliases = draftAliases(draft);
   const dueKey = parseJalaliKey(draft.dueDate);
   const perPerson = calc.isExact
     ? formatAmount(calc.perPersonExact)
@@ -155,13 +154,13 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
                   <td className="col-unit">
                     <span className="unit-cell">
                       <span className="unit-avatar"><IconUser size={16} /></span>
-                      واحد {s.unitNumber}
+                      <span className="unit-cell__name">{unitLabel(s.unitNumber, aliases[i])}</span>
                     </span>
                   </td>
                   {!perUnit && <td className="col-count num">{s.personCount}</td>}
                   <td className="num strong">{formatAmount(s.shareAmount)}</td>
                   <td className="col-action">
-                    <button type="button" className="icon-btn icon-btn--danger" aria-label={`حذف واحد ${s.unitNumber}`} onClick={() => removeUnit(i)}>
+                    <button type="button" className="icon-btn icon-btn--danger" aria-label={`حذف ${unitLabel(s.unitNumber, aliases[i])}`} onClick={() => removeUnit(i)}>
                       <IconTrash size={17} />
                     </button>
                   </td>

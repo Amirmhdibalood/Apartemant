@@ -526,7 +526,7 @@ h1, h2, h3, p { margin: 0; }
 .month-row.is-empty .month-row__name, .month-row.is-empty .month-row__amount { color: #aab2c3; font-weight: 500; }
 .report-note { font-size: 12px; color: var(--muted); padding: 10px 0 8px; line-height: 1.8; }
 
-/* راهنمای «واحدها از آخرین قبض وارد شد» در فرم قبض جدید */
+/* راهنمای «واحدها از تنظیمات ساختمان وارد شد» در فرم قبض جدید */
 .prefill-note {
   display: flex; align-items: center; gap: 10px; margin-top: 14px; padding: 10px 12px;
   background: var(--success-soft); border: 1px solid #cdebd9; border-radius: 12px;
@@ -768,3 +768,48 @@ h1, h2, h3, p { margin: 0; }
   background: #e5484d; color: #fff; font-size: 10.5px; font-weight: 800; line-height: 17px; text-align: center;
   box-shadow: 0 0 0 2px #fff;
 }
+
+/* ---------- ۱.۶.۰: ساختمان، اسم مستعار واحدها، واحد خالی ---------- */
+.dialog__text--pre { white-space: pre-line; }
+.section-title__count { font-size: 13px; font-weight: 600; color: var(--muted); }
+.units-row__unit { min-width: 0; flex: 1; }
+.units-row__text { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.units-row__name { font-weight: 700; font-size: 14.5px; line-height: 1.5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.units-row__meta { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; font-size: 12.5px; font-weight: 500; color: var(--muted); }
+.units-row__dot { color: #b8c0d0; }
+.units-row__share b { color: var(--primary); font-weight: 800; }
+.units-row__share.is-muted { color: #a3abbd; }
+.units-row.is-empty .unit-avatar { background: #f1f4f9; color: #a3abbd; }
+.units-row.is-empty .units-row__name { color: var(--muted); }
+.units-hint { margin: 8px 4px 0; font-size: 12.3px; line-height: 1.8; color: var(--muted); }
+.building-note { flex-wrap: wrap; background: var(--primary-soft); border-color: #d5e3fb; }
+.building-note .prefill-note__text { color: #2b4f95; flex-basis: 100%; }
+.building-note__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.unit-cell__name { overflow: hidden; text-overflow: ellipsis; }
+.unit-td { line-height: 1.5; }
+.unit-td__alias { display: block; font-size: 11.5px; font-weight: 600; color: var(--muted); word-break: break-word; }
+.no-share { display: inline-block; font-size: 12px; font-weight: 700; color: #a3abbd; background: #f1f4f9; border-radius: 10px; padding: 5px 9px; }
+.unit-name { font-weight: inherit; }
+
+.stepper { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.stepper__btn {
+  width: 38px; height: 38px; border-radius: 11px; border: 1px solid var(--border-2); background: #fff; color: var(--primary);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.stepper__btn:disabled { color: #c3cad8; background: #f6f8fb; }
+.stepper__btn:active:not(:disabled) { background: var(--primary-soft); }
+.stepper__input { width: 64px; height: 40px; text-align: center; font-weight: 800; font-size: 17px; padding: 0 4px; }
+.building-units { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.building-unit {
+  display: grid; grid-template-columns: 34px 1fr 70px; align-items: center; gap: 8px;
+  padding: 7px 10px; border-top: 1px solid var(--border);
+}
+.building-unit--head { border-top: 0; background: #f5f7fb; font-size: 12.5px; font-weight: 700; color: var(--text-2); padding: 9px 10px; }
+.building-unit__persons-h { display: inline-flex; align-items: center; justify-content: center; gap: 3px; }
+.building-unit__num {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--primary-soft); color: #3a5fb5; font-weight: 800; font-size: 13.5px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.building-unit__alias { height: 40px; font-size: 14px; padding: 0 10px; min-width: 0; }
+.building-unit__persons { width: 70px; }
+.building-note-small { margin-top: 10px; font-size: 12px; line-height: 1.8; color: var(--muted); }

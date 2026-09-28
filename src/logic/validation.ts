@@ -36,21 +36,27 @@ export function validateDraft(draft: BillDraft): ValidationResult {
     errors.push(Errors.noUnits());
   } else {
     const perUnit = draft.splitMethod === 'perUnit';
+    let hadPersonError = false;
     draft.personCounts.forEach((raw, i) => {
       const unitNumber = i + 1;
-      const digits = onlyDigits(raw ?? '');
-      const valid = raw.trim() !== '' && digits === raw.trim() && Number(digits) > 0;
+      const t = (raw ?? '').trim();
+      const digits = onlyDigits(t);
+      // از نسخه ۱.۶.۰ صفر مجاز است (واحد خالی)
+      const valid = t !== '' && digits === t && Number.isSafeInteger(Number(digits));
       if (perUnit) {
         // «بر اساس واحد»: نفرات در محاسبه اثری ندارد؛ نفرات معتبر حفظ و خالی/نامعتبر با ۱ ذخیره می‌شود
         personCounts.push(valid ? Number(digits) : 1);
-      } else if (raw.trim() === '') {
+      } else if (t === '') {
+        hadPersonError = true;
         errors.push(Errors.personCountMissing(unitNumber));
-      } else if (digits !== raw.trim() || Number(digits) <= 0) {
+      } else if (!valid) {
+        hadPersonError = true;
         errors.push(Errors.personCountInvalid(unitNumber));
       } else {
         personCounts.push(Number(digits));
       }
     });
+    if (!perUnit && !hadPersonError && personCounts.reduce((s, n) => s + n, 0) <= 0) errors.push(Errors.noPersons());
   }
 
   if (errors.length > 0) return { ok: false, errors };

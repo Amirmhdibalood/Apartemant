@@ -87,3 +87,14 @@ describe('مدل تصویر قبض (اشتراک‌گذاری/گالری)', () =
     expect(m2.billNumber).toBeNull();
   });
 });
+
+describe('تصویر قبض با اسم مستعار و واحد خالی (نسخه ۱.۶.۰)', () => {
+  it('برچسب واحد با اسم مستعار؛ ستون پهن فقط وقتی اسمی وجود دارد', () => {
+    const m = buildBillImageModel(base({}, [unit(1, 1, 200_000, { alias: 'آقای رضایی' }), unit(2, 3, 1_000_000), unit(3, 0, 0, { isSettled: true })]), NOW);
+    expect(m.hasAliases).toBe(true);
+    expect(m.rows.map((r) => r.unitLabel)).toEqual(['۱ - آقای رضایی', '۲', '۳']);
+    expect(m.rows[0].alias).toBe('آقای رضایی');
+    expect(m.rows[2].status).toEqual({ kind: 'settled', text: 'بدون سهم' });
+    expect(buildBillImageModel(base(), NOW).hasAliases).toBe(false);
+  });
+});

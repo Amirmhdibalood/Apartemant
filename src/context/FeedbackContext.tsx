@@ -15,7 +15,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Toast } from '../components/Toast';
 import { useSettings } from './SettingsContext';
 
-interface ConfirmOpts { title: string; text: string; confirmLabel: string }
+interface ConfirmOpts { title: string; text: string; confirmLabel: string; tone?: 'danger' | 'warning' }
 
 interface FeedbackCtx {
   showErrors: (errors: AppError | AppError[]) => void;
@@ -86,6 +86,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         title={confirm?.title ?? ''}
         text={confirm?.text ?? ''}
         confirmLabel={confirm?.confirmLabel ?? ''}
+        tone={confirm?.tone}
         onResult={(ok) => {
           setConfirm(null);
           confirmResolve.current?.(ok);

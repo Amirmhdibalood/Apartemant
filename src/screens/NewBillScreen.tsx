@@ -12,10 +12,15 @@ import { UnitsEditor } from '../components/UnitsEditor';
 import { useSettings } from '../context/SettingsContext';
 import { useFeedback } from '../context/FeedbackContext';
 import { validateDraft } from '../logic/validation';
+import { Errors } from '../logic/errors';
 import { CURRENCY, SPLIT_METHOD_LABELS } from '../models/constants';
 import { defaultSplitFor, type SplitDefaults } from '../logic/split';
 import { splitDefaultsRepository } from '../storage/splitDefaultsRepository';
-import { DEFAULT_PERSON_COUNT } from '../logic/billFactory';
+import { addDraftUnit, removeDraftUnit } from '../logic/billFactory';
+import type { BuildingSettings } from '../models/types';
+import { buildingFromDraftUnits, draftMatchesBuilding, draftUnitsFromBuilding } from '../logic/building';
+import { buildingRepository } from '../storage/buildingRepository';
+import { confirmUnitReduction } from '../components/confirmUnitReduction';
 
 interface Props {
   draft: BillDraft;
@@ -27,7 +32,7 @@ interface Props {
 /** ۲، ۳ و ۴. ثبت / ویرایش قبض (یک فرم مشترک) */
 export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) {
   const { settings } = useSettings();
-  const { showErrors } = useFeedback();
+  const { showErrors, confirmDanger, toast } = useFeedback();
   const set = (patch: Partial<BillDraft>) => setDraft({ ...draft, ...patch });
   const [splitDefaults, setSplitDefaults] = useState<SplitDefaults>({});
   useEffect(() => {
@@ -35,6 +40,38 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
     splitDefaultsRepository.get().then((d) => { if (alive) setSplitDefaults(d); }).catch(() => undefined);
     return () => { alive = false; };
   }, []);
+
+  // پیش‌فرض واحدها از تنظیمات «ساختمان» (فقط قبض جدید)
+  const [building, setBuilding] = useState<BuildingSettings | null>(null);
+  useEffect(() => {
+    if (draft.editingBillId) return;
+    let alive = true;
+    buildingRepository.get().then((b) => { if (alive) setBuilding(b); }).catch(() => undefined);
+    return () => { alive = false; };
+  }, [draft.editingBillId]);
+  const matches = building ? draftMatchesBuilding(draft.personCounts, draft.unitAliases, building) : true;
+
+  const resetToBuilding = () => {
+    if (building) set(draftUnitsFromBuilding(building));
+  };
+
+  /** «ذخیره به‌عنوان پیش‌فرض»: واحدهای این فرم پیش‌فرض قبض‌های بعدی می‌شوند */
+  const saveAsDefault = async () => {
+    const next = buildingFromDraftUnits(draft.personCounts, draft.unitAliases);
+    if (!next) {
+      showErrors([Errors.noUnits()]);
+      return;
+    }
+    if (building && next.units.length < building.units.length) {
+      if (!(await confirmUnitReduction(next.units.length, confirmDanger))) return;
+    }
+    try {
+      setBuilding(await buildingRepository.save(next));
+      toast('واحدهای این فرم به‌عنوان پیش‌فرض ساختمان ذخیره شد.');
+    } catch {
+      showErrors([Errors.storageFailed()]);
+    }
+  };
 
   // فقط سال‌های فعال (+ سال قبض در حال ویرایش، اگر غیرفعال شده باشد)
   const today = todayJalali();
@@ -136,22 +173,6 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
           />
         </div>
 
-        {!draft.editingBillId && draft.prefilledUnits ? (
-          <div className="prefill-note" role="status">
-            <p className="prefill-note__text">
-              واحدها و تعداد نفرات از آخرین قبض ثبت‌شده وارد شد (<span className="num">{draft.prefilledUnits}</span> واحد). در صورت
-              نیاز برای این قبض تغییر دهید.
-            </p>
-            <button
-              type="button"
-              className="prefill-note__reset"
-              onClick={() => set({ personCounts: [DEFAULT_PERSON_COUNT], prefilledUnits: undefined })}
-            >
-              شروع از صفر
-            </button>
-          </div>
-        ) : null}
-
         <div className="field split-field">
           <span className="field__label" id="split-label">نحوه تقسیم</span>
           <div className="seg" role="radiogroup" aria-labelledby="split-label">
@@ -173,10 +194,30 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
           )}
         </div>
 
+        {!draft.editingBillId && building && (
+          <div className="prefill-note building-note" role="status">
+            <p className="prefill-note__text">
+              {matches
+                ? <>واحدها از «تنظیمات ← ساختمان» وارد شد (<span className="num">{building.units.length}</span> واحد).</>
+                : <>واحدهای این قبض با پیش‌فرض ساختمان فرق دارد؛ تغییرات فقط روی همین قبض اثر دارد.</>}
+            </p>
+            {!matches && (
+              <div className="building-note__actions">
+                <button type="button" className="prefill-note__reset" onClick={resetToBuilding}>پیش‌فرض ساختمان</button>
+                <button type="button" className="prefill-note__reset" onClick={saveAsDefault}>ذخیره به‌عنوان پیش‌فرض</button>
+              </div>
+            )}
+          </div>
+        )}
+
         <UnitsEditor
           personCounts={draft.personCounts}
-          onChange={(personCounts) => set({ personCounts })}
-          perUnit={draft.splitMethod === 'perUnit'}
+          unitAliases={draft.unitAliases}
+          onAdd={(persons) => setDraft(addDraftUnit(draft, persons))}
+          onRemoveLast={() => setDraft(removeDraftUnit(draft, draft.personCounts.length - 1))}
+          onChangeCount={(index, v) => set({ personCounts: draft.personCounts.map((x, j) => (j === index ? v : x)) })}
+          amountDigits={draft.amountDigits}
+          splitMethod={draft.splitMethod}
         />
       </main>
       <div className="sticky-action">

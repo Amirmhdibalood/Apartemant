@@ -24,7 +24,11 @@ describe('validateDraft', () => {
     expect(codes({ ...base, amountDigits: '0' })).toEqual(['AMOUNT_INVALID']);
     expect(codes({ ...base, personCounts: [] })).toEqual(['NO_UNITS']);
     expect(codes({ ...base, personCounts: ['2', ''] })).toEqual(['PERSON_COUNT_MISSING']);
-    expect(codes({ ...base, personCounts: ['0'] })).toEqual(['PERSON_COUNT_INVALID']);
+    // از نسخه ۱.۶.۰ صفر = واحد خالی (مجاز)، ولی همه واحدها صفر نفر نمی‌توانند باشند
+    expect(codes({ ...base, personCounts: ['0', '3'] })).toEqual([]);
+    expect(codes({ ...base, personCounts: ['0'] })).toEqual(['NO_PERSONS']);
+    expect(codes({ ...base, personCounts: ['0', '0'], splitMethod: 'perUnit' })).toEqual([]);
+    expect(codes({ ...base, personCounts: ['1.5'] })).toEqual(['PERSON_COUNT_INVALID']);
     expect(codes({ ...base, expenseType: null })).toEqual(['REQUIRED_MISSING']);
   });
 });

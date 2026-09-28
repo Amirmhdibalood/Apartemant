@@ -68,5 +68,16 @@ describe('calculateShares', () => {
     expect(() => calculateShares(0, units(1))).toThrow();
     expect(() => calculateShares(1000, [])).toThrow();
     expect(() => calculateShares(1000, units(0))).toThrow();
+    expect(() => calculateShares(1000, units(0, 0))).toThrow();
+    expect(() => calculateShares(1000, units(2, -1))).toThrow();
+  });
+
+  it('empty units (0 persons) get 0 and never receive a rounding toman', () => {
+    const r = calculateShares(1_000_000, units(0, 1, 0, 1, 1));
+    expect(r.totalPersons).toBe(3);
+    expect(r.shares.map((s) => s.shareAmount)).toEqual([0, 333_334, 0, 333_333, 333_333]);
+    expect(sum(r.shares)).toBe(1_000_000);
+    const r2 = calculateShares(10, units(0, 3, 0));
+    expect(r2.shares.map((s) => s.shareAmount)).toEqual([0, 10, 0]);
   });
 });

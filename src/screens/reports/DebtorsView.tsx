@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { UnitName } from '../../components/UnitName';
 import type { BillWithUnits } from '../../models/types';
 import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../../models/constants';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
@@ -55,7 +56,7 @@ export function DebtorsView({ all, onOpenBill, onOpenUnit }: Props) {
                   >
                     <span className="unit-avatar unit-avatar--debt"><IconUser size={18} /></span>
                     <span className="debtor__main">
-                      <span className="debtor__title">واحد <span className="num">{d.unitNumber}</span></span>
+                      <span className="debtor__title"><UnitName n={d.unitNumber} alias={d.alias} /></span>
                       <span className="debtor__sub">
                         <span className="num">{d.items.length}</span> قبض تسویه‌نشده
                         {oldest > PAYMENT_GRACE_DAYS && <> · قدیمی‌ترین: <span className="num">{oldest}</span> روز</>}
@@ -85,7 +86,7 @@ export function DebtorsView({ all, onOpenBill, onOpenUnit }: Props) {
                         </button>
                       ))}
                       <button type="button" className="btn btn--soft btn--block debtor__history" onClick={() => onOpenUnit(d.unitNumber)}>
-                        سابقه پرداخت واحد <span className="num">{d.unitNumber}</span>
+                        <span>سابقه پرداخت <UnitName n={d.unitNumber} alias={d.alias} /></span>
                       </button>
                     </div>
                   )}
@@ -104,7 +105,7 @@ export function DebtorsView({ all, onOpenBill, onOpenUnit }: Props) {
             <div className="unit-chips__list">
               {report.allUnitNumbers.map((n) => (
                 <button type="button" key={n} className="unit-chip" onClick={() => onOpenUnit(n)}>
-                  واحد <span className="num">{n}</span>
+                  <UnitName n={n} alias={report.aliases[n]} />
                 </button>
               ))}
             </div>

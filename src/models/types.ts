@@ -51,7 +51,13 @@ export interface Unit {
   id: string;
   billId: string;
   unitNumber: number;
+  /** تعداد نفرات (از نسخه ۱.۶.۰ صفر هم مجاز است = واحد خالی) */
   personCount: number;
+  /**
+   * اسم مستعار واحد در زمان ثبت قبض (از نسخه ۱.۶.۰؛ مثل «آقای رضایی») یا null.
+   * این یک «عکس لحظه‌ای» است: تغییر تنظیمات ساختمان روی قبض‌های قبلی اثری ندارد.
+   */
+  alias?: string | null;
   /** سهم این واحد به تومان (عدد صحیح) */
   shareAmount: number;
   /** تسویه‌شده = مانده بدهی صفر (همیشه از روی پرداخت‌ها محاسبه می‌شود) */
@@ -109,6 +115,22 @@ export interface BillDraft {
   splitChosen?: boolean;
   /** مهلت پرداخت (تاریخ شمسی "1405-07-15") یا null */
   dueDate?: string | null;
-  /** اگر واحدها از الگوی آخرین قبض پر شده باشند: تعداد واحدهای پرشده (فقط برای نمایش راهنما) */
-  prefilledUnits?: number;
+  /**
+   * اسم مستعار هر واحد (هم‌ردیف personCounts) — از نسخه ۱.۶.۰.
+   * قبض جدید: از تنظیمات «ساختمان»؛ ویرایش: از عکس لحظه‌ای خود قبض (تعداد واحدها در فرم ثابت است).
+   */
+  unitAliases?: (string | null)[];
+}
+
+/** یک واحد در تنظیمات «ساختمان» (از نسخه ۱.۶.۰) */
+export interface BuildingUnit {
+  /** اسم مستعار اختیاری (مثل «آقای رضایی») یا null */
+  alias: string | null;
+  /** تعداد نفرات پیش‌فرض (۰ = واحد خالی) */
+  defaultPersons: number;
+}
+
+/** تنظیمات «ساختمان»: واحدهای قبض‌های جدید به ترتیب واحد ۱، ۲، ... */
+export interface BuildingSettings {
+  units: BuildingUnit[];
 }

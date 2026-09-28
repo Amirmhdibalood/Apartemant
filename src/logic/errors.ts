@@ -10,6 +10,7 @@ export type AppErrorCode =
   | 'NO_UNITS'
   | 'PERSON_COUNT_MISSING'
   | 'PERSON_COUNT_INVALID'
+  | 'NO_PERSONS'
   | 'REQUIRED_MISSING'
   | 'MIN_ONE_YEAR'
   | 'MIN_ONE_UNIT'
@@ -36,7 +37,11 @@ export const Errors = {
   }),
   personCountInvalid: (unitNumber: number): AppError => ({
     code: 'PERSON_COUNT_INVALID',
-    message: `تعداد نفرات واحد ${toPersianDigits(unitNumber)} نامعتبر است (باید عددی بزرگ‌تر از صفر باشد).`,
+    message: `تعداد نفرات واحد ${toPersianDigits(unitNumber)} نامعتبر است (باید عدد صحیح صفر یا بیشتر باشد؛ صفر یعنی واحد خالی).`,
+  }),
+  noPersons: (): AppError => ({
+    code: 'NO_PERSONS',
+    message: 'در تقسیم «بر اساس نفرات» حداقل یک واحد باید نفر داشته باشد (همه واحدها صفر نفر هستند).',
   }),
   requiredMissing: (field: string): AppError => ({
     code: 'REQUIRED_MISSING',
