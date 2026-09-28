@@ -135,7 +135,7 @@ export const billRepository = {
     await persist({ bills: bills.map(migrateBill), units: units.map((u) => ({ ...u })) });
   },
 
-  /** اطلاع از هر تغییر ذخیره‌شده (مثلاً برای زمان‌بندی دوباره یادآوری مهلت پرداخت) */
+  /** اطلاع از هر تغییر ذخیره‌شده (مثلاً برای به‌روزرسانی هشدار مهلت پرداخت صفحه اصلی) */
   onChange(listener: Listener): () => void {
     listeners.add(listener);
     return () => { listeners.delete(listener); };

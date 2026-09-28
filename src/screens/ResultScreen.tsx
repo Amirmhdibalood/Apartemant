@@ -4,7 +4,6 @@ import { CURRENCY, EXPENSE_TYPES, SPLIT_METHOD_LABELS, monthName } from '../mode
 import { AppHeader } from '../components/AppHeader';
 import { ExpenseIcon } from '../components/ExpenseIcon';
 import { IconCalendarSave, IconMinus, IconPlus, IconTrash, IconUser } from '../components/Icons';
-import { ensureReminderPermission, syncDueReminders } from '../services/dueReminders';
 import { formatJalaliSlash, parseJalaliKey } from '../logic/jalali';
 import { useFeedback } from '../context/FeedbackContext';
 import { validateDraft } from '../logic/validation';
@@ -81,8 +80,6 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
     try {
       const saved = buildBill(draft, calc, existing);
       await billRepository.upsert(saved.bill, saved.units);
-      // اولین ذخیره مهلت پرداخت: درخواست مجوز اعلان (اندروید ۱۳+) و زمان‌بندی یادآوری
-      if (saved.bill.dueDate) void ensureReminderPermission().then(() => syncDueReminders());
       // واحدهای این قبض، الگوی پیش‌فرض قبض بعدی می‌شوند
       await unitTemplateRepository.save(saved.units.map((u) => u.personCount)).catch(() => undefined);
       // نحوه تقسیم، پیش‌فرض قبض‌های بعدی همین نوع هزینه می‌شود

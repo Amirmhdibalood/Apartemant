@@ -8,11 +8,15 @@
 /**
  * مجوزهایی که از Manifest نهایی حذف می‌شوند:
  * - INTERNET: برنامه کاملاً آفلاین است.
- * - SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM: افزونه اعلان محلی آن را اضافه می‌کند؛ یادآوری سررسید با زمان‌بندی
- *   غیردقیق (inexact) هم کافی است و افزونه بدون این مجوز خودکار از AlarmManager.set استفاده می‌کند.
+ * - مجوزهای اعلان/هشدار سیستمی (POST_NOTIFICATIONS، RECEIVE_BOOT_COMPLETED، WAKE_LOCK، SCHEDULE_EXACT_ALARM، USE_EXACT_ALARM):
+ *   برنامه اعلان سیستمی ندارد (هشدار مهلت پرداخت فقط داخل برنامه، در صفحه اصلی است)؛ اگر کتابخانه‌ای یکی از این‌ها را
+ *   اضافه کند، با tools:node="remove" در Manifest نهایی نمی‌آید.
  */
 export const REMOVED_PERMISSIONS = [
   'android.permission.INTERNET',
+  'android.permission.POST_NOTIFICATIONS',
+  'android.permission.RECEIVE_BOOT_COMPLETED',
+  'android.permission.WAKE_LOCK',
   'android.permission.SCHEDULE_EXACT_ALARM',
   'android.permission.USE_EXACT_ALARM',
 ];

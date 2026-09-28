@@ -750,3 +750,21 @@ h1, h2, h3, p { margin: 0; }
 /* نام و ایمیل سازنده پایین تنظیمات */
 .app-credit { text-align: center; color: var(--muted); font-size: 12px; line-height: 1.9; margin-top: 4px; }
 .app-credit a { color: var(--muted); text-decoration: none; }
+
+/* ---------- نسخه ۱.۵.۱: هشدار مهلت پرداخت داخل برنامه (صفحه اصلی) ---------- */
+.due-alerts { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.due-alert {
+  display: flex; align-items: stretch; background: #fff0f0; border: 1px solid #f8cfcf; border-radius: var(--radius);
+  box-shadow: 0 2px 8px rgba(214, 69, 51, 0.08); overflow: hidden;
+}
+.due-alert__main { flex: 1; display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 6px; text-align: right; min-width: 0; }
+.due-alert__icon { color: #d64533; flex-shrink: 0; }
+.due-alert__text { flex: 1; font-size: 13.5px; font-weight: 700; line-height: 1.8; color: #9b2c1f; }
+.due-alert__arrow { color: #e0998f; flex-shrink: 0; }
+.due-alert__close { width: 40px; flex-shrink: 0; color: #c7776d; border-right: 1px solid #f8d9d9; }
+.bottom-nav__icon { position: relative; display: inline-flex; }
+.nav-badge {
+  position: absolute; top: -5px; left: -9px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 9px;
+  background: #e5484d; color: #fff; font-size: 10.5px; font-weight: 800; line-height: 17px; text-align: center;
+  box-shadow: 0 0 0 2px #fff;
+}

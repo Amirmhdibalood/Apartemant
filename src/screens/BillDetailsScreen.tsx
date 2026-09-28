@@ -24,7 +24,6 @@ import { DEFAULT_DUE_OFFSET_DAYS, billTone, dueText } from '../logic/billStatus'
 import { addJalaliDays, dateYearOptions, formatJalaliSlash, parseJalaliKey, todayJalali } from '../logic/jalali';
 import { formatJalaliDateTimeFa } from '../logic/date';
 import { classifyBillPayment } from '../logic/billPaymentReport';
-import { ensureReminderPermission, syncDueReminders } from '../services/dueReminders';
 
 interface Props {
   billId: string;
@@ -114,8 +113,7 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
   const saveDue = async () => {
     const value = dueEdit ?? null;
     setDueEdit(undefined);
-    const ok = await saveBill(setBillDueDate(bill, value), value ? 'مهلت پرداخت ذخیره شد.' : 'مهلت پرداخت حذف شد.');
-    if (ok && value) void ensureReminderPermission().then(() => syncDueReminders());
+    await saveBill(setBillDueDate(bill, value), value ? 'مهلت پرداخت ذخیره شد.' : 'مهلت پرداخت حذف شد.');
   };
 
   const remove = async () => {
@@ -345,7 +343,7 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
           <JalaliDateField
             id="dueEdit"
             label="مهلت پرداخت"
-            hint="آخرین مهلت پرداخت قبض؛ یک روز قبل از آن ساعت ۹ صبح یادآوری نمایش داده می‌شود."
+            hint="آخرین مهلت پرداخت قبض؛ از یک روز قبل، هشدار آن در صفحه اصلی برنامه نمایش داده می‌شود."
             value={dueEdit ?? null}
             onChange={(v) => setDueEdit(v)}
             defaultDate={addJalaliDays(today, DEFAULT_DUE_OFFSET_DAYS)}

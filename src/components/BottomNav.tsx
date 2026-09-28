@@ -10,7 +10,7 @@ const TABS: { id: TabId; label: string; Icon: typeof IconHome }[] = [
   { id: 'settings', label: 'تنظیمات', Icon: IconGear },
 ];
 
-export function BottomNav({ active, onSelect }: { active: TabId | null; onSelect: (t: TabId) => void }) {
+export function BottomNav({ active, onSelect, badges = {} }: { active: TabId | null; onSelect: (t: TabId) => void; badges?: Partial<Record<TabId, number>> }) {
   return (
     <nav className="bottom-nav" aria-label="منوی اصلی">
       {TABS.map(({ id, label, Icon }) => (
@@ -21,7 +21,12 @@ export function BottomNav({ active, onSelect }: { active: TabId | null; onSelect
           onClick={() => onSelect(id)}
           aria-current={active === id ? 'page' : undefined}
         >
-          <Icon size={22} />
+          <span className="bottom-nav__icon">
+            <Icon size={22} />
+            {(badges[id] ?? 0) > 0 && (
+              <span className="nav-badge num" aria-label={`${badges[id]} هشدار مهلت پرداخت`}>{badges[id]}</span>
+            )}
+          </span>
           <span>{label}</span>
         </button>
       ))}

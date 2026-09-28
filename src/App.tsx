@@ -20,7 +20,7 @@ import { TutorialScreen } from './screens/TutorialScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { IntroScreen } from './screens/IntroScreen';
 import { BillSavedDialog } from './components/BillSavedDialog';
-import { startDueReminderSync } from './services/dueReminders';
+import { useDueAlerts } from './hooks/useDueAlerts';
 
 export default function App() {
   const { settings, loaded } = useSettings();
@@ -53,8 +53,8 @@ export default function App() {
     return () => { void sub.then((h) => h.remove()); };
   }, [back]);
 
-  // یادآوری مهلت پرداخت: زمان‌بندی دوباره هنگام اجرا و پس از هر تغییر قبض‌ها (از جمله بازیابی پشتیبان)
-  useEffect(() => startDueReminderSync(), []);
+  // هشدار مهلت پرداخت داخل برنامه (صفحه اصلی + عدد روی زبانه سوابق) — بدون اعلان سیستمی و بدون هیچ مجوزی
+  const dueAlerts = useDueAlerts();
 
   // اسکرول به بالا هنگام تغییر صفحه
   useEffect(() => { window.scrollTo(0, 0); }, [route]);
@@ -82,7 +82,15 @@ export default function App() {
 
   switch (route.name) {
     case 'home':
-      screen = <HomeScreen onNewBill={startNewBill} onOpen={(t) => onTab(t)} />;
+      screen = (
+        <HomeScreen
+          onNewBill={startNewBill}
+          onOpen={(t) => onTab(t)}
+          alerts={dueAlerts.visible}
+          onOpenBill={(billId) => push({ name: 'details', billId })}
+          onDismiss={dueAlerts.dismiss}
+        />
+      );
       break;
     case 'newBill':
       screen = draft && (
@@ -165,7 +173,7 @@ export default function App() {
   return (
     <div className={'app-shell' + (showNav ? ' has-nav' : '')}>
       {screen}
-      {showNav && <BottomNav active={route.name as TabId} onSelect={onTab} />}
+      {showNav && <BottomNav active={route.name as TabId} onSelect={onTab} badges={{ records: dueAlerts.all.length }} />}
       <BillSavedDialog saved={justSaved} onClose={() => setJustSaved(null)} />
     </div>
   );

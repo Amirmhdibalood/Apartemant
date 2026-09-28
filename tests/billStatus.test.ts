@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Bill, BillWithUnits } from '../src/models/types';
 import { DUE_SOON_DAYS, TONE_LEGEND, billTone, daysUntilDue, dueText, toneLabel } from '../src/logic/billStatus';
-import { REMINDER_HOUR, planReminders, reminderBody, reminderFor, reminderIdFor } from '../src/logic/dueReminders';
 import { billPaymentReport, classifyBillPayment, timingLabel } from '../src/logic/billPaymentReport';
 
 const TODAY = { year: 1405, month: 7, day: 6 };
@@ -39,39 +38,6 @@ describe('رنگ وضعیت قبض (سبز / آبی / قرمز)', () => {
     expect(toneLabel('paid')).toBe('پرداخت شد');
     expect(toneLabel('unpaid')).toBe('پرداخت نشده');
     expect(TONE_LEGEND.map((x) => x.tone)).toEqual(['paid', 'unpaid', 'due']);
-  });
-});
-
-describe('یادآوری مهلت پرداخت (اعلان محلی)', () => {
-  const now = new Date(2026, 8, 28, 12, 0); // ۶ مهر ۱۴۰۵، ظهر به وقت محلی
-
-  it('یک روز قبل از مهلت، ساعت ۹:۰۰ به وقت محلی؛ متن اعلان', () => {
-    const b = bill({ dueDate: '1405-07-15' }); // ۷ اکتبر ۲۰۲۶
-    const r = reminderFor(b, now)!;
-    expect(r).not.toBeNull();
-    expect([r.at.getFullYear(), r.at.getMonth() + 1, r.at.getDate(), r.at.getHours(), r.at.getMinutes()]).toEqual([2026, 10, 6, REMINDER_HOUR, 0]);
-    expect(r.body).toBe('یادآوری: فردا مهلت پرداخت قبض گاز (مهر ۱۴۰۵) است');
-    expect(reminderBody({ expenseType: 'water', month: 12, year: 1404 })).toBe('یادآوری: فردا مهلت پرداخت قبض آب (اسفند ۱۴۰۴) است');
-    expect(r.id).toBe(reminderIdFor(b.id));
-  });
-
-  it('برای پرداخت‌شده، حذف‌شده، بدون مهلت و زمان گذشته اعلانی زمان‌بندی نمی‌شود', () => {
-    expect(reminderFor(bill({ dueDate: '1405-07-15', billPaid: true, billPaidDate: '1405-07-05' }), now)).toBeNull();
-    expect(reminderFor(bill({ dueDate: '1405-07-15', deletedAt: '2026-09-27T08:00:00.000Z' }), now)).toBeNull();
-    expect(reminderFor(bill(), now)).toBeNull();
-    expect(reminderFor(bill({ dueDate: '1405-07-07' }), now)).toBeNull(); // یادآوری امروز ۹:۰۰ بود (گذشته)
-    expect(reminderFor(bill({ dueDate: '1405-07-07' }), new Date(2026, 8, 28, 8, 59))).not.toBeNull(); // هنوز ۹ نشده
-    expect(reminderFor(bill({ dueDate: '1405-07-01' }), now)).toBeNull();
-  });
-
-  it('برنامه کامل به ترتیب زمان؛ شناسه‌ها پایدار، مثبت و یکتا', () => {
-    const bills = [bill({ dueDate: '1405-08-10' }), bill({ dueDate: '1405-07-20' }), bill({ billPaid: true, dueDate: '1405-07-25' }), bill()];
-    const plan = planReminders(bills, now);
-    expect(plan.map((p) => p.billId)).toEqual([bills[1].id, bills[0].id]);
-    const ids = ['a', 'b', 'bill-1', 'bill-2', 'x'.repeat(40)].map(reminderIdFor);
-    expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.every((i) => Number.isInteger(i) && i > 0 && i <= 0x7fffffff)).toBe(true);
-    expect(reminderIdFor('bill-1')).toBe(reminderIdFor('bill-1'));
   });
 });
 

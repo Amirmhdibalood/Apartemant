@@ -116,7 +116,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
         <JalaliDateField
           id="dueDate"
           label="مهلت پرداخت"
-          hint="آخرین مهلت پرداخت قبض؛ یک روز قبل از آن یادآوری نمایش داده می‌شود."
+          hint="آخرین مهلت پرداخت قبض؛ از یک روز قبل، هشدار آن در صفحه اصلی برنامه نمایش داده می‌شود."
           optional
           value={draft.dueDate ?? null}
           onChange={(dueDate) => set({ dueDate })}
