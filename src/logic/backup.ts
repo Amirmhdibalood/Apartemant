@@ -9,6 +9,8 @@ import { formatJalaliDateTimeFa, jalaliIsoDate } from './date';
 import { toPersianDigits } from './formatting';
 import { sanitizeUnitTemplate } from './unitTemplate';
 import { isSplitMethod, sanitizeSplitDefaults, type SplitDefaults } from './split';
+import { isBillDeleted, migrateBill, normalizePaidDate } from './billPaid';
+import { parseJalaliKey } from './jalali';
 
 export const BACKUP_APP_ID = 'apartemant';
 /**
@@ -16,9 +18,11 @@ export const BACKUP_APP_ID = 'apartemant';
  * ۱: نسخه ۱٫۱ برنامه (قبض‌ها، واحدها، تنظیمات) — همچنان قابل بازیابی است.
  * ۲: نسخه ۱٫۲ برنامه (+ الگوی واحدها `unitTemplate` و پرداخت‌های واحدها `payments`)
  * ۳: نسخه ۱٫۳ برنامه (+ نحوه تقسیم هر قبض `splitMethod` و پیش‌فرض هر نوع هزینه `splitDefaults`)
- * همه قالب‌های قدیمی‌تر قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات).
+ * ۴: نسخه ۱٫۵ برنامه (+ «پرداخت شد» خودِ قبض `billPaid`/`billPaidDate`، «مهلت پرداخت» `dueDate` (شمسی) و حذف نرم `deletedAt`)
+ * همه قالب‌های قدیمی‌تر (۱ تا ۳) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
+ * بدون dueDate = بدون مهلت پرداخت، بدون deletedAt = حذف‌نشده).
  */
-export const BACKUP_VERSION = 3;
+export const BACKUP_VERSION = 4;
 /** حداکثر حجم قابل قبول فایل پشتیبان */
 export const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
 
@@ -46,6 +50,8 @@ export interface BackupSummary {
   bills: number;
   units: number;
   settledBills: number;
+  /** قبض‌های «حذف‌شده» (از قالب ۴؛ همراه بقیه بازیابی می‌شوند) */
+  deletedBills: number;
   /** سال‌هایی که قبض دارند */
   years: number[];
   createdAt: string;
@@ -81,7 +87,7 @@ export function createBackup(data: BackupData, appVersion: string, now: Date = n
     appVersion,
     createdAt: now.toISOString(),
     data: {
-      bills: data.bills.map((b) => ({ ...b })),
+      bills: data.bills.map(migrateBill),
       units: data.units.map((u) => ({ ...u })),
       settings: sanitizeSettings(data.settings),
       ...withTemplate(data.unitTemplate),
@@ -110,6 +116,7 @@ export function summarizeBackup(backup: BackupFile): BackupSummary {
     bills: bills.length,
     units: units.length,
     settledBills: bills.filter((b) => b.isFullySettled).length,
+    deletedBills: bills.filter((b) => isBillDeleted(b)).length,
     years: Array.from(new Set(bills.map((b) => b.year))).sort((a, b) => a - b),
     createdAt: backup.createdAt,
     createdAtFa: formatJalaliDateTimeFa(new Date(backup.createdAt)),
@@ -140,11 +147,15 @@ function parseBills(raw: unknown): Bill[] {
       && typeof b.expenseType === 'string' && b.expenseType in EXPENSE_TYPES
       && optText(b.billNumber) && optText(b.description)
       && isInt(b.totalAmount, 1) && validDate(b.createdAt) && typeof b.isFullySettled === 'boolean'
-      && (b.splitMethod == null || isSplitMethod(b.splitMethod)); // نحوه تقسیم (از قالب ۳، اختیاری)
+      && (b.splitMethod == null || isSplitMethod(b.splitMethod)) // نحوه تقسیم (از قالب ۳، اختیاری)
+      && (b.billPaid == null || typeof b.billPaid === 'boolean') // «پرداخت شد» (از قالب ۴، اختیاری)
+      && (b.billPaidDate == null || normalizePaidDate(b.billPaidDate) !== null)
+      && (b.dueDate == null || parseJalaliKey(b.dueDate) !== null) // مهلت پرداخت (از قالب ۴، اختیاری)
+      && (b.deletedAt == null || validDate(b.deletedAt)); // حذف نرم (از قالب ۴، اختیاری)
     if (!ok) bad(`اطلاعات قبض ${nth(i)} نامعتبر است.`);
     if (ids.has(b.id as string)) bad(`شناسه قبض ${nth(i)} تکراری است.`);
     ids.add(b.id as string);
-    return {
+    return migrateBill({
       id: b.id as string,
       year: b.year as number,
       month: b.month as number,
@@ -155,7 +166,11 @@ function parseBills(raw: unknown): Bill[] {
       createdAt: b.createdAt as string,
       isFullySettled: b.isFullySettled as boolean,
       ...(isSplitMethod(b.splitMethod) ? { splitMethod: b.splitMethod } : {}),
-    };
+      billPaid: b.billPaid === true,
+      billPaidDate: (b.billPaidDate as string | null | undefined) ?? null,
+      dueDate: (b.dueDate as string | null | undefined) ?? null,
+      deletedAt: (b.deletedAt as string | null | undefined) ?? null,
+    });
   });
 }
 

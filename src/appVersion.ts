@@ -5,3 +5,7 @@ export const APP_VERSION: string = typeof __APP_VERSION__ === 'string' ? __APP_V
 
 /** مثلاً «نسخه ۱.۰.۰» */
 export const APP_VERSION_FA = `نسخه ${toPersianDigits(APP_VERSION)}`;
+
+/** سازنده برنامه (در تنظیمات، README و صفحه مایکت) */
+export const DEVELOPER_NAME = 'AmirMahdi Balood';
+export const DEVELOPER_EMAIL = 'amirmahdibalood16@gmail.com';

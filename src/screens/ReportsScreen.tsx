@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react';
-import type { BillWithUnits } from '../models/types';
+import type { BillWithUnits, ExpenseType } from '../models/types';
 import type { ReportTab } from '../navigation';
 import { AppHeader } from '../components/AppHeader';
 import { IconChart } from '../components/Icons';
 import { billRepository } from '../storage/billRepository';
 import { YearlyReportView } from './reports/YearlyReportView';
 import { DebtorsView } from './reports/DebtorsView';
+import { BillPaymentsView } from './reports/BillPaymentsView';
 
 interface Props {
   tab?: ReportTab;
   year?: number;
-  onChange: (tab: ReportTab, year?: number) => void;
+  /** فیلتر نوع هزینه گزارش «پرداخت قبض‌ها» */
+  type?: ExpenseType | null;
+  onChange: (tab: ReportTab, year?: number, type?: ExpenseType | null) => void;
   onOpenMonth: (year: number, month: number) => void;
   onOpenBill: (billId: string) => void;
   onOpenUnit: (unitNumber: number) => void;
@@ -20,10 +23,11 @@ interface Props {
 const TABS: { id: ReportTab; label: string }[] = [
   { id: 'yearly', label: 'هزینه‌های سال' },
   { id: 'debtors', label: 'بدهکاران' },
+  { id: 'billPayments', label: 'پرداخت قبض‌ها' },
 ];
 
-/** مرکز گزارش‌ها: زبانه‌های «هزینه‌های سال» و «بدهکاران» */
-export function ReportsScreen({ tab = 'yearly', year, onChange, onOpenMonth, onOpenBill, onOpenUnit }: Props) {
+/** مرکز گزارش‌ها: زبانه‌های «هزینه‌های سال»، «بدهکاران» و «پرداخت قبض‌ها» */
+export function ReportsScreen({ tab = 'yearly', year, type, onChange, onOpenMonth, onOpenBill, onOpenUnit }: Props) {
   const [all, setAll] = useState<BillWithUnits[] | null>(null);
   useEffect(() => {
     let alive = true;
@@ -35,7 +39,7 @@ export function ReportsScreen({ tab = 'yearly', year, onChange, onOpenMonth, onO
     <>
       <AppHeader title="گزارش‌ها" start={<span className="header-icon"><IconChart size={24} /></span>} />
       <main className="screen screen--report">
-        <div className="seg" role="tablist" aria-label="نوع گزارش">
+        <div className="seg seg--3" role="tablist" aria-label="نوع گزارش">
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -43,16 +47,18 @@ export function ReportsScreen({ tab = 'yearly', year, onChange, onOpenMonth, onO
               role="tab"
               aria-selected={tab === t.id}
               className={'seg__btn' + (tab === t.id ? ' is-active' : '')}
-              onClick={() => onChange(t.id, year)}
+              onClick={() => onChange(t.id, year, type)}
             >
               {t.label}
             </button>
           ))}
         </div>
-        {tab === 'yearly' ? (
+        {tab === 'yearly' && (
           <YearlyReportView all={all} year={year} onYearChange={(y) => onChange('yearly', y)} onOpenMonth={onOpenMonth} />
-        ) : (
-          <DebtorsView all={all} onOpenBill={onOpenBill} onOpenUnit={onOpenUnit} />
+        )}
+        {tab === 'debtors' && <DebtorsView all={all} onOpenBill={onOpenBill} onOpenUnit={onOpenUnit} />}
+        {tab === 'billPayments' && (
+          <BillPaymentsView all={all} year={year} type={type} onChange={(y, t) => onChange('billPayments', y, t)} onOpenBill={onOpenBill} />
         )}
       </main>
     </>

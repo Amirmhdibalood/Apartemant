@@ -5,7 +5,17 @@
  * WebView برنامه فایل‌ها را از داخل APK (https://localhost با shouldInterceptRequest) می‌خواند و به شبکه نیاز ندارد.
  * تابع خالص و idempotent است (اجرای چندباره همان نتیجه را می‌دهد).
  */
-export const REMOVED_PERMISSIONS = ['android.permission.INTERNET'];
+/**
+ * مجوزهایی که از Manifest نهایی حذف می‌شوند:
+ * - INTERNET: برنامه کاملاً آفلاین است.
+ * - SCHEDULE_EXACT_ALARM / USE_EXACT_ALARM: افزونه اعلان محلی آن را اضافه می‌کند؛ یادآوری سررسید با زمان‌بندی
+ *   غیردقیق (inexact) هم کافی است و افزونه بدون این مجوز خودکار از AlarmManager.set استفاده می‌کند.
+ */
+export const REMOVED_PERMISSIONS = [
+  'android.permission.INTERNET',
+  'android.permission.SCHEDULE_EXACT_ALARM',
+  'android.permission.USE_EXACT_ALARM',
+];
 
 export function stripNetworkPermissions(xml) {
   let out = xml;

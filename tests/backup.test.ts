@@ -6,6 +6,7 @@ import {
   backupFileName,
   createBackup,
   parseBackup,
+  summarizeBackup,
   serializeBackup,
   type BackupData,
 } from '../src/logic/backup';
@@ -23,8 +24,8 @@ const { billRepository } = await import('../src/storage/billRepository');
 
 function sample(): BackupData {
   const bills: Bill[] = [
-    { id: 'b1', year: 1405, month: 7, expenseType: 'water', billNumber: '123', description: 'آب مهر', totalAmount: 1000000, createdAt: '2026-09-26T08:00:00.000Z', isFullySettled: false },
-    { id: 'b2', year: 1404, month: 12, expenseType: 'gas', billNumber: null, description: null, totalAmount: 900000, createdAt: '2026-03-01T08:00:00.000Z', isFullySettled: true },
+    { id: 'b1', year: 1405, month: 7, expenseType: 'water', billNumber: '123', description: 'آب مهر', totalAmount: 1000000, createdAt: '2026-09-26T08:00:00.000Z', isFullySettled: false, billPaid: false, billPaidDate: null, dueDate: '1405-07-12', deletedAt: null },
+    { id: 'b2', year: 1404, month: 12, expenseType: 'gas', billNumber: null, description: null, totalAmount: 900000, createdAt: '2026-03-01T08:00:00.000Z', isFullySettled: true, billPaid: false, billPaidDate: null, dueDate: null, deletedAt: null },
   ];
   const units: Unit[] = [
     { id: 'u1', billId: 'b1', unitNumber: 1, personCount: 1, shareAmount: 333334, isSettled: true },
@@ -100,7 +101,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     const e = errorOf(text((o) => { o.backupVersion = BACKUP_VERSION + 1; }));
     expect(e).toContain('نسخه جدیدتری');
     expect(e).toContain(String(BACKUP_VERSION + 1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]));
-    expect(BACKUP_VERSION).toBe(3);
+    expect(BACKUP_VERSION).toBe(4);
   });
 
   it('نسخه نامعتبر قالب', () => {
@@ -185,6 +186,51 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     if (!r.ok) return;
     expect(r.backup.data.bills.every((b) => b.splitMethod === undefined)).toBe(true);
     expect(r.backup.data.splitDefaults).toBeUndefined();
+  });
+
+  it('«پرداخت شد» خودِ قبض (قالب ۴): رفت‌وبرگشت با تاریخ؛ مقدار نامعتبر رد می‌شود', () => {
+    const r = parseBackup(text((o) => { o.data.bills[1].billPaid = true; o.data.bills[1].billPaidDate = '1404-12-20'; }));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.backup.backupVersion).toBe(4);
+    expect(r.backup.data.bills[1]).toMatchObject({ billPaid: true, billPaidDate: '1404-12-20' });
+    // برچسب زمانی ISO (داده آزمایشی قدیمی) به تاریخ شمسی همان روز تبدیل می‌شود
+    const iso = parseBackup(text((o) => { o.data.bills[1].billPaid = true; o.data.bills[1].billPaidDate = '2026-03-05T10:00:00.000Z'; }));
+    expect(iso.ok && iso.backup.data.bills[1].billPaidDate).toBe('1404-12-14');
+    expect(r.backup.data.bills[0]).toMatchObject({ billPaid: false, billPaidDate: null });
+    expect(errorOf(text((o) => { o.data.bills[0].billPaid = 'yes'; }))).toContain('قبض ۱');
+    expect(errorOf(text((o) => { o.data.bills[1].billPaidDate = 'دیروز'; }))).toContain('قبض ۲');
+  });
+
+  it('پشتیبان‌های قالب ۱ تا ۳ (بدون billPaid) بازیابی می‌شوند و قبض‌ها «پرداخت‌نشده» هستند', () => {
+    for (const v of [1, 2, 3]) {
+      const r = parseBackup(text((o) => {
+        o.backupVersion = v;
+        for (const b of o.data.bills) { delete b.billPaid; delete b.billPaidDate; delete b.dueDate; delete b.deletedAt; }
+        if (v === 1) delete o.data.unitTemplate;
+      }));
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      expect(r.backup.backupVersion).toBe(v);
+      expect(r.backup.data.bills.map((b) => [b.billPaid, b.billPaidDate, b.dueDate, b.deletedAt])).toEqual([[false, null, null, null], [false, null, null, null]]);
+    }
+  });
+
+  it('مهلت پرداخت و حذف نرم (قالب ۴): رفت‌وبرگشت؛ مقدار نامعتبر رد می‌شود؛ خلاصه تعداد حذف‌شده‌ها', () => {
+    const r = parseBackup(text((o) => { o.data.bills[1].deletedAt = '2026-09-27T08:00:00.000Z'; }));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.backup.data.bills[0].dueDate).toBe('1405-07-12');
+    expect(r.backup.data.bills[1]).toMatchObject({ dueDate: null, deletedAt: '2026-09-27T08:00:00.000Z' });
+    expect(summarizeBackup(r.backup).deletedBills).toBe(1);
+    expect(errorOf(text((o) => { o.data.bills[0].dueDate = '1405/07/12'; }))).toContain('قبض ۱');
+    expect(errorOf(text((o) => { o.data.bills[1].deletedAt = 'دیروز'; }))).toContain('قبض ۲');
+    expect(errorOf(text((o) => { o.data.bills[0].dueDate = '1405-07-40'; }))).toContain('قبض ۱');
+  });
+
+  it('تاریخ پرداخت بدون تیک «پرداخت شد» نادیده گرفته می‌شود', () => {
+    const r = parseBackup(text((o) => { o.data.bills[0].billPaidDate = '2026-03-05T10:00:00.000Z'; }));
+    expect(r.ok && r.backup.data.bills[0]).toMatchObject({ billPaid: false, billPaidDate: null });
   });
 
   it('وضعیت «تسویه کامل» از روی واحدها محاسبه می‌شود', () => {

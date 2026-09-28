@@ -31,7 +31,7 @@ export function HomeScreen({ onNewBill, onOpen }: Props) {
         </button>
         <button type="button" className="menu-btn" onClick={() => onOpen('report')}>
           <IconChart size={24} className="menu-btn__icon menu-btn__icon--blue" />
-          <span>گزارش‌ها (هزینه‌های سال، بدهکاران)</span>
+          <span>گزارش‌ها</span>
         </button>
         <button type="button" className="menu-btn" onClick={() => onOpen('tutorial')}>
           <IconBook size={24} className="menu-btn__icon menu-btn__icon--green" />

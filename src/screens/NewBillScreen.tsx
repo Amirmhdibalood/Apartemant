@@ -3,6 +3,9 @@ import type { BillDraft } from '../models/types';
 import { MONTHS } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
 import { SelectField } from '../components/SelectField';
+import { JalaliDateField } from '../components/JalaliDateField';
+import { addJalaliDays, dateYearOptions, todayJalali } from '../logic/jalali';
+import { DEFAULT_DUE_OFFSET_DAYS } from '../logic/billStatus';
 import { ExpenseTypePicker } from '../components/ExpenseTypePicker';
 import { AmountInput } from '../components/AmountInput';
 import { UnitsEditor } from '../components/UnitsEditor';
@@ -34,6 +37,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
   }, []);
 
   // فقط سال‌های فعال (+ سال قبض در حال ویرایش، اگر غیرفعال شده باشد)
+  const today = todayJalali();
   const years = Array.from(new Set([...settings.activeYears, draft.year])).filter(
     (y) => settings.activeYears.includes(y) || (draft.editingBillId !== null && y === draft.year),
   ).sort((a, b) => a - b);
@@ -108,6 +112,18 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
             onChange={(e) => set({ description: e.target.value })}
           />
         </div>
+
+        <JalaliDateField
+          id="dueDate"
+          label="مهلت پرداخت"
+          hint="آخرین مهلت پرداخت قبض؛ یک روز قبل از آن یادآوری نمایش داده می‌شود."
+          optional
+          value={draft.dueDate ?? null}
+          onChange={(dueDate) => set({ dueDate })}
+          defaultDate={addJalaliDays(today, DEFAULT_DUE_OFFSET_DAYS)}
+          years={dateYearOptions(draft.year, today.year, today.year + 1)}
+          addLabel="افزودن مهلت پرداخت"
+        />
 
         <div className="field">
           <label className="field__label" htmlFor="amount">مبلغ قبض</label>

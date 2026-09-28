@@ -6,7 +6,7 @@ import { useFeedback } from '../context/FeedbackContext';
 import { YearPicker } from '../components/YearPicker';
 import { BackupSection } from '../components/BackupSection';
 import { selectableYears, toggleYear } from '../logic/years';
-import { APP_VERSION_FA } from '../appVersion';
+import { APP_VERSION_FA, DEVELOPER_EMAIL, DEVELOPER_NAME } from '../appVersion';
 import { Errors } from '../logic/errors';
 
 /** ۱۵. تنظیمات */
@@ -67,6 +67,11 @@ export function SettingsScreen({ onBack, canGoBack }: { onBack: () => void; canG
 
         <BackupSection />
         <p className="app-version">آپارتمانت — {APP_VERSION_FA} — کاملاً آفلاین</p>
+        <p className="app-credit">
+          سازنده: <span dir="ltr">{DEVELOPER_NAME}</span>
+          <br />
+          <a dir="ltr" href={`mailto:${DEVELOPER_EMAIL}`}>{DEVELOPER_EMAIL}</a>
+        </p>
       </main>
     </>
   );

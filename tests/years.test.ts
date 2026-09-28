@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, FIRST_YEAR, LAST_YEAR } from '../src/models/constants
 import { activeYearsSummary, migrateActiveYears, recordYearOptions, selectableYears } from '../src/logic/years';
 import { pickDefaultYear } from '../src/logic/date';
 import { sanitizeSettings } from '../src/storage/settingsRepository';
-import { APP_VERSION, APP_VERSION_FA } from '../src/appVersion';
+import { APP_VERSION, APP_VERSION_FA, DEVELOPER_EMAIL, DEVELOPER_NAME } from '../src/appVersion';
 
 describe('بازه سال‌ها (۱۴۰۵ تا ۱۵۰۵)', () => {
   it('سال‌های قابل انتخاب از ۱۴۰۵ شروع و به ۱۵۰۵ ختم می‌شوند', () => {
@@ -68,5 +68,7 @@ describe('نسخه برنامه', () => {
     expect(APP_VERSION).toBe(pkg.version);
     expect(APP_VERSION_FA).toBe('نسخه ' + pkg.version.replace(/\d/g, (d: string) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]));
     if (pkg.version === '1.0.0') expect(APP_VERSION_FA).toBe('نسخه ۱.۰.۰');
+    expect(DEVELOPER_NAME).toBe('AmirMahdi Balood');
+    expect(DEVELOPER_EMAIL).toBe('amirmahdibalood16@gmail.com');
   });
 });

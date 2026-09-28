@@ -20,6 +20,7 @@ import { TutorialScreen } from './screens/TutorialScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { IntroScreen } from './screens/IntroScreen';
 import { BillSavedDialog } from './components/BillSavedDialog';
+import { startDueReminderSync } from './services/dueReminders';
 
 export default function App() {
   const { settings, loaded } = useSettings();
@@ -51,6 +52,9 @@ export default function App() {
     });
     return () => { void sub.then((h) => h.remove()); };
   }, [back]);
+
+  // یادآوری مهلت پرداخت: زمان‌بندی دوباره هنگام اجرا و پس از هر تغییر قبض‌ها (از جمله بازیابی پشتیبان)
+  useEffect(() => startDueReminderSync(), []);
 
   // اسکرول به بالا هنگام تغییر صفحه
   useEffect(() => { window.scrollTo(0, 0); }, [route]);
@@ -110,7 +114,9 @@ export default function App() {
         <RecordsScreen
           year={route.year}
           month={route.month}
-          onFilterChange={(year, month) => replaceTop({ name: 'records', year, month })}
+          type={route.type}
+          status={route.status}
+          onFilterChange={(f) => replaceTop({ name: 'records', year: f.year, month: f.month, type: f.type, status: f.status })}
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onBack={stack.length > 1 && stack[stack.length - 2].name === 'report' ? back : undefined}
         />
@@ -121,7 +127,8 @@ export default function App() {
         <ReportsScreen
           tab={route.tab}
           year={route.year}
-          onChange={(tab, year) => replaceTop({ name: 'report', tab, year })}
+          type={route.type}
+          onChange={(tab, year, type) => replaceTop({ name: 'report', tab, year, type })}
           onOpenMonth={(year, month) => push({ name: 'records', year, month })}
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onOpenUnit={(unitNumber) => push({ name: 'unitHistory', unitNumber })}

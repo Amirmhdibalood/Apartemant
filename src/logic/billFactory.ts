@@ -8,6 +8,7 @@ import { allSettled } from './settlement';
 import { splitMethodOf } from './split';
 import { DEFAULT_SPLIT_METHOD } from '../models/constants';
 import { unitPayments, withPayments } from './payments';
+import { parseJalaliKey } from './jalali';
 
 export function buildBill(
   draft: BillDraft,
@@ -45,6 +46,11 @@ export function buildBill(
     createdAt: existing?.bill.createdAt ?? now.toISOString(),
     isFullySettled: allSettled(units),
     splitMethod: draft.splitMethod ?? DEFAULT_SPLIT_METHOD,
+    // «پرداخت شد» خودِ قبض در ویرایش حفظ می‌شود (قبض جدید = پرداخت‌نشده)
+    billPaid: existing?.bill.billPaid === true,
+    billPaidDate: existing?.bill.billPaid === true ? existing.bill.billPaidDate ?? null : null,
+    dueDate: parseJalaliKey(draft.dueDate) ? draft.dueDate! : null,
+    deletedAt: null,
   };
   return { bill, units };
 }
@@ -62,6 +68,7 @@ export function draftFromBill(x: BillWithUnits): BillDraft {
     personCounts: x.units.map((u) => String(u.personCount)),
     splitMethod: splitMethodOf(x.bill),
     splitChosen: true,
+    dueDate: parseJalaliKey(x.bill.dueDate) ? x.bill.dueDate! : null,
   };
 }
 
