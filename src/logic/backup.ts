@@ -23,10 +23,12 @@ export const BACKUP_APP_ID = 'apartemant';
  * ۵: نسخه ۱٫۶ برنامه (+ تنظیمات «ساختمان» `building` و اسم مستعار هر واحد در قبض `alias`؛ نفرات ۰ = واحد خالی)
  *    `unitTemplate` دیگر نوشته نمی‌شود؛ هنگام بازیابی فایل‌های ۱ تا ۴، تنظیمات ساختمان از جدیدترین قبض حذف‌نشده
  *    (وگرنه از unitTemplate، وگرنه ۱ واحد با ۱ نفر) ساخته می‌شود.
- * همه قالب‌های قدیمی‌تر (۱ تا ۴) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
+ * ۶: نسخه ۱٫۶٫۳ برنامه (+ پرچم «خالی» هر واحد در قبض `vacant` و در تنظیمات ساختمان `building.units[].vacant`)
+ *    در فایل‌های ۱ تا ۵ پرچم وجود ندارد = خالی نیست؛ فقط «نفرات پیش‌فرض ۰» تنظیمات ساختمان به «خالی» تبدیل می‌شود.
+ * همه قالب‌های قدیمی‌تر (۱ تا ۵) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
  * بدون dueDate = بدون مهلت پرداخت، بدون deletedAt = حذف‌نشده).
  */
-export const BACKUP_VERSION = 5;
+export const BACKUP_VERSION = 6;
 /** حداکثر حجم قابل قبول فایل پشتیبان */
 export const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
 
@@ -208,7 +210,8 @@ function parseUnits(raw: unknown, bills: Bill[]): Unit[] {
     if (!isObj(u)) return bad(`اطلاعات واحد ${nth(i)} نامعتبر است.`);
     const ok = isId(u.id) && isId(u.billId) && isInt(u.unitNumber, 1, 100000) && isInt(u.personCount, 0, 1000000)
       && isInt(u.shareAmount, 0) && typeof u.isSettled === 'boolean'
-      && (u.alias == null || (typeof u.alias === 'string' && u.alias.length <= 200)); // اسم مستعار (از قالب ۵، اختیاری)
+      && (u.alias == null || (typeof u.alias === 'string' && u.alias.length <= 200)) // اسم مستعار (از قالب ۵، اختیاری)
+      && (u.vacant === undefined || (typeof u.vacant === 'boolean' && (u.vacant === false || u.shareAmount === 0))); // واحد خالی (از قالب ۶)
     if (!ok) bad(`اطلاعات واحد ${nth(i)} نامعتبر است.`);
     if (!billIds.has(u.billId as string)) bad(`واحد ${nth(i)} به هیچ قبضی تعلق ندارد.`);
     if (ids.has(u.id as string)) bad(`شناسه واحد ${nth(i)} تکراری است.`);
@@ -219,6 +222,7 @@ function parseUnits(raw: unknown, bills: Bill[]): Unit[] {
       unitNumber: u.unitNumber as number,
       personCount: u.personCount as number,
       ...(u.alias !== undefined ? { alias: sanitizeAlias(u.alias) } : {}),
+      ...(u.vacant === true ? { vacant: true } : {}),
       shareAmount: u.shareAmount as number,
       isSettled: u.isSettled as boolean,
       ...parsePayments(u.payments, u.shareAmount as number, i),

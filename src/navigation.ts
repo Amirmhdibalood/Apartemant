@@ -20,4 +20,4 @@ export type RouteName = Route['name'];
 export type ReportTab = 'yearly' | 'debtors' | 'billPayments';
 
 /** صفحاتی که نوار پایین (Bottom Navigation) در آن‌ها نمایش داده می‌شود */
-export const TAB_ROUTES: RouteName[] = ['home', 'tutorial', 'records', 'report', 'settings'];
+export const TAB_ROUTES: RouteName[] = ['home', 'records', 'report', 'settings'];

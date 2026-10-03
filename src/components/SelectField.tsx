@@ -1,28 +1,21 @@
-import { IconChevronDown } from './Icons';
-
-interface Option { value: number; label: string }
+import { OptionPicker, type PickerOption } from './OptionPicker';
 
 interface Props {
   id: string;
   label?: string;
   value: number;
-  options: Option[];
+  options: PickerOption[];
   onChange: (v: number) => void;
 }
 
-/** کشوی انتخاب (Native select با ظاهر تصویر مرجع) */
+/**
+ * فیلد انتخاب (سال، ماه، نوع هزینه، وضعیت و ...): از ۱.۶.۲ همان ظاهر کشویی «سال‌های فعال» تنظیمات
+ * (OptionPicker که کلاس‌های YearPicker را دوباره استفاده می‌کند).
+ */
 export function SelectField({ id, label, value, options, onChange }: Props) {
   return (
-    <div className="field">
-      {label && <label className="field__label" htmlFor={id}>{label}</label>}
-      <div className="select-wrap">
-        <select id={id} className="input select" value={value} onChange={(e) => onChange(Number(e.target.value))}>
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>{o.label}</option>
-          ))}
-        </select>
-        <IconChevronDown size={18} className="select-chevron" />
-      </div>
+    <div className="field select-field">
+      <OptionPicker id={id} label={label ?? ''} ariaLabel={label} value={value} options={options} onChange={onChange} />
     </div>
   );
 }

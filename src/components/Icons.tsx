@@ -104,6 +104,24 @@ export const IconHistory = (p: P) => (
     <path d="M3 3v5.3h5.3M12 7v5l3.5 2" />
   </S>
 );
+export const IconMoon = (p: P) => (
+  <S {...p}>
+    <path d="M20.5 14.2A8.6 8.6 0 0 1 9.8 3.5a8.6 8.6 0 1 0 10.7 10.7z" />
+  </S>
+);
+export const IconSun = (p: P) => (
+  <S {...p}>
+    <circle cx="12" cy="12" r="4.2" />
+    <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M18.7 5.3l-1.6 1.6M6.9 17.1l-1.6 1.6" />
+  </S>
+);
+export const IconHelp = (p: P) => (
+  <S {...p}>
+    <circle cx="12" cy="12" r="9.5" />
+    <path d="M9.4 9.3a2.7 2.7 0 0 1 5.2.9c0 1.8-2.6 2.2-2.6 3.9" />
+    <path d="M12 17.2h.01" strokeWidth={2.6} />
+  </S>
+);
 export const IconBook = (p: P) => (
   <S {...p}>
     <path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z" />

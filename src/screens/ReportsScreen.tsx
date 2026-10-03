@@ -17,6 +17,7 @@ interface Props {
   onOpenMonth: (year: number, month: number) => void;
   onOpenBill: (billId: string) => void;
   onOpenUnit: (unitNumber: number) => void;
+  onHelp?: () => void;
 }
 
 /** گزارش‌های قابل افزودن در آینده فقط به این فهرست اضافه می‌شوند */
@@ -27,7 +28,7 @@ const TABS: { id: ReportTab; label: string }[] = [
 ];
 
 /** مرکز گزارش‌ها: زبانه‌های «هزینه‌های سال»، «بدهکاران» و «پرداخت قبض‌ها» */
-export function ReportsScreen({ tab = 'yearly', year, type, onChange, onOpenMonth, onOpenBill, onOpenUnit }: Props) {
+export function ReportsScreen({ tab = 'yearly', year, type, onChange, onOpenMonth, onOpenBill, onOpenUnit, onHelp }: Props) {
   const [all, setAll] = useState<BillWithUnits[] | null>(null);
   useEffect(() => {
     let alive = true;
@@ -37,7 +38,7 @@ export function ReportsScreen({ tab = 'yearly', year, type, onChange, onOpenMont
 
   return (
     <>
-      <AppHeader title="گزارش‌ها" start={<span className="header-icon"><IconChart size={24} /></span>} />
+      <AppHeader title="گزارش‌ها" onHelp={onHelp} start={<span className="header-icon"><IconChart size={24} /></span>} />
       <main className="screen screen--report">
         <div className="seg seg--3" role="tablist" aria-label="نوع گزارش">
           {TABS.map((t) => (

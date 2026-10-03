@@ -12,7 +12,7 @@ describe('validateDraft', () => {
   it('accepts a valid draft', () => {
     const r = validateDraft(base);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.value).toEqual({ totalAmount: 5_000_000, personCounts: [2, 3] });
+    if (r.ok) expect(r.value).toEqual({ totalAmount: 5_000_000, personCounts: [2, 3], vacant: [false, false] });
   });
 
   it('reports each error separately', () => {
@@ -28,6 +28,11 @@ describe('validateDraft', () => {
     expect(codes({ ...base, personCounts: ['0', '3'] })).toEqual([]);
     expect(codes({ ...base, personCounts: ['0'] })).toEqual(['NO_PERSONS']);
     expect(codes({ ...base, personCounts: ['0', '0'], splitMethod: 'perUnit' })).toEqual([]);
+    // واحد خالی (۱.۶.۳): نفراتش بررسی نمی‌شود؛ همه خالی = خطا
+    expect(codes({ ...base, personCounts: ['', '3'], unitVacant: [true, false] })).toEqual([]);
+    expect(codes({ ...base, personCounts: ['2', '3'], unitVacant: [true, true] })).toEqual(['ALL_VACANT']);
+    expect(codes({ ...base, personCounts: ['2', '3'], unitVacant: [false, true], splitMethod: 'perUnit' })).toEqual([]);
+    expect(codes({ ...base, personCounts: ['0', '3'], unitVacant: [false, true] })).toEqual(['NO_PERSONS']);
     expect(codes({ ...base, personCounts: ['1.5'] })).toEqual(['PERSON_COUNT_INVALID']);
     expect(codes({ ...base, expenseType: null })).toEqual(['REQUIRED_MISSING']);
   });

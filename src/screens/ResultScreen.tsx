@@ -10,7 +10,7 @@ import { validateDraft } from '../logic/validation';
 import { calculateBySplit } from '../logic/split';
 import { splitDefaultsRepository } from '../storage/splitDefaultsRepository';
 import { formatAmount } from '../logic/formatting';
-import { addDraftUnit, buildBill, draftAliases, removeDraftUnit } from '../logic/billFactory';
+import { addDraftUnit, buildBill, draftAliases, draftVacant, removeDraftUnit } from '../logic/billFactory';
 import { unitLabel } from '../logic/building';
 import { Errors } from '../logic/errors';
 import { billRepository } from '../storage/billRepository';
@@ -31,7 +31,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
   const validation = useMemo(() => validateDraft(draft), [draft]);
   const calc = useMemo(() => {
     if (!validation.ok) return null;
-    return calculateBySplit(validation.value.totalAmount, validation.value.personCounts, draft.splitMethod);
+    return calculateBySplit(validation.value.totalAmount, validation.value.personCounts, draft.splitMethod, validation.value.vacant);
   }, [validation, draft.splitMethod]);
 
   // اگر فرم نامعتبر شد (مثلاً همه واحدها حذف شدند) به فرم برگرد
@@ -92,6 +92,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
 
   const perUnit = calc.splitMethod === 'perUnit';
   const aliases = draftAliases(draft);
+  const vacants = draftVacant(draft);
   const dueKey = parseJalaliKey(draft.dueDate);
   const perPerson = calc.isExact
     ? formatAmount(calc.perPersonExact)
@@ -150,15 +151,15 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
             </thead>
             <tbody>
               {calc.shares.map((s, i) => (
-                <tr key={s.unitNumber}>
+                <tr key={s.unitNumber} className={vacants[i] ? 'is-vacant' : undefined}>
                   <td className="col-unit">
                     <span className="unit-cell">
                       <span className="unit-avatar"><IconUser size={16} /></span>
                       <span className="unit-cell__name">{unitLabel(s.unitNumber, aliases[i])}</span>
                     </span>
                   </td>
-                  {!perUnit && <td className="col-count num">{s.personCount}</td>}
-                  <td className="num strong">{formatAmount(s.shareAmount)}</td>
+                  {!perUnit && <td className="col-count num">{vacants[i] ? '—' : s.personCount}</td>}
+                  <td className="num strong">{vacants[i] ? <span className="no-share">خالی</span> : formatAmount(s.shareAmount)}</td>
                   <td className="col-action">
                     <button type="button" className="icon-btn icon-btn--danger" aria-label={`حذف ${unitLabel(s.unitNumber, aliases[i])}`} onClick={() => removeUnit(i)}>
                       <IconTrash size={17} />

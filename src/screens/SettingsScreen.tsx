@@ -12,7 +12,7 @@ import { APP_VERSION_FA, DEVELOPER_EMAIL, DEVELOPER_NAME } from '../appVersion';
 import { Errors } from '../logic/errors';
 
 /** ۱۵. تنظیمات */
-export function SettingsScreen({ onBack, canGoBack }: { onBack: () => void; canGoBack: boolean }) {
+export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => void; canGoBack: boolean; onHelp?: () => void }) {
   const { settings, updateSettings } = useSettings();
   const { showErrors, toast } = useFeedback();
   const years = selectableYears();
@@ -29,7 +29,7 @@ export function SettingsScreen({ onBack, canGoBack }: { onBack: () => void; canG
 
   return (
     <>
-      <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} />
+      <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} onHelp={onHelp} />
       <main className="screen screen--settings">
         <BuildingSection reloadKey={restoreKey} />
 

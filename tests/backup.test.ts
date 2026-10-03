@@ -35,7 +35,7 @@ function sample(): BackupData {
     { id: 'u5', billId: 'b2', unitNumber: 2, personCount: 1, shareAmount: 300000, isSettled: true },
   ];
   const settings: AppSettings = { showSaveWarning: false, activeYears: [1405, 1406], dismissedWarnings: ['roundingAdjust', 'duplicateBill'] };
-  const building = { units: [{ alias: 'آقای رضایی', defaultPersons: 1 }, { alias: null, defaultPersons: 1 }, { alias: null, defaultPersons: 0 }] };
+  const building = { units: [{ alias: 'آقای رضایی', defaultPersons: 1 }, { alias: null, defaultPersons: 1 }, { alias: null, defaultPersons: 1, vacant: true }] };
   return { bills, units, settings, building };
 }
 
@@ -102,7 +102,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     const e = errorOf(text((o) => { o.backupVersion = BACKUP_VERSION + 1; }));
     expect(e).toContain('نسخه جدیدتری');
     expect(e).toContain(String(BACKUP_VERSION + 1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]));
-    expect(BACKUP_VERSION).toBe(5);
+    expect(BACKUP_VERSION).toBe(6);
   });
 
   it('نسخه نامعتبر قالب', () => {
@@ -297,7 +297,7 @@ describe('مخزن پشتیبان (گرفتن و بازیابی کامل داد�
   });
 
   it('تنظیمات ساختمان در پشتیبان ذخیره و بازیابی می‌شود', async () => {
-    const building = { units: [{ alias: 'آقای رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 0 }] };
+    const building = { units: [{ alias: 'آقای رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 1, vacant: true }] };
     await backupRepository.replaceAll({ ...sample(), building });
     const json = serializeBackup(createBackup(await backupRepository.collect(), '1.6.0', NOW));
     expect(JSON.parse(json).data.building).toEqual(building);

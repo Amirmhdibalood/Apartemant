@@ -1,9 +1,11 @@
 import type { ExpenseType } from '../models/types';
 import { EXPENSE_TILE_ROWS, EXPENSE_TYPES } from '../models/constants';
 import { ExpenseIcon } from './ExpenseIcon';
+import { useAdapt } from '../context/ThemeContext';
 
 /** انتخاب نوع هزینه به‌صورت کاشی (فقط یک گزینه) */
 export function ExpenseTypePicker({ value, onChange }: { value: ExpenseType | null; onChange: (t: ExpenseType) => void }) {
+  const A = useAdapt();
   return (
     <div className="tiles" role="radiogroup" aria-label="نوع هزینه">
       {EXPENSE_TILE_ROWS.map((row, i) => (
@@ -18,7 +20,7 @@ export function ExpenseTypePicker({ value, onChange }: { value: ExpenseType | nu
                 role="radio"
                 aria-checked={selected}
                 className={'tile' + (selected ? ' is-selected' : '')}
-                style={{ background: info.bg, ['--tile-color' as string]: info.color }}
+                style={{ background: A(info.bg), ['--tile-color' as string]: A(info.color) }}
                 onClick={() => onChange(t)}
               >
                 <ExpenseIcon type={t} size={36} />

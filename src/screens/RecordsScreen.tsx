@@ -29,12 +29,13 @@ interface Props {
   status?: StatusFilter;
   onFilterChange: (filter: RecordsFilter) => void;
   onOpenBill: (billId: string) => void;
+  onHelp?: () => void;
   /** وقتی از صفحه گزارش باز شده باشد: بازگشت به گزارش */
   onBack?: () => void;
 }
 
 /** ۸. سوابق: فیلتر سال + ماه + نوع هزینه + وضعیت (پیش‌فرض «همه») + کارت‌های رنگی قبض‌ها (از دیتابیس محلی) */
-export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp, status: statusProp, onFilterChange, onOpenBill, onBack }: Props) {
+export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp, status: statusProp, onFilterChange, onOpenBill, onBack, onHelp }: Props) {
   const { settings } = useSettings();
   const now = currentJalali();
   const [all, setAll] = useState<BillWithUnits[] | null>(null);
@@ -56,7 +57,7 @@ export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp
 
   return (
     <>
-      <AppHeader title="سوابق" onBack={onBack} start={<span className="header-icon"><IconCalendar size={24} /></span>} />
+      <AppHeader title="سوابق" onBack={onBack} onHelp={onHelp} start={<span className="header-icon"><IconCalendar size={24} /></span>} />
       <main className="screen screen--records">
         <div className="filters">
           <SelectField

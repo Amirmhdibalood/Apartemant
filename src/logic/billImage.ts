@@ -86,7 +86,7 @@ export function buildBillImageModel({ bill, units }: BillWithUnits, now: Date = 
     const paid = paidAmount(u);
     const remaining = remainingAmount(u);
     let status: BillImageRow['status'];
-    if (u.shareAmount === 0) status = { kind: 'settled', text: 'بدون سهم' };
+    if (u.shareAmount === 0) status = { kind: 'settled', text: u.vacant ? 'خالی' : 'بدون سهم' };
     else if (remaining === 0) status = { kind: 'settled', text: 'تسویه' };
     else if (paid > 0) status = { kind: 'partial', text: `مانده ${faAmount(remaining)}` };
     else status = { kind: 'unpaid', text: 'پرداخت‌نشده' };
@@ -94,7 +94,7 @@ export function buildBillImageModel({ bill, units }: BillWithUnits, now: Date = 
       unit: toPersianDigits(u.unitNumber),
       alias: sanitizeAlias(u.alias),
       unitLabel: unitShortLabel(u.unitNumber, u.alias),
-      occupants: toPersianDigits(u.personCount),
+      occupants: u.vacant ? '—' : toPersianDigits(u.personCount),
       share: faAmount(u.shareAmount),
       status,
     };

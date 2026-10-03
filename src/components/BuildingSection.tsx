@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { BuildingSettings } from '../models/types';
+import type { BuildingSettings, BuildingUnit } from '../models/types';
 import { IconMinus, IconPlus, IconUser } from './Icons';
+import { Checkbox } from './Checkbox';
 import { useFeedback } from '../context/FeedbackContext';
 import { buildingRepository } from '../storage/buildingRepository';
 import { MAX_ALIAS_LENGTH, MAX_BUILDING_UNITS, resizeBuilding, sanitizeAlias, unitLabel } from '../logic/building';
@@ -8,15 +9,17 @@ import { sanitizePersonCount, toPersianDigits } from '../logic/formatting';
 import { Errors } from '../logic/errors';
 import { confirmUnitReduction } from './confirmUnitReduction';
 
-interface Row { alias: string; persons: string }
+interface Row { alias: string; persons: string; vacant: boolean }
 
-const toRows = (b: BuildingSettings): Row[] => b.units.map((u) => ({ alias: u.alias ?? '', persons: String(u.defaultPersons) }));
+const toRows = (b: BuildingSettings): Row[] => b.units.map((u) => ({ alias: u.alias ?? '', persons: String(u.defaultPersons), vacant: u.vacant === true }));
 const fromRows = (rows: Row[], prev: BuildingSettings | null): BuildingSettings => ({
-  units: rows.map((r, i) => ({
-    alias: sanitizeAlias(r.alias),
-    // نفرات خالی (در حال تایپ) = مقدار قبلی ذخیره‌شده، وگرنه ۱
-    defaultPersons: /^\d+$/.test(r.persons.trim()) ? Number(r.persons.trim()) : prev?.units[i]?.defaultPersons ?? 1,
-  })),
+  units: rows.map((r, i) => {
+    // نفرات خالی یا ۰ (در حال تایپ) = مقدار قبلی ذخیره‌شده، وگرنه ۱
+    const typed = /^\d+$/.test(r.persons.trim()) ? Number(r.persons.trim()) : 0;
+    const unit: BuildingUnit = { alias: sanitizeAlias(r.alias), defaultPersons: typed >= 1 ? typed : prev?.units[i]?.defaultPersons || 1 };
+    if (r.vacant) unit.vacant = true;
+    return unit;
+  }),
 });
 
 /**
@@ -120,6 +123,7 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
           <span>واحد</span>
           <span>اسم مستعار (اختیاری)</span>
           <span className="building-unit__persons-h"><IconUser size={13} /> نفرات</span>
+          <span className="building-unit__vacant-h">خالی</span>
         </div>
         {rows.map((r, i) => (
           <div className="building-unit" key={i}>
@@ -131,14 +135,15 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
               type="text"
               autoComplete="off"
               maxLength={MAX_ALIAS_LENGTH}
-              placeholder={i === 0 ? 'مثل: آقای رضایی' : unitLabel(i + 1)}
+              placeholder={unitLabel(i + 1)}
               aria-label={`اسم مستعار واحد ${toPersianDigits(i + 1)}`}
               value={r.alias}
               onChange={(e) => update(rows.map((x, j) => (j === i ? { ...x, alias: e.target.value } : x)))}
               onBlur={() => update(rows, true)}
             />
             <input
-              className="input input--count building-unit__persons"
+              className={'input input--count building-unit__persons' + (r.vacant ? ' is-weight' : '')}
+              disabled={r.vacant}
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
@@ -149,16 +154,19 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
               value={r.persons}
               onChange={(e) => update(rows.map((x, j) => (j === i ? { ...x, persons: sanitizePersonCount(e.target.value) } : x)))}
               onBlur={() => {
-                if (r.persons.trim() === '') {
+                if (r.persons.trim() === '' || Number(r.persons) < 1) {
                   const restored = rows.map((x, j) => (j === i ? { ...x, persons: String(saved.current?.units[i]?.defaultPersons ?? 1) } : x));
                   update(restored, true);
                 } else update(rows, true);
               }}
             />
+            <span className="building-unit__vacant">
+              <Checkbox checked={r.vacant} onChange={(v) => update(rows.map((x, j) => (j === i ? { ...x, vacant: v } : x)), true)} ariaLabel={`واحد ${toPersianDigits(i + 1)} خالی است`} />
+            </span>
           </div>
         ))}
       </div>
-      <p className="building-note-small">نفرات ۰ = واحد خالی (در تقسیم «بر اساس نفرات» سهمی ندارد). نام واحد بدون اسم مستعار: «واحد ۱»، «واحد ۲»، ...</p>
+      <p className="building-note-small">واحد «خالی» در قبض‌های جدید از محاسبه کنار گذاشته می‌شود (در هیچ‌کدام از دو روش تقسیم سهمی ندارد و در بدهکاران نمی‌آید)؛ در فرم قبض می‌توانید برای همان قبض تغییرش دهید. نام واحد بدون اسم مستعار: «واحد ۱»، «واحد ۲»، ...</p>
     </section>
   );
 }

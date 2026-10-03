@@ -265,11 +265,11 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
                     <span className="num">{u.unitNumber}</span>
                     {u.alias && <span className="unit-td__alias">{u.alias}</span>}
                   </td>
-                  <td className="num">{u.personCount}</td>
+                  <td className="num">{u.vacant ? '—' : u.personCount}</td>
                   <td className="num">{formatAmount(u.shareAmount)}</td>
                   <td>
                     {u.shareAmount === 0 ? (
-                      <span className="no-share">بدون سهم</span>
+                      <span className="no-share">{u.vacant ? 'خالی' : 'بدون سهم'}</span>
                     ) : (<>
                     <button
                       type="button"

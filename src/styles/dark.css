@@ -1,0 +1,21 @@
+/* ---------- حالت تاریک: موارد دستی (بقیه رنگ‌ها خودکار در dark.generated.css) ---------- */
+:root[data-theme="dark"] { color-scheme: dark; }
+:root[data-theme="light"] { color-scheme: light; }
+.theme-btn { color: var(--text); }
+.home-topbar { gap: 0; }
+
+/* دکمه‌ها و نشان‌های پُر با متن سفید: زمینه کمی تیره‌تر از رنگ برند تا کنتراست ≥ ۴٫۵ بماند */
+:root[data-theme="dark"] {
+  --primary-fill: #2e68d6;
+  --primary-fill-press: #2658bd;
+  --success-fill: #1c7f4f;
+  --success-fill-press: #166b42;
+  --danger-fill: #c93838;
+}
+:root[data-theme="dark"] .btn--primary,
+:root[data-theme="dark"] .step__num,
+:root[data-theme="dark"] .pay-btn { background: var(--primary-fill); color: #fff; }
+:root[data-theme="dark"] .btn--primary:active { background: var(--primary-fill-press); }
+:root[data-theme="dark"] .btn--success { background: var(--success-fill); color: #fff; }
+:root[data-theme="dark"] .btn--success:active { background: var(--success-fill-press); }
+:root[data-theme="dark"] .btn--danger { background: var(--danger-fill); color: #fff; }
