@@ -78,7 +78,8 @@ h1, h2, h3, p { margin: 0; }
   -webkit-backdrop-filter: blur(8px);
 }
 .app-header--help { grid-template-columns: 132px 1fr 132px; }
-.app-header--two { grid-template-columns: 172px 1fr 172px; }
+/* ۴ دکمه (بازگشت، زنگوله، راهنما، تم) در عرض ۳۶۰–۳۹۰ جا نمی‌شد و سرصفحه از صفحه بیرون می‌زد */
+.app-header--two { grid-template-columns: auto 1fr auto; }
 .app-header__end { gap: 0; }
 .help-btn { color: var(--primary); }
 .app-header__title { text-align: center; font-size: 18px; font-weight: 800; color: var(--text); }
@@ -938,8 +939,15 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
 .icon-opt__label { line-height: 1.4; text-align: center; }
 .unit-num { font-weight: 900; line-height: 1; }
 
+/* ---------- یکدستی صفحهٔ تنظیمات: هر بخش یک کارت؛ زیرگروه‌ها با h3 و خط جداکننده ---------- */
+.settings-sub { font-size: 14px; font-weight: 800; color: var(--text); margin: 0 0 6px; }
+.settings-sub:not(:first-child) { margin-top: 16px; }
+.settings-group + .settings-group { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-2); }
+.settings-group .card__hint { margin-bottom: 12px; }
+.settings-group .seg { margin-bottom: 10px; }
+.settings-group .notif-mode-hint { margin: 0; }
+
 /* ---------- انواع قبض و روش‌های محاسبه (تنظیمات) ---------- */
-.entry-prefs__group { font-size: 13.5px; font-weight: 800; color: var(--text-2); margin: 12px 0 8px; }
 .entry-prefs__row { margin-bottom: 6px; }
 .entry-prefs__label { flex-direction: row; align-items: center; gap: 10px; flex: 1; }
 .entry-prefs__note { margin: 6px 0 0; }

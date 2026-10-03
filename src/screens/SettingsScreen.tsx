@@ -46,6 +46,14 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
     <>
       <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} onHelp={onHelp} />
       <main className="screen screen--settings">
+        <section className="card settings-card">
+          <h2 className="card__title">سال‌ها</h2>
+          <p className="card__hint">
+            فهرست را باز کنید و سال‌های مورد نیاز را فعال یا غیرفعال کنید. فقط سال‌های فعال در کشوی سال صفحه «ثبت قبض جدید» و «سوابق» نمایش داده می‌شوند. حداقل یک سال باید فعال بماند.
+          </p>
+          <YearPicker years={years} active={settings.activeYears} onToggle={onYear} />
+        </section>
+
         <BuildingSection reloadKey={restoreKey} />
 
         <section className="card settings-card entry-prefs" aria-labelledby="entry-prefs-title">
@@ -54,7 +62,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
             نوع خاموش از فرم ثبت، سوابق، فیلترها، گزارش‌ها و جمع‌ها کنار می‌رود و با روشن شدن دوباره برمی‌گردد (داده پاک نمی‌شود).
             روش خاموش در انتخاب نحوه تقسیم نمی‌آید. از هر گروه دست‌کم یکی باید روشن بماند.
           </p>
-          <h3 className="entry-prefs__group">انواع قبض در برنامه</h3>
+          <h3 className="settings-sub">انواع قبض در برنامه</h3>
           {EXPENSE_TYPE_ORDER.map((t) => {
             const on = prefs.types.includes(t);
             return (
@@ -67,7 +75,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
               </div>
             );
           })}
-          <h3 className="entry-prefs__group">روش‌های محاسبه در ثبت قبض</h3>
+          <h3 className="settings-sub">روش‌های محاسبه در ثبت قبض</h3>
           {ALL_SPLIT_METHODS.map((m) => {
             const on = prefs.methods.includes(m);
             return (
@@ -80,6 +88,93 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
             );
           })}
           {prefs.methods.length === 1 && <p className="card__hint entry-prefs__note">فقط یک روش روشن است؛ انتخابگر نحوه تقسیم در فرم ثبت قبض پنهان و همین روش استفاده می‌شود.</p>}
+        </section>
+
+        <section className="card settings-card appearance-card" aria-labelledby="appearance-title">
+          <h2 className="card__title" id="appearance-title">تنظیمات ظاهری</h2>
+          <p className="card__hint">فقط شکل نمایش را عوض می‌کند؛ روی قبض‌ها و محاسبه‌ها اثری ندارد و در فایل پشتیبان نیست.</p>
+          <div className="settings-group" role="group" aria-labelledby="area-mode-title">
+            <h3 className="settings-sub" id="area-mode-title">نحوه نمایش متراژ</h3>
+            <p className="card__hint">شکل ورودی و نمایش متراژ واحدها در «ساختمان»، فرم قبض، نتیجه و جزئیات قبض (برای تقسیم «بر اساس متراژ»).</p>
+            <div className="seg" role="radiogroup" aria-label="نحوه نمایش متراژ">
+              {AREA_MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={areaMode === m.id}
+                  className={'seg__btn' + (areaMode === m.id ? ' is-active' : '')}
+                  onClick={() => setAreaMode(m.id)}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <p className="card__hint notif-mode-hint">{AREA_MODES.find((m) => m.id === areaMode)?.hint}</p>
+          </div>
+
+          <div className="settings-group" role="group" aria-labelledby="unit-icon-title">
+            <h3 className="settings-sub" id="unit-icon-title">نماد واحد</h3>
+            <p className="card__hint">نمادی که کنار هر واحد در فرم قبض، نتیجه و گزارش بدهکاران دیده می‌شود. آدمک فقط برای «تعداد نفرات» می‌ماند.</p>
+            <div className="icon-grid" role="radiogroup" aria-label="نماد واحد">
+              {UNIT_ICONS.map((o, i) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={unitIcon === o.id}
+                  aria-label={o.label}
+                  className={'icon-opt' + (unitIcon === o.id ? ' is-active' : '')}
+                  onClick={() => setUnitIcon(o.id)}
+                >
+                  <span className="unit-avatar icon-opt__glyph"><UnitIcon id={o.id} number={i + 1} size={18} /></span>
+                  <span className="icon-opt__label">{o.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="settings-group" role="group" aria-labelledby="area-icon-title">
+            <h3 className="settings-sub" id="area-icon-title">نماد متراژ</h3>
+            <p className="card__hint">نشانی که در حالت «بر اساس متراژ» کنار سرستون متراژ (فرم قبض و تنظیمات ← ساختمان) می‌آید.</p>
+            <div className="icon-grid" role="radiogroup" aria-label="نماد متراژ">
+              {AREA_ICONS.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={areaIcon === o.id}
+                  aria-label={o.label}
+                  className={'icon-opt' + (areaIcon === o.id ? ' is-active' : '')}
+                  onClick={() => setAreaIcon(o.id)}
+                >
+                  <span className="icon-opt__glyph icon-opt__glyph--area">{o.id === 'none' ? <span className="icon-opt__none">—</span> : <AreaIcon id={o.id} size={20} />}</span>
+                  <span className="icon-opt__label">{o.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="settings-group" role="group" aria-labelledby="notif-mode-title">
+            <h3 className="settings-sub" id="notif-mode-title">نحوه نمایش اعلان‌ها</h3>
+            <p className="card__hint">با زدن زنگولهٔ بالای صفحه، اعلان‌های مهلت پرداخت (از ۲ روز قبل) به این شکل باز می‌شوند.</p>
+            <div className="seg" role="radiogroup" aria-label="نحوه نمایش اعلان‌ها">
+              {NOTIF_MODES.map((m) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === m.id}
+                  className={'seg__btn' + (mode === m.id ? ' is-active' : '')}
+                  onClick={() => setMode(m.id)}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <p className="card__hint notif-mode-hint">{NOTIF_MODES.find((m) => m.id === mode)?.hint}</p>
+          </div>
+
         </section>
 
         <section className="card settings-card">
@@ -109,96 +204,6 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
               <span>نمایش دوباره سایر هشدارهای پنهان‌شده</span>
             </button>
           )}
-        </section>
-
-        <section className="card settings-card" aria-labelledby="area-mode-title">
-          <h2 className="card__title" id="area-mode-title">نحوه نمایش متراژ</h2>
-          <p className="card__hint">شکل ورودی و نمایش متراژ واحدها در «ساختمان»، فرم قبض، نتیجه و جزئیات قبض (برای تقسیم «بر اساس متراژ»). فقط ظاهر را عوض می‌کند و در فایل پشتیبان نیست.</p>
-          <div className="seg" role="radiogroup" aria-label="نحوه نمایش متراژ">
-            {AREA_MODES.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                role="radio"
-                aria-checked={areaMode === m.id}
-                className={'seg__btn' + (areaMode === m.id ? ' is-active' : '')}
-                onClick={() => setAreaMode(m.id)}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-          <p className="card__hint notif-mode-hint">{AREA_MODES.find((m) => m.id === areaMode)?.hint}</p>
-        </section>
-
-        <section className="card settings-card" aria-labelledby="unit-icon-title">
-          <h2 className="card__title" id="unit-icon-title">نماد واحد</h2>
-          <p className="card__hint">نمادی که کنار هر واحد در فرم قبض، نتیجه و گزارش بدهکاران دیده می‌شود. آدمک فقط برای «تعداد نفرات» می‌ماند. فقط ظاهر را عوض می‌کند و در فایل پشتیبان نیست.</p>
-          <div className="icon-grid" role="radiogroup" aria-label="نماد واحد">
-            {UNIT_ICONS.map((o, i) => (
-              <button
-                key={o.id}
-                type="button"
-                role="radio"
-                aria-checked={unitIcon === o.id}
-                aria-label={o.label}
-                className={'icon-opt' + (unitIcon === o.id ? ' is-active' : '')}
-                onClick={() => setUnitIcon(o.id)}
-              >
-                <span className="unit-avatar icon-opt__glyph"><UnitIcon id={o.id} number={i + 1} size={18} /></span>
-                <span className="icon-opt__label">{o.label}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="card settings-card" aria-labelledby="area-icon-title">
-          <h2 className="card__title" id="area-icon-title">نماد متراژ</h2>
-          <p className="card__hint">نشانی که در حالت «بر اساس متراژ» کنار سرستون متراژ (فرم قبض و تنظیمات ← ساختمان) می‌آید. فقط ظاهر را عوض می‌کند و در فایل پشتیبان نیست.</p>
-          <div className="icon-grid" role="radiogroup" aria-label="نماد متراژ">
-            {AREA_ICONS.map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                role="radio"
-                aria-checked={areaIcon === o.id}
-                aria-label={o.label}
-                className={'icon-opt' + (areaIcon === o.id ? ' is-active' : '')}
-                onClick={() => setAreaIcon(o.id)}
-              >
-                <span className="icon-opt__glyph icon-opt__glyph--area">{o.id === 'none' ? <span className="icon-opt__none">—</span> : <AreaIcon id={o.id} size={20} />}</span>
-                <span className="icon-opt__label">{o.label}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="card settings-card" aria-labelledby="notif-mode-title">
-          <h2 className="card__title" id="notif-mode-title">نحوه نمایش اعلان‌ها</h2>
-          <p className="card__hint">با زدن زنگولهٔ بالای صفحه، اعلان‌های مهلت پرداخت (از ۲ روز قبل) به این شکل باز می‌شوند.</p>
-          <div className="seg" role="radiogroup" aria-label="نحوه نمایش اعلان‌ها">
-            {NOTIF_MODES.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                role="radio"
-                aria-checked={mode === m.id}
-                className={'seg__btn' + (mode === m.id ? ' is-active' : '')}
-                onClick={() => setMode(m.id)}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-          <p className="card__hint notif-mode-hint">{NOTIF_MODES.find((m) => m.id === mode)?.hint}</p>
-        </section>
-
-        <section className="card settings-card">
-          <h2 className="card__title">سال‌ها</h2>
-          <p className="card__hint">
-            فهرست را باز کنید و سال‌های مورد نیاز را فعال یا غیرفعال کنید. فقط سال‌های فعال در کشوی سال صفحه «ثبت قبض جدید» و «سوابق» نمایش داده می‌شوند. حداقل یک سال باید فعال بماند.
-          </p>
-          <YearPicker years={years} active={settings.activeYears} onToggle={onYear} />
         </section>
 
         <BackupSection onRestored={() => setRestoreKey((k) => k + 1)} />
