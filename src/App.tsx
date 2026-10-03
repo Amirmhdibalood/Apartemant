@@ -160,6 +160,8 @@ export default function App() {
           year={route.year}
           type={route.type}
           onChange={(tab, year, type) => replaceTop({ name: 'report', tab, year, type })}
+          onOpenReport={(id) => push({ name: 'report', tab: id })}
+          onBack={back}
           onOpenMonth={(year, month) => push({ name: 'records', year, month })}
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onOpenUnit={(unitNumber) => push({ name: 'unitHistory', unitNumber })}

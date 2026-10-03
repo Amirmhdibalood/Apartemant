@@ -330,10 +330,10 @@ describe('تصویر قبض با پالت روشن', () => {
 });
 
 describe('نسخه و متن‌ها', () => {
-  it('package.json: ۱٫۶٫۱۳ / versionCode 21', () => {
+  it('package.json: نسخه معتبر و versionCode ≥ ۲۱ (نسخهٔ پالت‌های روشن ۱.۶.۱۳ بود)', () => {
     const pkg = JSON.parse(read('package.json'));
-    expect(pkg.version).toBe('1.6.13');
-    expect(pkg.versionCode).toBe(21);
+    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(pkg.versionCode).toBeGreaterThanOrEqual(21);
   });
   it('دستور theme:generate همهٔ مولدها را اجرا می‌کند', () => {
     const s = JSON.parse(read('package.json')).scripts['theme:generate'] as string;

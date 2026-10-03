@@ -248,3 +248,64 @@ export const IconBell = (p: P) => (
     <path d="M10 20.6a2.2 2.2 0 0 0 4 0" />
   </S>
 );
+
+export const IconPrinter = (p: P) => (
+  <S {...p}>
+    <path d="M7 9V3.5h10V9" />
+    <rect x="3.5" y="9" width="17" height="8" rx="2" />
+    <path d="M7 14h10v6.5H7z" />
+    <path d="M17 12h.01" strokeWidth={2.6} />
+  </S>
+);
+export const IconFile = (p: P) => (
+  <S {...p}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5" />
+  </S>
+);
+export const IconImage = (p: P) => (
+  <S {...p}>
+    <rect x="3" y="4" width="18" height="16" rx="3" />
+    <circle cx="9" cy="10" r="1.6" />
+    <path d="m4 18 5-5 3.5 3.5L16 13l4 4.5" />
+  </S>
+);
+export const IconPie = (p: P) => (
+  <S {...p}>
+    <path d="M12 3a9 9 0 1 0 9 9h-9z" />
+    <path d="M15 3.4A9 9 0 0 1 20.6 9H15z" />
+  </S>
+);
+export const IconLine = (p: P) => (
+  <S {...p}>
+    <path d="M3.5 20.5h17" />
+    <path d="m4.5 15 4.5-5 4 3.5L19.5 6" />
+  </S>
+);
+export const IconBars = (p: P) => (
+  <S {...p}>
+    <path d="M3.5 20.5h17" />
+    <rect x="5.5" y="10" width="3" height="8" rx="1" />
+    <rect x="10.5" y="5" width="3" height="13" rx="1" />
+    <rect x="15.5" y="12" width="3" height="6" rx="1" />
+  </S>
+);
+export const IconList = (p: P) => (
+  <S {...p}>
+    <path d="M9 6h11M9 12h11M9 18h11" />
+    <path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" strokeWidth={2.8} />
+  </S>
+);
+export const IconUsers = (p: P) => (
+  <S {...p}>
+    <circle cx="9" cy="8" r="3.6" />
+    <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+    <path d="M16 4.6a3.6 3.6 0 0 1 0 6.8M18.5 14.2A6.5 6.5 0 0 1 21.5 20" />
+  </S>
+);
+export const IconReceipt = (p: P) => (
+  <S {...p}>
+    <path d="M6 3h12v18l-2.4-1.6L13.2 21 12 20l-1.2 1-2.4-1.6L6 21z" />
+    <path d="M9.5 8h5M9.5 12h5" />
+  </S>
+);

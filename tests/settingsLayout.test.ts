@@ -22,8 +22,8 @@ const h2s = [...html.matchAll(/<h2[^>]*>(.*?)<\/h2>/g)].map((m) => strip(m[1]));
 const h3s = [...html.matchAll(/<h3[^>]*>(.*?)<\/h3>/g)].map((m) => m[1]);
 
 describe('ترتیب و یکدستی صفحهٔ تنظیمات', () => {
-  it('ترتیب بخش‌ها: سال‌ها ← ساختمان ← انواع قبض ← تنظیمات ظاهری ← هشدارها ← پشتیبان', () => {
-    expect(h2s).toEqual(['سال‌ها', 'ساختمان', 'انواع قبض و روش‌های محاسبه', 'تنظیمات ظاهری', 'هشدارها', 'پشتیبان‌گیری و بازیابی']);
+  it('ترتیب بخش‌ها: سال‌ها ← ساختمان ← انواع قبض ← نمایش گزارش‌ها ← تنظیمات ظاهری ← هشدارها ← پشتیبان', () => {
+    expect(h2s).toEqual(['سال‌ها', 'ساختمان', 'انواع قبض و روش‌های محاسبه', 'نمایش گزارش‌ها', 'تنظیمات ظاهری', 'هشدارها', 'پشتیبان‌گیری و بازیابی']);
   });
   it('«تنظیمات ظاهری» پنج زیرگروه دارد: تم (اول)، نحوه نمایش متراژ، نماد واحد، نماد متراژ، نحوه نمایش اعلان‌ها', () => {
     const a = html.indexOf('data-acc="appearance"');
@@ -48,19 +48,20 @@ describe('ترتیب و یکدستی صفحهٔ تنظیمات', () => {
   });
 
   it('هر ۶ بخش آکاردئون و پیش‌فرض بسته‌اند؛ دکمهٔ عنوان داخل h2 با aria-expanded/aria-controls و ناحیهٔ region', () => {
-    expect(html.match(/class="card settings-card acc[ "]/g)).toHaveLength(6);
-    expect(html.match(/class="acc__head" aria-expanded="false"/g)).toHaveLength(6);
+    expect(html.match(/class="card settings-card acc[ "]/g)).toHaveLength(7);
+    expect(html.match(/class="acc__head" aria-expanded="false"/g)).toHaveLength(7);
     expect(html).not.toContain('aria-expanded="true"');
     expect(html).not.toContain('acc is-open');
     for (const m of html.matchAll(/<h2 class="acc__title" id="([^"]+)"><button[^>]*aria-controls="([^"]+)"/g)) {
       expect(html).toContain(`id="${m[2]}" class="acc__body" role="region" aria-labelledby="${m[1]}"`);
     }
-    expect(html.match(/acc__chevron/g)).toHaveLength(6);
+    expect(html.match(/acc__chevron/g)).toHaveLength(7);
   });
-  it('نسخه و سازنده بیرون از آکاردئون و همیشه دیده می‌شوند', () => {
+  it('نسخه بیرون از آکاردئون و همیشه دیده می‌شود؛ نام و ایمیل سازنده فعلاً پنهان است (TODO: نام مستعار و ایمیل کاری بعداً جایگزین شود)', () => {
     const tail = html.slice(html.lastIndexOf('</section>'));
     expect(tail).toContain('app-version');
-    expect(tail).toContain('app-credit');
+    expect(tail).not.toContain('app-credit');
+    expect(html).not.toMatch(/AmirMahdi|amirmahdi|mailto:/i);
   });
   it('حالت باز/بسته فقط در حافظهٔ نشست: ثبت، خواندن و بازنشانی', async () => {
     const { isAccordionOpen, setAccordionOpen, resetAccordionState } = await import('../src/logic/accordionState');

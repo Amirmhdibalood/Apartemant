@@ -33,9 +33,12 @@ function downloadDataUrl(dataUrl: string, fileName: string) {
   a.remove();
 }
 
-async function dataUrlToFile(img: RenderedBillImage): Promise<File> {
+/** هر تصویر آمادهٔ خروجی (تصویر قبض یا تصویر گزارش) */
+export interface ImageFile { dataUrl: string; base64: string; fileName: string }
+
+async function dataUrlToFile(img: ImageFile): Promise<File> {
   const blob = await (await fetch(img.dataUrl)).blob();
-  return new File([blob], img.fileName, { type: 'image/png' });
+  return new File([blob], img.fileName, { type: img.fileName.endsWith('.jpg') ? 'image/jpeg' : 'image/png' });
 }
 
 export type ShareOutcome = 'shared' | 'cancelled' | 'downloaded';
@@ -43,11 +46,16 @@ export type ShareOutcome = 'shared' | 'cancelled' | 'downloaded';
 /** باز کردن پنجره اشتراک‌گذاری با تصویر (تلگرام، واتس‌اپ، ...) */
 export async function shareBillImage(data: BillWithUnits, pre?: RenderedBillImage): Promise<ShareOutcome> {
   const img = pre ?? (await renderBillImage(data));
+  return shareImageFile(img, 'قبض', 'تصویر قبض', 'اشتراک‌گذاری تصویر قبض');
+}
+
+/** اشتراک‌گذاری هر فایل تصویری (قبض یا گزارش) — همان رفتار تصویر قبض */
+export async function shareImageFile(img: ImageFile, webTitle: string, title: string, dialogTitle: string): Promise<ShareOutcome> {
   if (!Capacitor.isNativePlatform()) {
     try {
       const file = await dataUrlToFile(img);
       if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'قبض' });
+        await navigator.share({ files: [file], title: webTitle });
         return 'shared';
       }
     } catch (e) {
@@ -58,7 +66,7 @@ export async function shareBillImage(data: BillWithUnits, pre?: RenderedBillImag
   }
   const { uri } = await Filesystem.writeFile({ path: img.fileName, data: img.base64, directory: Directory.Cache });
   try {
-    await Share.share({ title: 'تصویر قبض', files: [uri], dialogTitle: 'اشتراک‌گذاری تصویر قبض' });
+    await Share.share({ title, files: [uri], dialogTitle });
     return 'shared';
   } catch (e) {
     if (isCancel(e)) return 'cancelled';
@@ -75,6 +83,11 @@ export type SaveOutcome =
 /** ذخیره تصویر در گالری (Pictures/Apartemant) */
 export async function saveBillImageToGallery(data: BillWithUnits, pre?: RenderedBillImage): Promise<SaveOutcome> {
   const img = pre ?? (await renderBillImage(data));
+  return saveImageFileToGallery(img, () => shareBillImage(data, img));
+}
+
+/** ذخیره هر فایل PNG (قبض یا گزارش) در گالری؛ در اندروید ۹ و قدیمی‌تر پنجرهٔ اشتراک‌گذاری */
+export async function saveImageFileToGallery(img: ImageFile, fallbackShare: () => Promise<ShareOutcome>): Promise<SaveOutcome> {
   if (!Capacitor.isNativePlatform()) {
     downloadDataUrl(img.dataUrl, img.fileName);
     return { kind: 'downloaded' };
@@ -86,7 +99,7 @@ export async function saveBillImageToGallery(data: BillWithUnits, pre?: Rendered
     const code = (e as { code?: string })?.code;
     const msg = String((e as { message?: string })?.message ?? e);
     if (code === 'UNSUPPORTED' || msg.includes('UNSUPPORTED') || msg.includes('not implemented')) {
-      return { kind: 'shared-fallback', outcome: await shareBillImage(data, img) };
+      return { kind: 'shared-fallback', outcome: await fallbackShare() };
     }
     throw e;
   }

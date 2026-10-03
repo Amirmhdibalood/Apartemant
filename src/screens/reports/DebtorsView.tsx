@@ -8,6 +8,8 @@ import { useIconPrefs } from '../../context/IconPrefsContext';
 import { IconCheck, IconChevronLeft } from '../../components/Icons';
 import { formatAmount } from '../../logic/formatting';
 import { debtorsReport, PAYMENT_GRACE_DAYS } from '../../logic/debts';
+import { debtorsDoc } from '../../logic/reportDoc';
+import { ReportActions } from '../../components/ReportActions';
 
 interface Props {
   all: BillWithUnits[] | null;
@@ -20,6 +22,7 @@ export function DebtorsView({ all, onOpenBill, onOpenUnit }: Props) {
   const { unitIcon } = useIconPrefs();
   const report = useMemo(() => debtorsReport(all ?? []), [all]);
   const [open, setOpen] = useState<number | null>(null);
+  const doc = useMemo(() => (all && all.length > 0 ? debtorsDoc(report) : null), [all, report]);
   if (!all) return null;
   const expanded = open ?? report.units[0]?.unitNumber ?? null;
 
@@ -115,6 +118,7 @@ export function DebtorsView({ all, onOpenBill, onOpenUnit }: Props) {
           </div>
         </>
       )}
+      <ReportActions doc={doc} />
     </>
   );
 }

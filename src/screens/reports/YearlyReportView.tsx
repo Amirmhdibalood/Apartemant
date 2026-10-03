@@ -12,6 +12,8 @@ import { formatAmount } from '../../logic/formatting';
 import { recordYearOptions } from '../../logic/years';
 import { useEntryPrefs } from '../../context/EntryPrefsContext';
 import { pickReportYear, yearlyReport } from '../../logic/report';
+import { yearlyDoc } from '../../logic/reportDoc';
+import { ReportActions } from '../../components/ReportActions';
 
 interface Props {
   /** همه قبض‌ها (null = در حال بارگذاری) */
@@ -37,6 +39,7 @@ export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMont
   const year = yearProp && years.includes(yearProp) ? yearProp : pickReportYear(years, billYears, now.year);
   const report = useMemo(() => yearlyReport(all ?? [], year, prefs.types), [all, year, prefs.types]);
   const withCost = report.byType.filter((t) => t.total > 0);
+  const doc = useMemo(() => (all && report.billCount > 0 ? yearlyDoc(report) : null), [all, report]);
   const withoutCost = report.byType.filter((t) => t.total === 0);
 
   return (
@@ -156,6 +159,7 @@ export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMont
             </div>
           </>
         )}
+      <ReportActions doc={doc} />
     </>
   );
 }

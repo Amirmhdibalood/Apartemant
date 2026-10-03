@@ -1,6 +1,7 @@
 /** تعریف مسیرهای برنامه (ناوبری ساده مبتنی بر Stack، بدون وابستگی خارجی) */
 import type { ExpenseType } from './models/types';
 import type { StatusFilter } from './logic/billFilter';
+import type { ReportId } from './logic/reportCatalog';
 
 export type Route =
   | { name: 'home' }
@@ -16,8 +17,8 @@ export type Route =
 
 export type RouteName = Route['name'];
 
-/** زبانه‌های مرکز گزارش‌ها (گزارش‌های جدید در آینده اینجا اضافه می‌شوند) */
-export type ReportTab = 'yearly' | 'debtors' | 'billPayments';
+/** شناسهٔ گزارش‌ها (از ۱.۷.۰ فهرست گزارش‌ها + صفحهٔ جداگانهٔ هر گزارش؛ بدون tab = فهرست) */
+export type ReportTab = ReportId;
 
 /** صفحاتی که نوار پایین (Bottom Navigation) در آن‌ها نمایش داده می‌شود */
 export const TAB_ROUTES: RouteName[] = ['home', 'records', 'report', 'settings'];

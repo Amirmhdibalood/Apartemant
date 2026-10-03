@@ -12,6 +12,8 @@ import { typeFilterOptions } from '../../logic/entryPrefs';
 import { useEntryPrefs } from '../../context/EntryPrefsContext';
 import { billPaymentReport, filterPaymentRows, PAYMENT_STATUS_LABEL, toggleStatusFilter, type PaymentStatusFilter } from '../../logic/billPaymentReport';
 import { formatJalaliSlash, todayJalali } from '../../logic/jalali';
+import { billPaymentsDoc } from '../../logic/reportDoc';
+import { ReportActions } from '../../components/ReportActions';
 
 interface Props {
   all: BillWithUnits[] | null;
@@ -34,6 +36,7 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
   const report = useMemo(() => billPaymentReport(all ?? [], year, type, today), [all, year, type, today.year, today.month, today.day]);
   const s = report.summary;
   const shown = useMemo(() => filterPaymentRows(report.rows, status), [report.rows, status]);
+  const doc = useMemo(() => (all && report.rows.length > 0 ? billPaymentsDoc(shown, s, year, type) : null), [all, report.rows.length, shown, s, year, type]);
   const tap = (x: PaymentStatusFilter) => setStatus((cur) => toggleStatusFilter(cur, x));
   const typeIndex = Math.max(0, typeOptions.findIndex((o) => o.value === type));
 
@@ -125,6 +128,7 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
           </div>
         </>
       )}
+      <ReportActions doc={doc} />
     </>
   );
 }

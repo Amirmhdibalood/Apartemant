@@ -16,6 +16,8 @@ import { NOTIF_MODES } from '../logic/notifMode';
 import { useAreaMode } from '../context/AreaModeContext';
 import { AREA_MODES } from '../logic/areaMode';
 import { useEntryPrefs } from '../context/EntryPrefsContext';
+import { useReportPrefs } from '../context/ReportPrefsContext';
+import { REPORTS } from '../logic/reportCatalog';
 import { ALL_SPLIT_METHODS } from '../logic/entryPrefs';
 import { EXPENSE_TYPES, EXPENSE_TYPE_ORDER, SPLIT_METHOD_LABELS } from '../models/constants';
 import { ExpenseIcon } from '../components/ExpenseIcon';
@@ -32,6 +34,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
   const { areaMode, setAreaMode } = useAreaMode();
   const { unitIcon, areaIcon, setUnitIcon, setAreaIcon } = useIconPrefs();
   const { prefs, setTypeOn, setMethodOn } = useEntryPrefs();
+  const { prefs: reportPrefs, setReportOn } = useReportPrefs();
   const years = selectableYears();
   const [restoreKey, setRestoreKey] = useState(0);
 
@@ -90,6 +93,23 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
             );
           })}
           {prefs.methods.length === 1 && <p className="card__hint entry-prefs__note">فقط یک روش روشن است؛ انتخابگر نحوه تقسیم در فرم ثبت قبض پنهان و همین روش استفاده می‌شود.</p>}
+        </Accordion>
+
+        <Accordion id="report-prefs" title="نمایش گزارش‌ها" className="entry-prefs">
+          <p className="card__hint">
+            گزارش خاموش از فهرست «گزارش‌ها» کنار می‌رود و با روشن کردن دوباره برمی‌گردد (هیچ داده‌ای پاک نمی‌شود). دست‌کم یک گزارش باید روشن بماند.
+          </p>
+          {REPORTS.map((r) => {
+            const on = reportPrefs.visible.includes(r.id);
+            return (
+              <div className="setting-row entry-prefs__row" key={r.id}>
+                <label htmlFor={`sw-report-${r.id}`} className="setting-row__text entry-prefs__label">
+                  <span className="setting-row__label">{r.title}</span>
+                </label>
+                <Switch id={`sw-report-${r.id}`} label={`نمایش گزارش ${r.title}`} checked={on} disabled={on && reportPrefs.visible.length === 1} onChange={(v) => setReportOn(r.id, v)} />
+              </div>
+            );
+          })}
         </Accordion>
 
         <Accordion id="appearance" title="تنظیمات ظاهری" className="appearance-card">
@@ -212,11 +232,14 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
           <BackupSection onRestored={() => setRestoreKey((k) => k + 1)} />
         </Accordion>
         <p className="app-version">آپارتمانت — {APP_VERSION_FA} — کاملاً آفلاین</p>
-        <p className="app-credit">
-          سازنده: <span dir="ltr">{DEVELOPER_NAME}</span>
-          <br />
-          <a dir="ltr" href={`mailto:${DEVELOPER_EMAIL}`}>{DEVELOPER_EMAIL}</a>
-        </p>
+        {/* TODO: نام مستعار و ایمیل کاری بعداً جایگزین شود — تا آن زمان (DEVELOPER_NAME/EMAIL در appVersion.ts = null) چیزی نمایش داده نمی‌شود */}
+        {DEVELOPER_NAME && DEVELOPER_EMAIL && (
+          <p className="app-credit">
+            سازنده: <span dir="ltr">{DEVELOPER_NAME}</span>
+            <br />
+            <a dir="ltr" href={`mailto:${DEVELOPER_EMAIL}`}>{DEVELOPER_EMAIL}</a>
+          </p>
+        )}
       </main>
     </>
   );
