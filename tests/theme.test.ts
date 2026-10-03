@@ -133,8 +133,8 @@ describe('محل دکمه‌ها و تصویر قبض', () => {
     const html = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'سوابق', onHelp: () => {}, onBack: () => {} }))));
     expect(html).toContain('راهنما (آموزش)');
     expect(html).toContain('حالت تاریک');
-    // ترتیب از راست (راست‌به‌چپ): بازگشت ← تم ← «؟» ← زنگوله
-    const pos = ['aria-label="بازگشت"', 'حالت تاریک', 'راهنما (آموزش)', 'aria-label="اعلان‌ها"'].map((x) => html.indexOf(x));
+    // صفحه راست‌به‌چپ است؛ ترتیب فیزیکی از چپ: بازگشت ← تم ← «؟» ← زنگوله، یعنی در DOM برعکس:
+    const pos = ['aria-label="اعلان‌ها"', 'راهنما (آموزش)', 'حالت تاریک', 'aria-label="بازگشت"'].map((x) => html.indexOf(x));
     expect(pos.every((x) => x >= 0)).toBe(true);
     expect([...pos].sort((a, b) => a - b)).toEqual(pos);
     expect(html).toContain('app-header--two');

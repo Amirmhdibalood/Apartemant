@@ -28,7 +28,7 @@ export function HomeScreen({ onNewBill, onOpen, alerts: visible = [], onOpenBill
   const { shown: alerts, more } = bannerFor(visible, mode);
   return (
     <main className="screen screen--home">
-      {onHelp && <div className="home-topbar"><ThemeToggle /><HelpButton onHelp={onHelp} /><NotifBell /></div>}
+      {onHelp && <div className="home-topbar"><NotifBell /><HelpButton onHelp={onHelp} /><ThemeToggle /></div>}
       {alerts.length > 0 && (
         <section className="due-alerts" aria-label="هشدار مهلت پرداخت">
           {alerts.map((a) => (
