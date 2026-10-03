@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { adaptColor, darkHex, hexToRgb, paletteSwatches, rgbToHsl } from '../src/logic/darkColor';
 import { DARK_PALETTES, DARK_PALETTE_ORDER, DEFAULT_DARK_PALETTE, sanitizeDarkPalette, type DarkPaletteId } from '../src/logic/darkPalettes';
+import type { LightPaletteId } from '../src/logic/lightPalettes';
 import { themeMetaColor, THEME_META_COLORS } from '../src/logic/theme';
 import { typeColors } from '../src/logic/typeColor';
 import { EXPENSE_TYPE_ORDER } from '../src/models/constants';
@@ -20,9 +21,9 @@ const { themeRepository, PALETTE_KEY } = await import('../src/storage/themeRepos
 const { backupRepository } = await import('../src/storage/backupRepository');
 const { billRepository } = await import('../src/storage/billRepository');
 
-let themeState: { theme: 'light' | 'dark'; palette: DarkPaletteId } = { theme: 'dark', palette: 'navy' };
+let themeState: { theme: 'light' | 'dark'; palette: DarkPaletteId; lightPalette?: LightPaletteId } = { theme: 'dark', palette: 'navy' };
 vi.mock('../src/context/ThemeContext', () => ({
-  useTheme: () => ({ ...themeState, toggle: () => undefined, setTheme: () => undefined, setPalette: () => undefined }),
+  useTheme: () => ({ lightPalette: 'sky', ...themeState, toggle: () => undefined, setTheme: () => undefined, setPalette: () => undefined, setLightPalette: () => undefined }),
 }));
 const { ThemePicker } = await import('../src/components/ThemePicker');
 
@@ -226,13 +227,15 @@ describe('ماندگاری انتخاب پالت', () => {
 
 describe('انتخابگر «تم» در تنظیمات', () => {
   const render = (state: typeof themeState) => { themeState = state; return renderToStaticMarkup(createElement(ThemePicker)); };
-  it('گروه «تم» با دو حالت: تاریک (بازشونده، پیش‌فرض بسته) و روشن با نشان «به‌زودی»', () => {
+  it('گروه «تم» با دو حالت بازشونده: تاریک و روشن (بدون نشان «به‌زودی»)', () => {
     const html = render({ theme: 'dark', palette: 'navy' });
     expect(html).toContain('<h3 class="settings-sub" id="theme-title">تم</h3>');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('>تاریک<');
     expect(html).toContain('>روشن<');
-    expect(html).toContain('به‌زودی');
+    expect(html).not.toContain('به‌زودی');
+    expect(html).toContain('پالت: آسمانی');
+    expect(html).toContain('role="radiogroup" aria-label="پالت‌های روشن"');
     expect(html).toContain('پالت: سرمه‌ای عمیق');
     expect(html).toContain('role="radiogroup" aria-label="پالت‌های تاریک"');
     expect(html).toMatch(/class="tp-body"[^>]*hidden/); // بسته: دیده نمی‌شود و فوکوس نمی‌گیرد
@@ -244,20 +247,19 @@ describe('انتخابگر «تم» در تنظیمات', () => {
       expect(html).toContain(DARK_PALETTES[id].desc);
       expect(html).toContain(`background:${darkHex('#f4f7fc', id)}`);
     }
-    expect(html.match(/tp-mini"/g)).toHaveLength(4);
-    expect(html.match(/tp-def/g)).toHaveLength(1);
-    expect(html.match(/role="radio"/g)).toHaveLength(4);
+    expect(html.match(/tp-mini"/g)).toHaveLength(4 + 5); // ۴ تاریک + ۵ روشن
+    expect(html.match(/tp-def/g)).toHaveLength(2); // سرمه‌ای و آسمانی
+    expect(html.match(/role="radio"/g)).toHaveLength(4 + 5);
   });
   it('فقط پالت فعلی (در حالت تاریک) تیک دارد؛ در حالت روشن هیچ‌کدام و «روشن» فعال است', () => {
     const warm = render({ theme: 'dark', palette: 'warm' });
-    expect(warm.match(/aria-checked="true"/g)).toHaveLength(1);
+    expect(warm.match(/aria-checked="true"/g)).toHaveLength(1); // فقط پالت تاریک فعال (روشن غیرفعال)
     expect(warm).toMatch(/aria-checked="true" class="tp-pal is-active"[^>]*>(?:(?!<button).)*قهوه‌ای گرم/s);
     expect(warm).toContain('tp-mode is-current'); // تاریک
-    expect(warm).toContain('aria-pressed="false"'); // روشن
     const light = render({ theme: 'light', palette: 'warm' });
-    expect(light).not.toContain('aria-checked="true"');
-    expect(light).toContain('aria-pressed="true"');
-    expect(light).toContain('پالت: قهوه‌ای گرم'); // پالت در حالت روشن هم نگه داشته می‌شود
+    expect(light.match(/aria-checked="true"/g)).toHaveLength(1); // فقط پالت روشن (آسمانی) تیک دارد
+    expect(light).toMatch(/aria-checked="true" class="tp-pal is-active"[^>]*>(?:(?!<button).)*آسمانی/s);
+    expect(light).toContain('پالت: قهوه‌ای گرم'); // پالت تاریک در حالت روشن هم نگه داشته می‌شود
   });
   it('CSS انتخابگر بدون هگز ثابت (همه با متغیر) و بدون اسکرول افقی', () => {
     const css = readFileSync('src/styles/global.css', 'utf8');
@@ -270,7 +272,7 @@ describe('انتخابگر «تم» در تنظیمات', () => {
 });
 
 describe('تصویر قبض و نوار وضعیت', () => {
-  it('تصویر قبض همچنان از تم/پالت مستقل است', () => {
+  it('تصویر قبض از پالت تاریک مستقل است (فقط پالت روشن انتخابی را می‌خواند)', () => {
     for (const f of ['../src/services/billImage.tsx', '../src/logic/billImage.ts']) {
       expect(readFileSync(new URL(f, import.meta.url), 'utf8')).not.toMatch(/darkPalettes|darkColor|useTheme|useAdapt|data-palette/);
     }
@@ -278,7 +280,8 @@ describe('تصویر قبض و نوار وضعیت', () => {
   it('ThemeProvider پالت را روی ریشه، meta و نوار وضعیت اعمال می‌کند', () => {
     const src = readFileSync('src/context/ThemeContext.tsx', 'utf8');
     expect(src).toContain('dataset.palette = palette');
-    expect(src).toContain('themeMetaColor(theme, palette)');
+    expect(src).toContain('themeMetaColor(theme, palette, lightPalette)');
+    expect(src).toContain('dataset.light = lightPalette');
     expect(src).toContain('SystemBarsStyle.Dark');
   });
 });

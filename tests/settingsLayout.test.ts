@@ -10,7 +10,7 @@ vi.mock('../src/context/NotifContext', () => ({ useNotif: () => ({ mode: 'sheet'
 vi.mock('../src/context/AreaModeContext', () => ({ useAreaMode: () => ({ areaMode: 'column', setAreaMode: () => undefined }) }));
 vi.mock('../src/context/IconPrefsContext', () => ({ useIconPrefs: () => ({ unitIcon: 'door', areaIcon: 'm2', setUnitIcon: () => undefined, setAreaIcon: () => undefined }) }));
 vi.mock('../src/context/EntryPrefsContext', () => ({ useEntryPrefs: () => ({ prefs: DEFAULT_ENTRY_PREFS, setTypeOn: () => undefined, setMethodOn: () => undefined }) }));
-vi.mock('../src/context/ThemeContext', () => ({ useTheme: () => ({ theme: 'light', palette: 'navy', toggle: () => undefined, setTheme: () => undefined, setPalette: () => undefined }) }));
+vi.mock('../src/context/ThemeContext', () => ({ useTheme: () => ({ theme: 'light', palette: 'navy', lightPalette: 'sky', toggle: () => undefined, setTheme: () => undefined, setPalette: () => undefined, setLightPalette: () => undefined }) }));
 vi.mock('../src/components/AppHeader', () => ({ AppHeader: () => null }));
 vi.mock('../src/components/BuildingSection', () => ({ BuildingSection: () => createElement('div', { className: 'building-card' }, 'محتوای ساختمان') }));
 vi.mock('../src/components/BackupSection', () => ({ BackupSection: () => createElement('div', { className: 'backup-card' }, 'محتوای پشتیبان') }));

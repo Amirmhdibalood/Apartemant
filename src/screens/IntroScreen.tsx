@@ -18,8 +18,8 @@ interface Props {
  * کاملاً آفلاین: تصویر و فونت داخل بسته برنامه هستند.
  */
 export function IntroScreen({ onDone }: Props) {
-  const { theme, palette } = useTheme();
-  const art = introArtFor(theme === 'dark', palette);
+  const { theme, palette, lightPalette } = useTheme();
+  const art = introArtFor(theme === 'dark', palette, lightPalette);
   const [leaving, setLeaving] = useState(false);
   const doneRef = useRef(false);
 

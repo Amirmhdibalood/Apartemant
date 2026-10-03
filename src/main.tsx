@@ -9,6 +9,7 @@ import '@fontsource/vazirmatn/900.css';
 import './styles/global.css';
 import './styles/dark.generated.css';
 import './styles/dark.css';
+import './styles/light.generated.css';
 import App from './App';
 import { ThemeProvider } from './context/ThemeContext';
 import { SettingsProvider } from './context/SettingsContext';

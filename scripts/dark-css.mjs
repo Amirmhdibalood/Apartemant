@@ -15,10 +15,10 @@ export const SRC_CSS = path.join(ROOT, 'src/styles/global.css');
 export const OUT_CSS = path.join(ROOT, 'src/styles/dark.generated.css');
 const DARK = ':root[data-theme="dark"]';
 /** ویژگی‌هایی که سفید در آن‌ها «متن/آیکون روی زمینه رنگی» است و نباید به رنگ کارت تبدیل شود */
-const KEEP_WHITE = new Set(['color', 'fill', 'stroke', '-webkit-text-fill-color', 'caret-color']);
+export const KEEP_WHITE = new Set(['color', 'fill', 'stroke', '-webkit-text-fill-color', 'caret-color']);
 
 /** جدا کردن اعلان‌ها در سطح بالا (; داخل پرانتز مثل url(data:...) نادیده گرفته می‌شود) */
-function splitDecls(body) {
+export function splitDecls(body) {
   const out = []; let depth = 0, cur = '';
   for (const ch of body) {
     if (ch === '(') depth++;
@@ -28,7 +28,7 @@ function splitDecls(body) {
   if (cur.trim()) out.push(cur);
   return out.map((d) => d.trim()).filter(Boolean);
 }
-function splitSelectors(sel) {
+export function splitSelectors(sel) {
   const out = []; let depth = 0, cur = '';
   for (const ch of sel) {
     if (ch === '(' || ch === '[') depth++;
@@ -38,9 +38,9 @@ function splitSelectors(sel) {
   if (cur.trim()) out.push(cur.trim());
   return out;
 }
-const darkSelector = (prefix) => (s) => (s === ':root' ? prefix : s.startsWith(':root') ? prefix + s.slice(5) : `${prefix} ${s}`);
+export const darkSelector = (prefix) => (s) => (s === ':root' ? prefix : s.startsWith(':root') ? prefix + s.slice(5) : `${prefix} ${s}`);
 
-const isWhite = (v) => /^(#fff(fff)?|white|rgba?\(\s*255\s*,\s*255\s*,\s*255\s*(,\s*1)?\))$/i.test(v.trim());
+export const isWhite = (v) => /^(#fff(fff)?|white|rgba?\(\s*255\s*,\s*255\s*,\s*255\s*(,\s*1)?\))$/i.test(v.trim());
 
 /** قاعده‌ی تاریک (فهرست [ویژگی، مقدار]) برای یک پالت؛ بدون رنگ ← فهرست خالی */
 function darkDecls(body, palette) {
@@ -81,7 +81,7 @@ function collect(css, palette, media = null, out = []) {
   return out;
 }
 
-function emit(items, prefix) {
+export function emit(items, prefix) {
   let out = ''; let curMedia = null;
   const close = () => { if (curMedia) { out += '}\n'; curMedia = null; } };
   for (const it of items) {

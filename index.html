@@ -6,11 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#DCE8FF" />
     <script>
-      // تم اولیه (قبل از رندر، بدون پرش رنگ): تم سیستم؛ ThemeProvider بعداً انتخاب ذخیره‌شده کاربر را اعمال می‌کند
+      // تم اولیه (قبل از رندر، بدون پرش رنگ): آخرین حالت/پالت‌های اعمال‌شده (آینهٔ سبک)، وگرنه تم سیستم؛
+      // ThemeProvider بعداً انتخاب ذخیره‌شده کاربر را از kvStore اعمال می‌کند
       try {
-        var d = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        document.documentElement.dataset.theme = d ? 'dark' : 'light';
-        document.documentElement.dataset.palette = 'navy';
+        var r = document.documentElement, m = null;
+        try { m = JSON.parse(localStorage.getItem('bc.themeMirror')); } catch (e) {}
+        var d = m && (m[0] === 'dark' || m[0] === 'light') ? m[0] === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var ok = function (v) { return typeof v === 'string' && /^[a-z]{3,12}$/.test(v); };
+        r.dataset.theme = d ? 'dark' : 'light';
+        r.dataset.palette = m && ok(m[1]) ? m[1] : 'navy';
+        r.dataset.light = m && ok(m[2]) ? m[2] : 'sky';
         if (d) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d121f');
       } catch (e) {}
     </script>

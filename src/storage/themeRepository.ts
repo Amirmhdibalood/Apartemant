@@ -2,10 +2,13 @@
 import { readJson, writeJson } from './kvStore';
 import { sanitizeTheme, type Theme } from '../logic/theme';
 import { DEFAULT_DARK_PALETTE, sanitizeDarkPalette, type DarkPaletteId } from '../logic/darkPalettes';
+import { DEFAULT_LIGHT_PALETTE, sanitizeLightPalette, type LightPaletteId } from '../logic/lightPalettes';
 
 const KEY = 'theme';
 /** پالت تم تاریک (از ۱.۶.۱۲)؛ مثل خود تم عمداً بیرون از فایل پشتیبان است */
 export const PALETTE_KEY = 'darkPalette';
+/** پالت تم روشن (از ۱.۶.۱۳)؛ آن هم بیرون از فایل پشتیبان است */
+export const LIGHT_PALETTE_KEY = 'lightPalette';
 
 export const themeRepository = {
   async get(): Promise<Theme | null> {
@@ -19,5 +22,11 @@ export const themeRepository = {
   },
   async savePalette(id: DarkPaletteId): Promise<void> {
     await writeJson(PALETTE_KEY, id);
+  },
+  async getLightPalette(): Promise<LightPaletteId> {
+    return sanitizeLightPalette(await readJson<unknown>(LIGHT_PALETTE_KEY, null)) ?? DEFAULT_LIGHT_PALETTE;
+  },
+  async saveLightPalette(id: LightPaletteId): Promise<void> {
+    await writeJson(LIGHT_PALETTE_KEY, id);
   },
 };
