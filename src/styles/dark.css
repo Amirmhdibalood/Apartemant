@@ -24,3 +24,12 @@
 :root[data-theme="dark"] .area-warn { border-color: #6b2f33; color: #ffb4ad; background: #3a1f26; }
 :root[data-theme="dark"] .ppm { border-color: #2c4a86; }
 :root[data-theme="dark"] .split-badge.is-perArea { background: #17423f; color: #7de3d3; }
+
+/* کلیدهای روشن/خاموش (Switch) و چک‌باکس در حالت تاریک:
+   قاعدهٔ خودکار `.switch` / `.checkbox__box` قوی‌تر از `.is-on` / `.is-checked` بود و روشن و خاموش یک‌رنگ می‌شدند. */
+:root[data-theme="dark"] .switch { background: #2a3858; box-shadow: inset 0 0 0 2px #7a89ad; }
+:root[data-theme="dark"] .switch__thumb { background: #aab4cf; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+:root[data-theme="dark"] .switch.is-on { background: var(--primary-fill); box-shadow: inset 0 0 0 2px #7fa6f5; }
+:root[data-theme="dark"] .switch.is-on .switch__thumb { background: #fff; }
+:root[data-theme="dark"] .checkbox.is-checked .checkbox__box { background: var(--success-fill); border-color: #64df9e; color: #fff; }
+:root[data-theme="dark"] .checkbox:not(.is-checked) .checkbox__box { border-color: #7a89ad; }
