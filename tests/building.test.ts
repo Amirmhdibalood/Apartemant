@@ -101,7 +101,7 @@ describe('تنظیمات ساختمان (منطق)', () => {
   it('مقایسه فرم با پیش‌فرض و «ذخیره به‌عنوان پیش‌فرض»', () => {
     const b = { units: [{ alias: 'رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 1, vacant: true }] };
     const rows = draftUnitsFromBuilding(b);
-    expect(rows).toEqual({ personCounts: ['5', '1'], unitAliases: ['رضایی', null], unitVacant: [false, true] });
+    expect(rows).toEqual({ personCounts: ['5', '1'], unitAliases: ['رضایی', null], unitVacant: [false, true], unitAreas: ['', ''] });
     expect(draftMatchesBuilding(rows.personCounts, rows.unitAliases, b, rows.unitVacant)).toBe(true);
     // تفاوت فقط در «خالی» هم یعنی فرم با پیش‌فرض فرق دارد
     expect(draftMatchesBuilding(rows.personCounts, rows.unitAliases, b, [false, false])).toBe(false);

@@ -10,6 +10,7 @@ import { DEFAULT_SPLIT_METHOD } from '../models/constants';
 import { unitPayments, withPayments } from './payments';
 import { parseJalaliKey } from './jalali';
 import { draftUnitsFromBuilding, sanitizeAlias } from './building';
+import { areaToInput, parseArea } from './area';
 
 export function buildBill(
   draft: BillDraft,
@@ -29,6 +30,8 @@ export function buildBill(
       // عکس لحظه‌ای اسم مستعار واحد (تغییرات بعدی تنظیمات ساختمان روی این قبض اثری ندارد)
       alias: sanitizeAlias(draft.unitAliases?.[i]),
       ...(draft.unitVacant?.[i] === true ? { vacant: true } : {}),
+      // عکس لحظه‌ای متراژ (فقط وقتی معتبر باشد؛ تغییر تنظیمات ساختمان روی این قبض اثری ندارد)
+      ...(parseArea(draft.unitAreas?.[i] ?? null) !== null ? { area: parseArea(draft.unitAreas?.[i] ?? null) } : {}),
       shareAmount: s.shareAmount,
       // واحد بدون سهم (واحد خالی) بدهی ندارد
       isSettled: s.shareAmount === 0 ? true : prev?.isSettled ?? false,
@@ -74,6 +77,7 @@ export function draftFromBill(x: BillWithUnits): BillDraft {
     personCounts: x.units.map((u) => String(u.personCount)),
     unitAliases: x.units.map((u) => sanitizeAlias(u.alias)),
     unitVacant: x.units.map((u) => u.vacant === true),
+    unitAreas: x.units.map((u) => areaToInput(u.area)),
     splitMethod: splitMethodOf(x.bill),
     splitChosen: true,
     dueDate: parseJalaliKey(x.bill.dueDate) ? x.bill.dueDate! : null,
@@ -88,7 +92,7 @@ export const DEFAULT_PERSON_COUNT = '1';
  * بدون تنظیمات: یک واحد با ۱ نفر. در فرم می‌توان واحد افزود/حذف کرد (فقط برای همین قبض).
  */
 export function emptyDraft(year: number, month: number, building?: BuildingSettings | null): BillDraft {
-  const rows = building && building.units.length > 0 ? draftUnitsFromBuilding(building) : { personCounts: [DEFAULT_PERSON_COUNT], unitAliases: [null], unitVacant: [false] };
+  const rows = building && building.units.length > 0 ? draftUnitsFromBuilding(building) : { personCounts: [DEFAULT_PERSON_COUNT], unitAliases: [null], unitVacant: [false], unitAreas: [''] };
   return {
     editingBillId: null,
     year,
@@ -100,6 +104,7 @@ export function emptyDraft(year: number, month: number, building?: BuildingSetti
     personCounts: rows.personCounts,
     unitAliases: rows.unitAliases,
     unitVacant: rows.unitVacant,
+    unitAreas: rows.unitAreas,
     splitMethod: DEFAULT_SPLIT_METHOD,
   };
 }
@@ -109,6 +114,11 @@ export function draftAliases(draft: Pick<BillDraft, 'personCounts' | 'unitAliase
   return draft.personCounts.map((_, i) => sanitizeAlias(draft.unitAliases?.[i]));
 }
 
+/** متراژهای هم‌ردیف با نفرات (برای فرم‌های قدیمی بدون unitAreas) */
+export function draftAreas(draft: Pick<BillDraft, 'personCounts' | 'unitAreas'>): string[] {
+  return draft.personCounts.map((_, i) => draft.unitAreas?.[i] ?? '');
+}
+
 /** پرچم‌های «خالی» هم‌ردیف با نفرات (برای فرم‌های قدیمی بدون unitVacant) */
 export function draftVacant(draft: Pick<BillDraft, 'personCounts' | 'unitVacant'>): boolean[] {
   return draft.personCounts.map((_, i) => draft.unitVacant?.[i] === true);
@@ -116,7 +126,7 @@ export function draftVacant(draft: Pick<BillDraft, 'personCounts' | 'unitVacant'
 
 /** افزودن واحد در فرم (فقط برای همین قبض)؛ واحد جدید بدون اسم مستعار = «واحد N» */
 export function addDraftUnit(draft: BillDraft, persons: string = DEFAULT_PERSON_COUNT): BillDraft {
-  return { ...draft, personCounts: [...draft.personCounts, persons], unitAliases: [...draftAliases(draft), null], unitVacant: [...draftVacant(draft), false] };
+  return { ...draft, personCounts: [...draft.personCounts, persons], unitAliases: [...draftAliases(draft), null], unitVacant: [...draftVacant(draft), false], unitAreas: [...draftAreas(draft), ''] };
 }
 
 /** حذف یک واحد از فرم؛ اسم مستعار همراه ردیف خودش جابه‌جا می‌شود (شماره واحدهای بعدی یکی کم می‌شود) */
@@ -126,5 +136,6 @@ export function removeDraftUnit(draft: BillDraft, index: number): BillDraft {
     personCounts: draft.personCounts.filter((_, i) => i !== index),
     unitAliases: draftAliases(draft).filter((_, i) => i !== index),
     unitVacant: draftVacant(draft).filter((_, i) => i !== index),
+    unitAreas: draftAreas(draft).filter((_, i) => i !== index),
   };
 }

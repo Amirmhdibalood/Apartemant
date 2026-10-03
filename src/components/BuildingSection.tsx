@@ -8,16 +8,21 @@ import { MAX_ALIAS_LENGTH, MAX_BUILDING_UNITS, resizeBuilding, sanitizeAlias, un
 import { sanitizePersonCount, toPersianDigits } from '../logic/formatting';
 import { Errors } from '../logic/errors';
 import { confirmUnitReduction } from './confirmUnitReduction';
+import { AreaInput } from './AreaInput';
+import { useAreaMode } from '../context/AreaModeContext';
+import { areaToInput, parseArea } from '../logic/area';
 
-interface Row { alias: string; persons: string; vacant: boolean }
+interface Row { alias: string; persons: string; vacant: boolean; area: string }
 
-const toRows = (b: BuildingSettings): Row[] => b.units.map((u) => ({ alias: u.alias ?? '', persons: String(u.defaultPersons), vacant: u.vacant === true }));
+const toRows = (b: BuildingSettings): Row[] => b.units.map((u) => ({ alias: u.alias ?? '', persons: String(u.defaultPersons), vacant: u.vacant === true, area: areaToInput(u.area) }));
 const fromRows = (rows: Row[], prev: BuildingSettings | null): BuildingSettings => ({
   units: rows.map((r, i) => {
     // نفرات خالی یا ۰ (در حال تایپ) = مقدار قبلی ذخیره‌شده، وگرنه ۱
     const typed = /^\d+$/.test(r.persons.trim()) ? Number(r.persons.trim()) : 0;
     const unit: BuildingUnit = { alias: sanitizeAlias(r.alias), defaultPersons: typed >= 1 ? typed : prev?.units[i]?.defaultPersons || 1 };
     if (r.vacant) unit.vacant = true;
+    const area = parseArea(r.area);
+    if (area !== null) unit.area = area;
     return unit;
   }),
 });
@@ -32,6 +37,7 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
   const saved = useRef<BuildingSettings | null>(null);
   const timer = useRef<number | undefined>(undefined);
   const [countText, setCountText] = useState('');
+  const { areaMode } = useAreaMode();
 
   useEffect(() => {
     let alive = true;
@@ -118,11 +124,12 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
         </div>
       </div>
 
-      <div className="building-units">
+      <div className={'building-units area-' + areaMode}>
         <div className="building-unit building-unit--head">
           <span>واحد</span>
           <span>اسم مستعار (اختیاری)</span>
           <span className="building-unit__persons-h"><IconUser size={13} /> نفرات</span>
+          {areaMode === 'column' && <span className="building-unit__persons-h">متراژ (م²)</span>}
           <span className="building-unit__vacant-h">خالی</span>
         </div>
         {rows.map((r, i) => (
@@ -160,12 +167,36 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
                 } else update(rows, true);
               }}
             />
+            {areaMode === 'column' && (
+              <AreaInput
+                className="building-unit__area"
+                value={r.area}
+                ariaLabel={`متراژ واحد ${toPersianDigits(i + 1)}`}
+                onChange={(v) => update(rows.map((x, j) => (j === i ? { ...x, area: v } : x)))}
+                onBlur={() => update(rows, true)}
+              />
+            )}
             <span className="building-unit__vacant">
               <Checkbox checked={r.vacant} onChange={(v) => update(rows.map((x, j) => (j === i ? { ...x, vacant: v } : x)), true)} ariaLabel={`واحد ${toPersianDigits(i + 1)} خالی است`} />
             </span>
+            {areaMode === 'line' && (
+              <span className="building-unit__area-line">
+                <label htmlFor={`bu-area-${i}`}>متراژ</label>
+                <AreaInput
+                  id={`bu-area-${i}`}
+                  value={r.area}
+                  placeholder="مثلاً ۷۵٫۵"
+                  ariaLabel={`متراژ واحد ${toPersianDigits(i + 1)}`}
+                  onChange={(v) => update(rows.map((x, j) => (j === i ? { ...x, area: v } : x)))}
+                  onBlur={() => update(rows, true)}
+                />
+                <span className="area-unit">مترمربع</span>
+              </span>
+            )}
           </div>
         ))}
       </div>
+      <p className="building-note-small">متراژ (اختیاری، اعشار مجاز مثل ۷۵٫۵) فقط برای تقسیم «بر اساس متراژ» لازم است و در فرم قبض پیش‌فرض می‌شود؛ ظاهر آن را در «نحوه نمایش متراژ» پایین‌تر انتخاب کنید.</p>
       <p className="building-note-small">واحد «خالی» در قبض‌های جدید از محاسبه کنار گذاشته می‌شود (در هیچ‌کدام از دو روش تقسیم سهمی ندارد و در بدهکاران نمی‌آید)؛ در فرم قبض می‌توانید برای همان قبض تغییرش دهید. نام واحد بدون اسم مستعار: «واحد ۱»، «واحد ۲»، ...</p>
     </section>
   );

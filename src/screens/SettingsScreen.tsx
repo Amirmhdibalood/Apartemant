@@ -12,12 +12,15 @@ import { APP_VERSION_FA, DEVELOPER_EMAIL, DEVELOPER_NAME } from '../appVersion';
 import { Errors } from '../logic/errors';
 import { useNotif } from '../context/NotifContext';
 import { NOTIF_MODES } from '../logic/notifMode';
+import { useAreaMode } from '../context/AreaModeContext';
+import { AREA_MODES } from '../logic/areaMode';
 
 /** ۱۵. تنظیمات */
 export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => void; canGoBack: boolean; onHelp?: () => void }) {
   const { settings, updateSettings } = useSettings();
   const { showErrors, toast } = useFeedback();
   const { mode, setMode } = useNotif();
+  const { areaMode, setAreaMode } = useAreaMode();
   const years = selectableYears();
   const [restoreKey, setRestoreKey] = useState(0);
 
@@ -63,6 +66,26 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
               <span>نمایش دوباره سایر هشدارهای پنهان‌شده</span>
             </button>
           )}
+        </section>
+
+        <section className="card settings-card" aria-labelledby="area-mode-title">
+          <h2 className="card__title" id="area-mode-title">نحوه نمایش متراژ</h2>
+          <p className="card__hint">شکل ورودی و نمایش متراژ واحدها در «ساختمان»، فرم قبض، نتیجه و جزئیات قبض (برای تقسیم «بر اساس متراژ»). فقط ظاهر را عوض می‌کند و در فایل پشتیبان نیست.</p>
+          <div className="seg" role="radiogroup" aria-label="نحوه نمایش متراژ">
+            {AREA_MODES.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                role="radio"
+                aria-checked={areaMode === m.id}
+                className={'seg__btn' + (areaMode === m.id ? ' is-active' : '')}
+                onClick={() => setAreaMode(m.id)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <p className="card__hint notif-mode-hint">{AREA_MODES.find((m) => m.id === areaMode)?.hint}</p>
         </section>
 
         <section className="card settings-card" aria-labelledby="notif-mode-title">

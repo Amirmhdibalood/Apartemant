@@ -9,6 +9,7 @@ import { splitMethodOf } from './split';
 import { paidAmount, remainingAmount } from './payments';
 import { jalaliDateTime, jalaliIsoDate } from './date';
 import { sanitizeAlias, unitShortLabel } from './building';
+import { formatArea, parseArea, sumAreas } from './area';
 
 export const APP_NAME_FA = 'آپارتمانت';
 
@@ -23,6 +24,8 @@ export interface BillImageRow {
   unitLabel: string;
   /** تعداد نفرات (ارقام فارسی) — فقط در تقسیم «بر اساس نفرات» نمایش داده می‌شود */
   occupants: string;
+  /** متراژ واحد (ارقام فارسی) — فقط در تقسیم «بر اساس متراژ» */
+  area: string;
   /** سهم واحد (ارقام فارسی با جداکننده) */
   share: string;
   status: { kind: UnitStatusKind; text: string };
@@ -43,6 +46,10 @@ export interface BillImageModel {
   splitLabel: string;
   /** ستون «نفرات» نمایش داده شود؟ (فقط بر اساس نفرات) */
   showOccupants: boolean;
+  /** ستون «متراژ» نمایش داده شود؟ (فقط بر اساس متراژ) */
+  showArea: boolean;
+  /** جمع متراژ واحدهای غیرخالی (ارقام فارسی، مثل «۳۰۰») */
+  totalArea: string;
   /** ستون «وضعیت» نمایش داده شود؟ (فقط وقتی حداقل یک پرداخت ثبت شده) */
   showStatus: boolean;
   rows: BillImageRow[];
@@ -95,6 +102,7 @@ export function buildBillImageModel({ bill, units }: BillWithUnits, now: Date = 
       alias: sanitizeAlias(u.alias),
       unitLabel: unitShortLabel(u.unitNumber, u.alias),
       occupants: u.vacant ? '—' : toPersianDigits(u.personCount),
+      area: u.vacant ? '—' : parseArea(u.area ?? null) !== null ? formatArea(u.area as number) : '—',
       share: faAmount(u.shareAmount),
       status,
     };
@@ -106,6 +114,11 @@ export function buildBillImageModel({ bill, units }: BillWithUnits, now: Date = 
     perShareLine = `سهم هر نفر: ${faAmount(Math.round(bill.totalAmount / persons))} ${CURRENCY}`;
   } else if (method === 'perUnit' && sorted.length > 0) {
     perShareLine = `سهم هر واحد: ${faAmount(Math.round(bill.totalAmount / sorted.length))} ${CURRENCY}`;
+  }
+
+  const totalAreaM2 = sumAreas(sorted.map((u) => u.area), sorted.map((u) => u.vacant === true));
+  if (method === 'perArea' && totalAreaM2 > 0) {
+    perShareLine = `قیمت هر مترمربع: ${faAmount(Math.round(bill.totalAmount / totalAreaM2))} ${CURRENCY}`;
   }
 
   const allSettled = sorted.length > 0 && rows.every((r) => r.status.kind === 'settled');
@@ -123,6 +136,8 @@ export function buildBillImageModel({ bill, units }: BillWithUnits, now: Date = 
     splitMethod: method,
     splitLabel: SPLIT_METHOD_LABELS[method],
     showOccupants: method === 'perPerson',
+    showArea: method === 'perArea',
+    totalArea: formatArea(totalAreaM2),
     showStatus: anyPayment,
     rows,
     hasAliases: rows.some((r) => r.alias !== null),

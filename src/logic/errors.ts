@@ -11,6 +11,8 @@ export type AppErrorCode =
   | 'PERSON_COUNT_MISSING'
   | 'PERSON_COUNT_INVALID'
   | 'NO_PERSONS'
+  | 'AREA_MISSING'
+  | 'AREA_INVALID'
   | 'REQUIRED_MISSING'
   | 'MIN_ONE_YEAR'
   | 'MIN_ONE_UNIT'
@@ -43,6 +45,14 @@ export const Errors = {
   noPersons: (): AppError => ({
     code: 'NO_PERSONS',
     message: 'در تقسیم «بر اساس نفرات» حداقل یک واحد باید نفر داشته باشد (همه واحدها صفر نفر هستند).',
+  }),
+  areaMissing: (unitNumber: number): AppError => ({
+    code: 'AREA_MISSING',
+    message: `متراژ واحد ${toPersianDigits(unitNumber)} وارد نشده است. برای تقسیم «بر اساس متراژ» متراژ همه واحدهای غیرخالی لازم است.`,
+  }),
+  areaInvalid: (unitNumber: number): AppError => ({
+    code: 'AREA_INVALID',
+    message: `متراژ واحد ${toPersianDigits(unitNumber)} نامعتبر است (عدد بزرگ‌تر از صفر، حداکثر ۳ رقم اعشار و تا ${toPersianDigits(100000)} مترمربع).`,
   }),
   allVacant: (): AppError => ({
     code: 'ALL_VACANT',

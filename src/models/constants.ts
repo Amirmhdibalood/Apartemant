@@ -69,5 +69,6 @@ export const CURRENCY = 'تومان';
 export const SPLIT_METHOD_LABELS: Record<SplitMethod, string> = {
   perPerson: 'بر اساس نفرات',
   perUnit: 'بر اساس واحد',
+  perArea: 'بر اساس متراژ',
 };
 export const DEFAULT_SPLIT_METHOD: SplitMethod = 'perPerson';

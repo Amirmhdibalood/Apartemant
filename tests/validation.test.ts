@@ -12,7 +12,7 @@ describe('validateDraft', () => {
   it('accepts a valid draft', () => {
     const r = validateDraft(base);
     expect(r.ok).toBe(true);
-    if (r.ok) expect(r.value).toEqual({ totalAmount: 5_000_000, personCounts: [2, 3], vacant: [false, false] });
+    if (r.ok) expect(r.value).toEqual({ totalAmount: 5_000_000, personCounts: [2, 3], vacant: [false, false], areas: [null, null] });
   });
 
   it('reports each error separately', () => {

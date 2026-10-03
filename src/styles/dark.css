@@ -19,3 +19,8 @@
 :root[data-theme="dark"] .btn--success { background: var(--success-fill); color: #fff; }
 :root[data-theme="dark"] .btn--success:active { background: var(--success-fill-press); }
 :root[data-theme="dark"] .btn--danger { background: var(--danger-fill); color: #fff; }
+
+/* ---------- تقسیم «بر اساس متراژ» — حالت تاریک ---------- */
+:root[data-theme="dark"] .area-warn { border-color: #6b2f33; color: #ffb4ad; background: #3a1f26; }
+:root[data-theme="dark"] .ppm { border-color: #2c4a86; }
+:root[data-theme="dark"] .split-badge.is-perArea { background: #17423f; color: #7de3d3; }

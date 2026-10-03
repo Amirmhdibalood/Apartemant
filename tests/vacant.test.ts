@@ -108,7 +108,7 @@ describe('پشتیبان قالب ۶: پرچم خالی', () => {
   const make = (mut?: (o: any) => void) => { const o = JSON.parse(serializeBackup(createBackup(sample(), '1.6.3', new Date()))); mut?.(o); return JSON.stringify(o); };
 
   it('نسخه ۶ و رفت‌وبرگشت کامل', () => {
-    expect(BACKUP_VERSION).toBe(6);
+    expect(BACKUP_VERSION).toBe(7);
     const r = parseBackup(make());
     if (!r.ok) throw new Error(r.error);
     expect(r.backup.data.units[1].vacant).toBe(true);

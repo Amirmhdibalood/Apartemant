@@ -14,6 +14,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { FeedbackProvider } from './context/FeedbackContext';
 import { NotifProvider } from './context/NotifContext';
+import { AreaModeProvider } from './context/AreaModeContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -21,7 +22,9 @@ createRoot(document.getElementById('root')!).render(
       <SettingsProvider>
         <FeedbackProvider>
           <NotifProvider>
-            <App />
+            <AreaModeProvider>
+              <App />
+            </AreaModeProvider>
           </NotifProvider>
         </FeedbackProvider>
       </SettingsProvider>
