@@ -182,3 +182,11 @@
 :root[data-theme="dark"] .notif-pop__head { color: #d2d8e4; }
 :root[data-theme="dark"] .notif-pop__more { background: #17243d; color: #4784f2; }
 :root[data-theme="dark"] .notif-empty { color: #a2a8b7; }
+:root[data-theme="dark"] .bp-all { background: #151e33; }
+:root[data-theme="dark"] .bp-all.is-active { color: #f4f6fa; }
+:root[data-theme="dark"] button.bp-summary__item.is-selected.is-ontime { border-color: #64df9e; box-shadow: 0 0 0 3px rgba(100,223,158,0.18); }
+:root[data-theme="dark"] button.bp-summary__item.is-selected.is-late { border-color: #da5848; box-shadow: 0 0 0 3px rgba(218,88,72,0.18); }
+:root[data-theme="dark"] button.bp-summary__item.is-selected.is-unpaid { border-color: #4784f2; box-shadow: 0 0 0 3px rgba(71,132,242,0.18); }
+:root[data-theme="dark"] .bp-tick { background: #1c67ef; color: #f4f6fa; }
+:root[data-theme="dark"] .is-ontime .bp-tick { background: #64df9e; }
+:root[data-theme="dark"] .is-late .bp-tick { background: #da5848; }

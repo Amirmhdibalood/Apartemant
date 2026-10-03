@@ -108,3 +108,29 @@ export function billPaymentReport(
   };
   return { rows, summary };
 }
+
+/** فیلتر وضعیت گزارش «پرداخت قبض‌ها» (از ۱.۶.۴): کارت‌های خلاصه همان فیلتر هستند */
+export type PaymentStatusFilter = 'all' | 'onTime' | 'late' | 'unpaid';
+
+export const PAYMENT_STATUS_LABEL: Record<PaymentStatusFilter, string> = {
+  all: 'همه', onTime: 'به‌موقع', late: 'با تأخیر', unpaid: 'پرداخت‌نشده',
+};
+
+/** به‌موقع = زودتر + سر موعد؛ پرداخت‌نشده = در انتظار + گذشته از مهلت؛ «همه» شامل پرداخت‌شده‌های بدون مهلت/تاریخ هم هست */
+export function matchesPaymentStatus(row: Pick<BillPaymentRow, 'timing'>, status: PaymentStatusFilter): boolean {
+  switch (status) {
+    case 'onTime': return row.timing === 'early' || row.timing === 'onTime';
+    case 'late': return row.timing === 'late';
+    case 'unpaid': return row.timing === 'pending' || row.timing === 'overdue';
+    default: return true;
+  }
+}
+
+export function filterPaymentRows<T extends Pick<BillPaymentRow, 'timing'>>(rows: T[], status: PaymentStatusFilter): T[] {
+  return status === 'all' ? rows : rows.filter((r) => matchesPaymentStatus(r, status));
+}
+
+/** لمس کارتِ فعال، فیلتر را برمی‌دارد (همه)؛ لمس کارت دیگر آن را فعال می‌کند */
+export function toggleStatusFilter(current: PaymentStatusFilter, tapped: PaymentStatusFilter): PaymentStatusFilter {
+  return current === tapped ? 'all' : tapped;
+}
