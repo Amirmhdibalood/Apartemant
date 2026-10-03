@@ -3,7 +3,9 @@ import { UnitName } from '../../components/UnitName';
 import type { BillWithUnits } from '../../models/types';
 import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../../models/constants';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
-import { IconCheck, IconChevronLeft, IconUser } from '../../components/Icons';
+import { UnitIcon } from '../../components/PrefIcons';
+import { useIconPrefs } from '../../context/IconPrefsContext';
+import { IconCheck, IconChevronLeft } from '../../components/Icons';
 import { formatAmount } from '../../logic/formatting';
 import { debtorsReport, PAYMENT_GRACE_DAYS } from '../../logic/debts';
 
@@ -15,6 +17,7 @@ interface Props {
 
 /** گزارش بدهکاران: واحدهای دارای بدهی، جمع بدهی هر واحد و ریز آن به تفکیک قبض/سال/ماه */
 export function DebtorsView({ all, onOpenBill, onOpenUnit }: Props) {
+  const { unitIcon } = useIconPrefs();
   const report = useMemo(() => debtorsReport(all ?? []), [all]);
   const [open, setOpen] = useState<number | null>(null);
   if (!all) return null;
@@ -54,7 +57,7 @@ export function DebtorsView({ all, onOpenBill, onOpenUnit }: Props) {
                     aria-expanded={isOpen}
                     onClick={() => setOpen(isOpen ? -1 : d.unitNumber)}
                   >
-                    <span className="unit-avatar unit-avatar--debt"><IconUser size={18} /></span>
+                    <span className="unit-avatar unit-avatar--debt"><UnitIcon id={unitIcon} number={d.unitNumber} size={18} /></span>
                     <span className="debtor__main">
                       <span className="debtor__title"><UnitName n={d.unitNumber} alias={d.alias} /></span>
                       <span className="debtor__sub">

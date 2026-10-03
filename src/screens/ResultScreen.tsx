@@ -1,9 +1,11 @@
+import { UnitIcon } from '../components/PrefIcons';
+import { useIconPrefs } from '../context/IconPrefsContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BillDraft, BillWithUnits } from '../models/types';
 import { CURRENCY, EXPENSE_TYPES, SPLIT_METHOD_LABELS, monthName } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
 import { ExpenseIcon } from '../components/ExpenseIcon';
-import { IconCalendarSave, IconMinus, IconPlus, IconTrash, IconUser } from '../components/Icons';
+import { IconCalendarSave, IconMinus, IconPlus, IconTrash } from '../components/Icons';
 import { formatJalaliSlash, parseJalaliKey } from '../logic/jalali';
 import { useFeedback } from '../context/FeedbackContext';
 import { validateDraft } from '../logic/validation';
@@ -31,6 +33,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
   const [saving, setSaving] = useState(false);
   const roundingShownFor = useRef<string>('');
   const { areaMode } = useAreaMode();
+  const { unitIcon } = useIconPrefs();
 
   const validation = useMemo(() => validateDraft(draft), [draft]);
   const calc = useMemo(() => {
@@ -178,7 +181,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
                 <tr key={s.unitNumber} className={vacants[i] ? 'is-vacant' : undefined}>
                   <td className="col-unit">
                     <span className="unit-cell">
-                      <span className="unit-avatar"><IconUser size={16} /></span>
+                      <span className="unit-avatar"><UnitIcon id={unitIcon} number={s.unitNumber} /></span>
                       <span className="unit-cell__name">
                         {unitLabel(s.unitNumber, aliases[i])}
                         {areaLine && !vacants[i] && s.area != null && (

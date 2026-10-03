@@ -14,6 +14,9 @@ import { useNotif } from '../context/NotifContext';
 import { NOTIF_MODES } from '../logic/notifMode';
 import { useAreaMode } from '../context/AreaModeContext';
 import { AREA_MODES } from '../logic/areaMode';
+import { useIconPrefs } from '../context/IconPrefsContext';
+import { AREA_ICONS, UNIT_ICONS } from '../logic/iconPrefs';
+import { AreaIcon, UnitIcon } from '../components/PrefIcons';
 
 /** ۱۵. تنظیمات */
 export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => void; canGoBack: boolean; onHelp?: () => void }) {
@@ -21,6 +24,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
   const { showErrors, toast } = useFeedback();
   const { mode, setMode } = useNotif();
   const { areaMode, setAreaMode } = useAreaMode();
+  const { unitIcon, areaIcon, setUnitIcon, setAreaIcon } = useIconPrefs();
   const years = selectableYears();
   const [restoreKey, setRestoreKey] = useState(0);
 
@@ -86,6 +90,48 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
             ))}
           </div>
           <p className="card__hint notif-mode-hint">{AREA_MODES.find((m) => m.id === areaMode)?.hint}</p>
+        </section>
+
+        <section className="card settings-card" aria-labelledby="unit-icon-title">
+          <h2 className="card__title" id="unit-icon-title">نماد واحد</h2>
+          <p className="card__hint">نمادی که کنار هر واحد در فرم قبض، نتیجه و گزارش بدهکاران دیده می‌شود. آدمک فقط برای «تعداد نفرات» می‌ماند. فقط ظاهر را عوض می‌کند و در فایل پشتیبان نیست.</p>
+          <div className="icon-grid" role="radiogroup" aria-label="نماد واحد">
+            {UNIT_ICONS.map((o, i) => (
+              <button
+                key={o.id}
+                type="button"
+                role="radio"
+                aria-checked={unitIcon === o.id}
+                aria-label={o.label}
+                className={'icon-opt' + (unitIcon === o.id ? ' is-active' : '')}
+                onClick={() => setUnitIcon(o.id)}
+              >
+                <span className="unit-avatar icon-opt__glyph"><UnitIcon id={o.id} number={i + 1} size={18} /></span>
+                <span className="icon-opt__label">{o.label}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="card settings-card" aria-labelledby="area-icon-title">
+          <h2 className="card__title" id="area-icon-title">نماد متراژ</h2>
+          <p className="card__hint">نشانی که در حالت «بر اساس متراژ» کنار سرستون متراژ (فرم قبض و تنظیمات ← ساختمان) می‌آید. فقط ظاهر را عوض می‌کند و در فایل پشتیبان نیست.</p>
+          <div className="icon-grid" role="radiogroup" aria-label="نماد متراژ">
+            {AREA_ICONS.map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                role="radio"
+                aria-checked={areaIcon === o.id}
+                aria-label={o.label}
+                className={'icon-opt' + (areaIcon === o.id ? ' is-active' : '')}
+                onClick={() => setAreaIcon(o.id)}
+              >
+                <span className="icon-opt__glyph icon-opt__glyph--area">{o.id === 'none' ? <span className="icon-opt__none">—</span> : <AreaIcon id={o.id} size={20} />}</span>
+                <span className="icon-opt__label">{o.label}</span>
+              </button>
+            ))}
+          </div>
         </section>
 
         <section className="card settings-card" aria-labelledby="notif-mode-title">

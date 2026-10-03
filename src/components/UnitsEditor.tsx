@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import type { SplitMethod } from '../models/types';
-import { IconAreaM2, IconMinus, IconPlus, IconUser } from './Icons';
+import { IconMinus, IconPlus, IconUser } from './Icons';
+import { AreaIcon, UnitIcon } from './PrefIcons';
+import { useIconPrefs } from '../context/IconPrefsContext';
 import { PersonCountInput } from './PersonCountInput';
 import { AreaInput } from './AreaInput';
 import { useAreaMode } from '../context/AreaModeContext';
@@ -77,6 +79,7 @@ export function UnitsEditor({ personCounts, unitAliases, unitVacant, onAdd, onRe
   const perArea = splitMethod === 'perArea';
   const areaCol = perArea && areaMode === 'column';
   const areaLine = perArea && areaMode === 'line';
+  const { unitIcon, areaIcon } = useIconPrefs();
   const totalArea = sumAreas(unitAreas, unitVacant);
   const perUnit = splitMethod === 'perUnit';
   const shares = useMemo(() => liveShares(amountDigits, personCounts, splitMethod, unitVacant, unitAreas), [amountDigits, personCounts, splitMethod, unitVacant, unitAreas]);
@@ -110,7 +113,7 @@ export function UnitsEditor({ personCounts, unitAliases, unitVacant, onAdd, onRe
           <span className="units-row__unit">واحد</span>
           <span className="units-row__vacant">خالی</span>
           <span className="units-row__count">
-            {areaCol ? <IconAreaM2 size={14} /> : <IconUser size={14} />}
+            {areaCol ? <AreaIcon id={areaIcon} /> : <IconUser size={14} />}
             {areaCol ? 'متراژ' : perUnit ? 'سهم (هر واحد ۱)' : 'تعداد نفرات'}
           </span>
         </div>
@@ -126,7 +129,7 @@ export function UnitsEditor({ personCounts, unitAliases, unitVacant, onAdd, onRe
           return (
             <div className={'units-row' + (vacant ? ' is-empty' : '') + (areaLine ? ' has-line' : '')} key={i}>
               <span className="units-row__unit">
-                <span className="unit-avatar"><IconUser size={16} /></span>
+                <span className="unit-avatar"><UnitIcon id={unitIcon} number={i + 1} /></span>
                 <span className="units-row__text">
                   <span className="units-row__name">{label}</span>
                   <span className="units-row__meta">

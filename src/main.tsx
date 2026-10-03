@@ -15,6 +15,7 @@ import { SettingsProvider } from './context/SettingsContext';
 import { FeedbackProvider } from './context/FeedbackContext';
 import { NotifProvider } from './context/NotifContext';
 import { AreaModeProvider } from './context/AreaModeContext';
+import { IconPrefsProvider } from './context/IconPrefsContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -23,7 +24,9 @@ createRoot(document.getElementById('root')!).render(
         <FeedbackProvider>
           <NotifProvider>
             <AreaModeProvider>
-              <App />
+              <IconPrefsProvider>
+                <App />
+              </IconPrefsProvider>
             </AreaModeProvider>
           </NotifProvider>
         </FeedbackProvider>
