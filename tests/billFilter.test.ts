@@ -52,8 +52,8 @@ describe('فیلترهای سوابق (سال + ماه + نوع هزینه، ت�
   });
 
   it('خلاصه: تعداد، جمع مبالغ و تعداد قبض‌های پرداخت‌شده', () => {
-    expect(summarizeBills(filterBills(data, { year: 1405, month: null, type: 'gas', status: 'all' }))).toEqual({ count: 4, total: 2200000, paid: 1 });
-    expect(summarizeBills([])).toEqual({ count: 0, total: 0, paid: 0 });
+    expect(summarizeBills(filterBills(data, { year: 1405, month: null, type: 'gas', status: 'all' }))).toEqual({ count: 4, total: 2200000, paid: 1, unpaid: 3 });
+    expect(summarizeBills([])).toEqual({ count: 0, total: 0, paid: 0, unpaid: 0 });
   });
 
   it('نرمال‌سازی مقادیر مسیر/کشو: مقدار نامعتبر = همه', () => {

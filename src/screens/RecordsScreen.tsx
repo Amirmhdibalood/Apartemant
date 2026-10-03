@@ -116,6 +116,8 @@ export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp
             <span>جمع: <b className="num">{formatAmount(summary.total)}</b> {CURRENCY}</span>
             <span className="records-summary__sep">•</span>
             <span><b className="num">{summary.paid}</b> پرداخت‌شده</span>
+            <span className="records-summary__sep">•</span>
+            <span><b className="num">{summary.unpaid}</b> پرداخت‌نشده</span>
           </div>
         )}
 

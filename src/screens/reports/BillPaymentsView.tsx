@@ -54,8 +54,8 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
         <div className="empty-state">
           <IconCalendar size={40} />
           <p>
-            برای سال {year}{type ? ` و قبض «${EXPENSE_TYPES[type].label}»` : ''} قبضی با مهلت پرداخت یا پرداخت‌شده پیدا نشد.
-            برای استفاده از این گزارش، هنگام ثبت قبض «مهلت پرداخت» را تعیین کنید و پس از پرداخت، تیک «پرداخت شد» را بزنید.
+            برای سال {year}{type ? ` و قبض «${EXPENSE_TYPES[type].label}»` : ''} هنوز قبضی ثبت نشده است.
+            برای بهره‌گیری کامل از این گزارش، هنگام ثبت قبض «مهلت پرداخت» را تعیین کنید و پس از پرداخت، تیک «پرداخت شد» را بزنید.
           </p>
         </div>
       )}
@@ -66,6 +66,9 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
             <span className="bp-statusbar__k">وضعیت</span>
             <button type="button" className={'bp-all' + (status === 'all' ? ' is-active' : '')} aria-pressed={status === 'all'} onClick={() => setStatus('all')}>
               {status === 'all' && <IconCheck size={14} />} همه <span className="num">({toPersianDigits(s.total)})</span>
+            </button>
+            <button type="button" className={'bp-all' + (status === 'paid' ? ' is-active' : '')} aria-pressed={status === 'paid'} onClick={() => tap('paid')}>
+              {status === 'paid' && <IconCheck size={14} />} پرداخت‌شده <span className="num">({toPersianDigits(s.paid)})</span>
             </button>
             <span className="bp-statusbar__hint">برای فیلتر، روی یک کارت بزنید</span>
           </div>
@@ -85,7 +88,7 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
             <button type="button" className={'bp-summary__item is-unpaid' + (status === 'unpaid' ? ' is-selected' : '')} aria-pressed={status === 'unpaid'} onClick={() => tap('unpaid')}>
               <b className="num">{s.unpaid}</b>
               <span>پرداخت‌نشده</span>
-              <small>گذشته از مهلت <span className="num">{s.overdue}</span></small>
+              <small>گذشته از مهلت <span className="num">{s.overdue}</span> · بدون مهلت <span className="num">{s.unpaidNoDue}</span></small>
               {status === 'unpaid' && <i className="bp-tick"><IconCheck size={12} /></i>}
             </button>
           </section>

@@ -53,7 +53,7 @@ describe('گزارش «پرداخت قبض‌ها»', () => {
     expect(c({ dueDate: '1405-07-01' })).toMatchObject({ timing: 'overdue', days: 5, label: 'پرداخت‌نشده — ۵ روز از مهلت گذشته' });
     expect(c({ billPaid: true, billPaidDate: '1405-07-03' })?.timing).toBe('paidNoDue');
     expect(c({ billPaid: true, billPaidDate: null, dueDate: '1405-07-03' })?.timing).toBe('paidUnknown');
-    expect(c({})).toBeNull(); // بدون مهلت و پرداخت‌نشده
+    expect(c({})).toMatchObject({ timing: 'unpaidNoDue', days: null, label: 'پرداخت‌نشده (بدون مهلت)' }); // بدون مهلت و پرداخت‌نشده: هنوز دیده می‌شود
     expect(c({ dueDate: '1405-07-10', deletedAt: '2026-09-27T08:00:00.000Z' })).toBeNull(); // حذف‌شده
     expect(timingLabel('pending', 0)).toBe('پرداخت‌نشده — مهلت امروز');
   });
@@ -66,18 +66,18 @@ describe('گزارش «پرداخت قبض‌ها»', () => {
       bw(bill({ month: 4, expenseType: 'gas', dueDate: '1405-04-10', billPaid: true, billPaidDate: '1405-04-20' })), // ۱۰ روز تأخیر
       bw(bill({ month: 7, expenseType: 'water', dueDate: '1405-07-02' })), // گذشته از مهلت
       bw(bill({ month: 7, expenseType: 'electricity', dueDate: '1405-07-20' })), // در انتظار
-      bw(bill({ month: 3, expenseType: 'gas' })), // بدون مهلت — در گزارش نیست
+      bw(bill({ month: 3, expenseType: 'gas' })), // بدون مهلت و پرداخت‌نشده — پرداخت‌نشده (بدون مهلت)
       bw(bill({ month: 2, expenseType: 'gas', dueDate: '1405-02-10', deletedAt: '2026-09-27T08:00:00.000Z' })), // حذف‌شده
       bw(bill({ year: 1404, month: 12, expenseType: 'gas', dueDate: '1404-12-10', billPaid: true, billPaidDate: '1404-12-25' })),
     ];
     const r = billPaymentReport(all, 1405, null, TODAY);
-    expect(r.rows).toHaveLength(6);
-    expect(r.rows.map((x) => x.bill.month)).toEqual([7, 7, 7, 6, 5, 4]);
-    expect(r.summary).toEqual({ total: 6, early: 1, exact: 1, onTime: 2, late: 2, unpaid: 2, overdue: 1, avgLateDays: 7 });
+    expect(r.rows).toHaveLength(7);
+    expect(r.rows.map((x) => x.bill.month)).toEqual([7, 7, 7, 6, 5, 4, 3]);
+    expect(r.summary).toEqual({ total: 7, early: 1, exact: 1, onTime: 2, late: 2, paid: 4, paidUndated: 0, unpaid: 3, overdue: 1, unpaidNoDue: 1, avgLateDays: 7 });
 
     const gas = billPaymentReport(all, 1405, 'gas', TODAY);
-    expect(gas.rows.map((x) => x.timing)).toEqual(['early', 'onTime', 'late']);
-    expect(gas.summary).toMatchObject({ onTime: 2, late: 1, unpaid: 0, avgLateDays: 10 });
+    expect(gas.rows.map((x) => x.timing)).toEqual(['early', 'onTime', 'late', 'unpaidNoDue']);
+    expect(gas.summary).toMatchObject({ onTime: 2, late: 1, paid: 3, unpaid: 1, overdue: 0, unpaidNoDue: 1, avgLateDays: 10 });
 
     const y1404 = billPaymentReport(all, 1404, null, TODAY);
     expect(y1404.rows.map((x) => x.label)).toEqual(['با تأخیر (۱۵ روز)']);

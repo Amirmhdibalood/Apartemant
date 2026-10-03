@@ -716,7 +716,8 @@ h1, h2, h3, p { margin: 0; }
 .timing-chip { display: inline-flex; margin-top: 8px; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 20px; background: #eef2f8; color: var(--text-2); }
 .timing-chip.is-early, .timing-chip.is-onTime { background: var(--success-soft); color: var(--success-press); }
 .timing-chip.is-late, .timing-chip.is-overdue { background: #fdecec; color: #d64533; }
-.timing-chip.is-pending { background: var(--primary-soft); color: var(--primary); }
+.timing-chip.is-pending, .timing-chip.is-unpaidNoDue { background: var(--primary-soft); color: var(--primary); }
+.timing-chip.is-paidNoDue, .timing-chip.is-paidUnknown { background: var(--success-soft); color: var(--success-press); }
 
 .btn--text-danger.is-disabled { color: #a3abbd; }
 .delete-blocked-note {

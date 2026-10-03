@@ -67,10 +67,12 @@ describe('فیلتر وضعیت گزارش پرداخت قبض‌ها', () => {
     expect(toggleStatusFilter('unpaid', 'all')).toBe('all');
   });
   it('برچسب‌ها و matchesPaymentStatus', () => {
-    expect(PAYMENT_STATUS_LABEL).toEqual({ all: 'همه', onTime: 'به‌موقع', late: 'با تأخیر', unpaid: 'پرداخت‌نشده' });
+    expect(PAYMENT_STATUS_LABEL).toEqual({ all: 'همه', paid: 'پرداخت‌شده', onTime: 'به‌موقع', late: 'با تأخیر', unpaid: 'پرداخت‌نشده' });
     expect(matchesPaymentStatus({ timing: 'pending' }, 'unpaid')).toBe(true);
     expect(matchesPaymentStatus({ timing: 'late' }, 'onTime')).toBe(false);
     expect(matchesPaymentStatus({ timing: 'paidUnknown' }, 'all')).toBe(true);
+    expect(matchesPaymentStatus({ timing: 'unpaidNoDue' }, 'unpaid')).toBe(true);
+    expect(matchesPaymentStatus({ timing: 'paidNoDue' }, 'paid')).toBe(true);
   });
   it('رابط: pill «همه (N)»، کارت‌ها دکمه‌اند، نوار «فیلتر … نمایش همه» و دو انتخابگر سال/نوع', () => {
     const src = readFileSync('src/screens/reports/BillPaymentsView.tsx', 'utf8');
