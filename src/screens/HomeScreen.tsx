@@ -3,7 +3,10 @@ import { IconAlertTriangle, IconBook, IconChart, IconChevronLeft, IconGear, Icon
 import type { TabId } from '../components/BottomNav';
 import { HelpButton } from '../components/AppHeader';
 import { ThemeToggle } from '../components/ThemeToggle';
-import type { DueAlert } from '../logic/dueAlerts';
+import { NotifBell } from '../components/NotifBell';
+import { bannerFor, type DueAlert } from '../logic/dueAlerts';
+import type { NotifMode } from '../logic/notifMode';
+import { toPersianDigits } from '../logic/formatting';
 
 interface Props {
   onNewBill: () => void;
@@ -14,13 +17,18 @@ interface Props {
   onDismiss?: (key: string) => void;
   /** باز کردن آموزش (دکمه «؟» بالا-چپ) */
   onHelp?: () => void;
+  /** حالت نمایش اعلان‌ها (در «پنجره پایین» بنر فشرده می‌شود) */
+  mode?: NotifMode;
+  /** باز کردن مرکز اعلان‌ها (زنگوله) */
+  onShowAll?: () => void;
 }
 
 /** ۱. صفحه اصلی */
-export function HomeScreen({ onNewBill, onOpen, alerts = [], onOpenBill, onDismiss, onHelp }: Props) {
+export function HomeScreen({ onNewBill, onOpen, alerts: visible = [], onOpenBill, onDismiss, onHelp, mode = 'sheet', onShowAll }: Props) {
+  const { shown: alerts, more } = bannerFor(visible, mode);
   return (
     <main className="screen screen--home">
-      {onHelp && <div className="home-topbar"><HelpButton onHelp={onHelp} /><ThemeToggle /></div>}
+      {onHelp && <div className="home-topbar"><NotifBell /><HelpButton onHelp={onHelp} /><ThemeToggle /></div>}
       {alerts.length > 0 && (
         <section className="due-alerts" aria-label="هشدار مهلت پرداخت">
           {alerts.map((a) => (
@@ -35,6 +43,12 @@ export function HomeScreen({ onNewBill, onOpen, alerts = [], onOpenBill, onDismi
               </button>
             </div>
           ))}
+          {more > 0 && (
+            <button type="button" className="due-more" onClick={onShowAll}>
+              <span>و <span className="num">{toPersianDigits(more)}</span> اعلان دیگر — مشاهده همه</span>
+              <IconChevronLeft size={14} />
+            </button>
+          )}
         </section>
       )}
       <div className="home">

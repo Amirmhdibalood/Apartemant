@@ -128,13 +128,15 @@ describe('تصویر شبانه صفحه ورود', () => {
 describe('محل دکمه‌ها و تصویر قبض', () => {
   it('دکمه ماه/خورشید کنار «؟» در هدر است', async () => {
     const { ThemeProvider } = await import('../src/context/ThemeContext');
+    const { NotifProvider } = await import('../src/context/NotifContext');
     const { AppHeader } = await import('../src/components/AppHeader');
-    const html = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(AppHeader, { title: 'سوابق', onHelp: () => {}, onBack: () => {} })));
+    const html = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'سوابق', onHelp: () => {}, onBack: () => {} }))));
     expect(html).toContain('راهنما (آموزش)');
     expect(html).toContain('حالت تاریک');
     expect(html.indexOf('راهنما (آموزش)')).toBeLessThan(html.indexOf('حالت تاریک'));
+    expect(html.indexOf('اعلان‌ها')).toBeLessThan(html.indexOf('راهنما (آموزش)')); // زنگوله کنار «؟»
     expect(html).toContain('app-header--two');
-    const noHelp = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(AppHeader, { title: 'آموزش' })));
+    const noHelp = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'آموزش' }))));
     expect(noHelp).not.toContain('حالت تاریک');
   });
   it('تصویر قبض (canvas) از تم مستقل است: رنگ ثابت و بدون وابستگی به تم/CSS', () => {

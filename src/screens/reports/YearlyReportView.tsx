@@ -4,6 +4,8 @@ import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../../models/constants';
 import { SelectField } from '../../components/SelectField';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
 import { IconChart, IconChevronLeft } from '../../components/Icons';
+import { useTheme } from '../../context/ThemeContext';
+import { typeBarColor } from '../../logic/typeColor';
 import { useSettings } from '../../context/SettingsContext';
 import { currentJalali } from '../../logic/date';
 import { formatAmount } from '../../logic/formatting';
@@ -24,6 +26,7 @@ const pct = (p: number) => `${Number.isInteger(p) ? p : p.toFixed(1)}%`;
 /** گزارش هزینه‌های سال: جمع هر نوع هزینه، جمع کل، سهم درصدی و ریز ماه‌به‌ماه */
 export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMonth }: Props) {
   const { settings } = useSettings();
+  const { theme } = useTheme();
   const now = currentJalali();
 
   const billYears = useMemo(() => Array.from(new Set((all ?? []).map((b) => b.bill.year))), [all]);
@@ -65,7 +68,7 @@ export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMont
               </div>
               <div className="share-bar" aria-hidden="true">
                 {withCost.map((t) => (
-                  <span key={t.type} style={{ width: `${t.percent}%`, background: EXPENSE_TYPES[t.type].color }} />
+                  <span key={t.type} style={{ width: `${t.percent}%`, background: typeBarColor(t.type, theme) }} />
                 ))}
               </div>
               <div className="report-total__settle">
@@ -89,11 +92,11 @@ export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMont
                         </span>
                       </div>
                       <div className="type-row__bar">
-                        <span style={{ width: `${Math.max(t.percent, 1.5)}%`, background: info.color }} />
+                        <span style={{ width: `${Math.max(t.percent, 1.5)}%`, background: typeBarColor(t.type, theme) }} />
                       </div>
                       <div className="type-row__meta">
                         <span><span className="num">{t.count}</span> قبض</span>
-                        <span className="type-row__pct num" style={{ color: info.color }}>{pct(t.percent)}</span>
+                        <span className="type-row__pct num" style={{ color: typeBarColor(t.type, theme) }}>{pct(t.percent)}</span>
                       </div>
                     </div>
                   </div>
@@ -136,7 +139,7 @@ export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMont
                             .map((t) => (
                               <span
                                 key={t.type}
-                                style={{ flexGrow: m.byType[t.type], background: EXPENSE_TYPES[t.type].color }}
+                                style={{ flexGrow: m.byType[t.type], background: typeBarColor(t.type, theme) }}
                               />
                             ))}
                         </span>

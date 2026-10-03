@@ -16,10 +16,16 @@ export interface ExpenseTypeInfo {
   bg: string;
   /** پس‌زمینه دایره آیکون (کمی پررنگ‌تر) */
   iconBg: string;
+  /** مقادیر مخصوص تم تاریک (اگر نباشد از روی رنگ روشن محاسبه می‌شود) */
+  dark?: { color: string; bg: string; iconBg: string };
 }
 
 export const EXPENSE_TYPES: Record<ExpenseType, ExpenseTypeInfo> = {
-  water: { id: 'water', label: 'آب', color: '#2F7BF5', bg: '#EEF4FF', iconBg: '#DCE9FF' },
+  // آب: سرمه‌ای عمیق (نه آبی روشن) تا در نوار خلاصهٔ آبیِ گزارش و پس‌زمینه گم نشود
+  water: {
+    id: 'water', label: 'آب', color: '#14307A', bg: '#E3E6EF', iconBg: '#C2C9DC',
+    dark: { color: '#B6D4FF', bg: '#28344B', iconBg: '#384660' },
+  },
   electricity: { id: 'electricity', label: 'برق', color: '#F2B01E', bg: '#FFF8E6', iconBg: '#FFEFC2' },
   gas: { id: 'gas', label: 'گاز', color: '#F47A20', bg: '#FFF3EA', iconBg: '#FFE3CF' },
   building: { id: 'building', label: 'شارژ ساختمان', color: '#8B5CF6', bg: '#F4F0FF', iconBg: '#E7DDFF' },

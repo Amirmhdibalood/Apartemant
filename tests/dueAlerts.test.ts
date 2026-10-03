@@ -12,8 +12,9 @@ const bill = (id: string, over: Partial<Bill> = {}): Bill => ({
 });
 
 describe('هشدار مهلت پرداخت داخل برنامه (صفحه اصلی)', () => {
-  it('فردا / امروز / گذشته با متن درست', () => {
-    expect(ALERT_DAYS_BEFORE).toBe(1);
+  it('۲ روز دیگر / فردا / امروز / گذشته با متن درست', () => {
+    expect(ALERT_DAYS_BEFORE).toBe(2);
+    expect(dueAlertFor(bill('a', { dueDate: '1405-07-08' }), TODAY)).toMatchObject({ kind: 'in2days', days: 2, text: '۲ روز دیگر مهلت پرداخت قبض گاز (مهر ۱۴۰۵) است', expenseType: 'gas', title: 'گاز (مهر ۱۴۰۵)', dueDate: '1405-07-08' });
     expect(dueAlertFor(bill('a', { dueDate: '1405-07-07' }), TODAY)).toMatchObject({ kind: 'tomorrow', text: 'فردا مهلت پرداخت قبض گاز (مهر ۱۴۰۵) است' });
     expect(dueAlertFor(bill('a', { dueDate: '1405-07-06' }), TODAY)).toMatchObject({ kind: 'today', text: 'امروز آخرین مهلت پرداخت قبض گاز (مهر ۱۴۰۵) است' });
     expect(dueAlertFor(bill('a', { dueDate: '1405-06-30', expenseType: 'water', month: 6 }), TODAY))
@@ -21,11 +22,11 @@ describe('هشدار مهلت پرداخت داخل برنامه (صفحه اص�
     expect(dueAlertText({ expenseType: 'electricity', month: 12, year: 1404 }, 'tomorrow')).toBe('فردا مهلت پرداخت قبض برق (اسفند ۱۴۰۴) است');
   });
 
-  it('برای پرداخت‌شده، حذف‌شده، بدون مهلت یا مهلت دورتر از فردا هشداری نیست', () => {
+  it('برای پرداخت‌شده، حذف‌شده، بدون مهلت یا مهلت دورتر از ۲ روز هشداری نیست', () => {
     expect(dueAlertFor(bill('a', { dueDate: '1405-07-06', billPaid: true, billPaidDate: '1405-07-05' }), TODAY)).toBeNull();
     expect(dueAlertFor(bill('a', { dueDate: '1405-07-01', deletedAt: '2026-09-27T08:00:00.000Z' }), TODAY)).toBeNull();
     expect(dueAlertFor(bill('a'), TODAY)).toBeNull();
-    expect(dueAlertFor(bill('a', { dueDate: '1405-07-08' }), TODAY)).toBeNull(); // ۲ روز مانده
+    expect(dueAlertFor(bill('a', { dueDate: '1405-07-09' }), TODAY)).toBeNull(); // ۳ روز مانده
   });
 
   it('ترتیب: بیشترین روز گذشته اول، بعد امروز، بعد فردا؛ عبور از مرز سال', () => {
@@ -33,11 +34,12 @@ describe('هشدار مهلت پرداخت داخل برنامه (صفحه اص�
       bill('t', { dueDate: '1405-07-07' }),
       bill('o1', { dueDate: '1405-07-04' }),
       bill('d', { dueDate: '1405-07-06' }),
+      bill('two', { dueDate: '1405-07-08' }),
       bill('far', { dueDate: '1405-07-20' }),
       bill('o9', { dueDate: '1405-06-28' }),
       bill('p', { dueDate: '1405-07-01', billPaid: true, billPaidDate: '1405-07-02' }),
     ], TODAY);
-    expect(r.map((a) => a.billId)).toEqual(['o9', 'o1', 'd', 't']);
+    expect(r.map((a) => a.billId)).toEqual(['o9', 'o1', 'd', 't', 'two']);
     expect(dueAlertFor(bill('y', { year: 1404, month: 12, dueDate: '1405-01-01' }), { year: 1404, month: 12, day: 29 })?.kind).toBe('tomorrow');
   });
 

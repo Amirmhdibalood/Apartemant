@@ -10,11 +10,14 @@ import { useState } from 'react';
 import { selectableYears, toggleYear } from '../logic/years';
 import { APP_VERSION_FA, DEVELOPER_EMAIL, DEVELOPER_NAME } from '../appVersion';
 import { Errors } from '../logic/errors';
+import { useNotif } from '../context/NotifContext';
+import { NOTIF_MODES } from '../logic/notifMode';
 
 /** ۱۵. تنظیمات */
 export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => void; canGoBack: boolean; onHelp?: () => void }) {
   const { settings, updateSettings } = useSettings();
   const { showErrors, toast } = useFeedback();
+  const { mode, setMode } = useNotif();
   const years = selectableYears();
   const [restoreKey, setRestoreKey] = useState(0);
 
@@ -60,6 +63,26 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
               <span>نمایش دوباره سایر هشدارهای پنهان‌شده</span>
             </button>
           )}
+        </section>
+
+        <section className="card settings-card" aria-labelledby="notif-mode-title">
+          <h2 className="card__title" id="notif-mode-title">نحوه نمایش اعلان‌ها</h2>
+          <p className="card__hint">با زدن زنگولهٔ بالای صفحه، اعلان‌های مهلت پرداخت (از ۲ روز قبل) به این شکل باز می‌شوند.</p>
+          <div className="seg" role="radiogroup" aria-label="نحوه نمایش اعلان‌ها">
+            {NOTIF_MODES.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                role="radio"
+                aria-checked={mode === m.id}
+                className={'seg__btn' + (mode === m.id ? ' is-active' : '')}
+                onClick={() => setMode(m.id)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
+          <p className="card__hint notif-mode-hint">{NOTIF_MODES.find((m) => m.id === mode)?.hint}</p>
         </section>
 
         <section className="card settings-card">

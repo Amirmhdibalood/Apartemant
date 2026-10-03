@@ -1,15 +1,15 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { BillWithUnits, ExpenseType } from '../../models/types';
 import { CURRENCY, EXPENSE_TYPES, monthName } from '../../models/constants';
 import { SelectField } from '../../components/SelectField';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
-import { IconCalendar, IconChevronLeft } from '../../components/Icons';
+import { IconCalendar, IconCheck, IconChevronLeft, IconX } from '../../components/Icons';
 import { useSettings } from '../../context/SettingsContext';
-import { formatAmount } from '../../logic/formatting';
+import { formatAmount, toPersianDigits } from '../../logic/formatting';
 import { recordYearOptions } from '../../logic/years';
 import { pickReportYear } from '../../logic/report';
 import { TYPE_FILTER_OPTIONS } from '../../logic/billFilter';
-import { billPaymentReport } from '../../logic/billPaymentReport';
+import { billPaymentReport, filterPaymentRows, PAYMENT_STATUS_LABEL, toggleStatusFilter, type PaymentStatusFilter } from '../../logic/billPaymentReport';
 import { formatJalaliSlash, todayJalali } from '../../logic/jalali';
 
 interface Props {
@@ -23,12 +23,15 @@ interface Props {
 /** گزارش «پرداخت قبض‌ها»: مهلت پرداخت، تاریخ پرداخت و به‌موقع/با تأخیر بودن پرداخت خودِ قبض‌ها */
 export function BillPaymentsView({ all, year: yearProp, type = null, onChange, onOpenBill }: Props) {
   const { settings } = useSettings();
+  const [status, setStatus] = useState<PaymentStatusFilter>('all');
   const today = todayJalali();
   const billYears = useMemo(() => Array.from(new Set((all ?? []).map((b) => b.bill.year))), [all]);
   const years = recordYearOptions(settings.activeYears, billYears);
   const year = yearProp && years.includes(yearProp) ? yearProp : pickReportYear(years, billYears, today.year);
   const report = useMemo(() => billPaymentReport(all ?? [], year, type, today), [all, year, type, today.year, today.month, today.day]);
   const s = report.summary;
+  const shown = useMemo(() => filterPaymentRows(report.rows, status), [report.rows, status]);
+  const tap = (x: PaymentStatusFilter) => setStatus((cur) => toggleStatusFilter(cur, x));
   const typeIndex = Math.max(0, TYPE_FILTER_OPTIONS.findIndex((o) => o.value === type));
 
   return (
@@ -56,26 +59,47 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
 
       {all && report.rows.length > 0 && (
         <>
-          <section className="bp-summary" aria-label="خلاصه پرداخت قبض‌ها">
-            <div className="bp-summary__item is-ontime">
+          <div className="bp-statusbar">
+            <span className="bp-statusbar__k">وضعیت</span>
+            <button type="button" className={'bp-all' + (status === 'all' ? ' is-active' : '')} aria-pressed={status === 'all'} onClick={() => setStatus('all')}>
+              {status === 'all' && <IconCheck size={14} />} همه <span className="num">({toPersianDigits(s.total)})</span>
+            </button>
+            <span className="bp-statusbar__hint">برای فیلتر، روی یک کارت بزنید</span>
+          </div>
+          <section className={'bp-summary' + (status !== 'all' ? ' has-filter' : '')} aria-label="خلاصه پرداخت قبض‌ها">
+            <button type="button" className={'bp-summary__item is-ontime' + (status === 'onTime' ? ' is-selected' : '')} aria-pressed={status === 'onTime'} onClick={() => tap('onTime')}>
               <b className="num">{s.onTime}</b>
               <span>به‌موقع</span>
               <small>زودتر <span className="num">{s.early}</span> · سر موعد <span className="num">{s.exact}</span></small>
-            </div>
-            <div className="bp-summary__item is-late">
+              {status === 'onTime' && <i className="bp-tick"><IconCheck size={12} /></i>}
+            </button>
+            <button type="button" className={'bp-summary__item is-late' + (status === 'late' ? ' is-selected' : '')} aria-pressed={status === 'late'} onClick={() => tap('late')}>
               <b className="num">{s.late}</b>
               <span>با تأخیر</span>
               <small>{s.avgLateDays !== null ? <>میانگین <span className="num">{s.avgLateDays}</span> روز</> : '—'}</small>
-            </div>
-            <div className="bp-summary__item is-unpaid">
+              {status === 'late' && <i className="bp-tick"><IconCheck size={12} /></i>}
+            </button>
+            <button type="button" className={'bp-summary__item is-unpaid' + (status === 'unpaid' ? ' is-selected' : '')} aria-pressed={status === 'unpaid'} onClick={() => tap('unpaid')}>
               <b className="num">{s.unpaid}</b>
               <span>پرداخت‌نشده</span>
               <small>گذشته از مهلت <span className="num">{s.overdue}</span></small>
-            </div>
+              {status === 'unpaid' && <i className="bp-tick"><IconCheck size={12} /></i>}
+            </button>
           </section>
 
+          <div className="bp-result" aria-live="polite">
+            <span>
+              {status === 'all'
+                ? <>همه قبض‌ها · <b className="num">{toPersianDigits(shown.length)}</b></>
+                : <>فیلتر: <b>{PAYMENT_STATUS_LABEL[status]}</b> · <b className="num">{toPersianDigits(shown.length)}</b> قبض</>}
+            </span>
+            {status !== 'all' && (
+              <button type="button" className="bp-result__clear" onClick={() => setStatus('all')}><IconX size={13} /> نمایش همه</button>
+            )}
+          </div>
+
           <div className="bp-list">
-            {report.rows.map((r) => (
+            {shown.map((r) => (
               <button type="button" key={r.bill.id} className="bp-row" onClick={() => onOpenBill(r.bill.id)}>
                 <ExpenseIcon type={r.bill.expenseType} size={38} />
                 <div className="bp-row__main">
