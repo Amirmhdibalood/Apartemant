@@ -1,5 +1,6 @@
 import { MONTHS } from '../models/constants';
-import { IconCalendar, IconChevronDown, IconX } from './Icons';
+import { IconCalendar, IconX } from './Icons';
+import { OptionPicker } from './OptionPicker';
 import { formatJalaliKey, jalaliMonthLength, parseJalaliKey, type JalaliDate } from '../logic/jalali';
 
 interface Props {
@@ -30,18 +31,14 @@ export function JalaliDateField({ id, label, hint, optional, value, onChange, de
   const yearList = d && !years.includes(d.year) ? [...years, d.year].sort((a, b) => a - b) : years;
 
   const sel = (key: 'day' | 'month' | 'year', aria: string, options: { value: number; label: string }[]) => (
-    <div className="select-wrap">
-      <select
-        id={`${id}-${key}`}
-        className="input select"
-        aria-label={`${label} — ${aria}`}
-        value={d ? d[key] : ''}
-        onChange={(e) => d && set({ ...d, [key]: Number(e.target.value) })}
-      >
-        {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-      </select>
-      <IconChevronDown size={16} className="select-chevron" />
-    </div>
+    <OptionPicker
+      id={`${id}-${key}`}
+      label={aria}
+      ariaLabel={`${label} — ${aria}`}
+      value={d ? d[key] : 0}
+      options={options}
+      onChange={(v) => d && set({ ...d, [key]: v })}
+    />
   );
 
   return (
@@ -56,8 +53,9 @@ export function JalaliDateField({ id, label, hint, optional, value, onChange, de
           {sel('month', 'ماه', MONTHS.map((m, i) => ({ value: i + 1, label: m })))}
           {sel('year', 'سال', yearList.map((y) => ({ value: y, label: String(y) })))}
           {clearable && (
-            <button type="button" className="icon-btn date-field__clear" aria-label={`حذف ${label}`} onClick={() => onChange(null)}>
-              <IconX size={18} />
+            <button type="button" className="btn btn--text-danger btn--block btn--sm date-field__clear" aria-label={`حذف ${label}`} onClick={() => onChange(null)}>
+              <IconX size={16} />
+              <span>حذف {label}</span>
             </button>
           )}
         </div>

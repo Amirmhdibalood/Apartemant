@@ -695,10 +695,8 @@ h1, h2, h3, p { margin: 0; }
 .bill-paid-card__hint { font-size: 12.5px; line-height: 1.9; color: var(--text-2); margin-top: 6px; }
 .bill-paid-card .date-field { margin: 12px 0 4px; }
 
-.date-field__row { display: grid; grid-template-columns: 0.8fr 1.3fr 1fr auto; gap: 8px; align-items: center; }
-.date-field__row .select { padding-left: 30px; padding-right: 10px; }
-.date-field__row .select-chevron { left: 8px; }
-.date-field__clear { width: 40px; height: 40px; color: var(--muted); }
+.date-field__row { display: grid; grid-template-columns: 1fr; gap: 8px; align-items: start; }
+.date-field__clear { margin-top: 2px; }
 .date-field__add { height: 46px; font-size: 14px; }
 .field__hint { font-size: 12.5px; color: var(--muted); margin: -2px 0 8px; line-height: 1.8; }
 .due-dialog { text-align: right; margin-top: 6px; }
@@ -813,3 +811,10 @@ h1, h2, h3, p { margin: 0; }
 .building-unit__alias { height: 40px; font-size: 14px; padding: 0 10px; min-width: 0; }
 .building-unit__persons { width: 70px; }
 .building-note-small { margin-top: 10px; font-size: 12px; line-height: 1.8; color: var(--muted); }
+
+/* ---------- ۱.۶.۲: انتخابگرهای تک‌گزینه‌ای با ظاهر «سال‌های فعال» (OptionPicker) ---------- */
+.select-field .option-picker { width: 100%; }
+.filters { align-items: start; }
+.filters .field { margin-bottom: 0; }
+.option-picker .year-row { width: 100%; text-align: right; background: transparent; border-left: 0; border-right: 0; border-top: 0; font: inherit; }
+.option-picker .year-row__year { white-space: normal; }

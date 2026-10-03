@@ -204,8 +204,8 @@ scripts\build-apk.bat release
 
 ### نسخه‌گذاری (فقط در یک جا: `package.json`)
 ```json
-"version": "1.6.1",
-"versionCode": 9,
+"version": "1.6.2",
+"versionCode": 10,
 ```
 - `version` ← `versionName` اندروید و متن «نسخه ۱.۳.۰» پایین صفحه تنظیمات.
 - `versionCode` ← عدد صحیحی که اندروید و مایکت برای تشخیص نسخه جدیدتر استفاده می‌کنند. **در هر انتشار باید حتماً بیشتر از نسخه قبلی باشد** (۱، ۲، ۳، ...)؛ هرگز کم یا تکراری نشود.
@@ -213,7 +213,7 @@ scripts\build-apk.bat release
 
 ### انتشار به‌روزرسانی در مایکت (قدم‌به‌قدم)
 1. تغییرات کد را انجام دهید و `npm test` را اجرا کنید.
-2. در `package.json` مقدار `version` را بالا ببرید (مثلاً `1.6.1` → `1.6.2` یا `1.7.0`) و `versionCode` را **یک واحد افزایش دهید** (مثلاً `9` → `10`).
+2. در `package.json` مقدار `version` را بالا ببرید (مثلاً `1.6.2` → `1.6.3` یا `1.7.0`) و `versionCode` را **یک واحد افزایش دهید** (مثلاً `10` → `10`).
 3. با **همان keystore (`amb632-release.jks`)** نسخه Release بسازید: `scripts\build-apk.bat release` (یا GitHub Actions با Secretها).
 4. (اختیاری) امضا را با `apksigner verify --print-certs` بررسی کنید؛ اثر انگشت SHA-256 گواهی باید `e345788b…03997715` (همان نسخه ۱.۶.۱) باشد.
 5. در پنل توسعه‌دهندگان مایکت (myket.ir) وارد صفحه برنامه شوید، بخش **نسخه جدید / بارگذاری APK** را انتخاب و `apartemant-release.apk` را بارگذاری کنید،
@@ -442,7 +442,7 @@ building-charge/
    ├─ services/    backupFile (اشتراک‌گذاری/ذخیره فایل پشتیبان روی اندروید، دانلود در وب) · billImage (رسم تصویر قبض با canvas) · billImageExport (اشتراک‌گذاری / ذخیره در گالری)
    ├─ hooks/       useDueAlerts (هشدارهای مهلت پرداخت + بستن فقط در همین اجرا)
    ├─ context/     SettingsContext · FeedbackContext (مدیریت جدای Error / Warning / Toast)
-   ├─ components/  AppHeader, BottomNav, YearPicker (کشوی سال‌های فعال), PaymentDialog (پرداخت کامل/جزئی), JalaliDateField (انتخابگر تاریخ شمسی), BackupSection, RestoreConfirmDialog, AmountInput, PersonCountInput, UnitsEditor, ExpenseTypePicker,
+   ├─ components/  AppHeader, BottomNav, YearPicker (کشوی سال‌های فعال), OptionPicker (انتخابگر تک‌گزینه‌ای با همان ظاهر YearPicker؛ پایهٔ SelectField و JalaliDateField), SelectField, PaymentDialog (پرداخت کامل/جزئی), JalaliDateField (انتخابگر تاریخ شمسی), BackupSection, RestoreConfirmDialog, AmountInput, PersonCountInput, UnitsEditor, ExpenseTypePicker,
    │               ErrorDialog, WarningDialog, LockedDialog, ConfirmDialog, Toast, Checkbox, Switch, Icons, Illustrations ...
    ├─ assets/      intro-art.svg / intro-art-landscape.svg (تصویر صفحه ورود)
    ├─ screens/     Intro (صفحه ورود), Home, NewBill (ثبت/ویرایش), Result, Records, Reports (مرکز گزارش‌ها + reports/YearlyReportView, reports/DebtorsView, reports/BillPaymentsView), UnitHistory (سابقه پرداخت واحد), BillDetails, Tutorial, Settings
@@ -514,6 +514,11 @@ npm run branding:generate
 - بعد از هر تغییر کد، `npm run build` و `npx cap sync` را فراموش نکنید؛ در غیر این صورت APK نسخه قبلی را نشان می‌دهد.
 
 ## تاریخچه نسخه‌ها
+
+- **۱.۶.۲** (versionCode 10): **یکدست‌سازی انتخابگرها**: همه فیلترها و انتخاب‌های ماه/سال/تاریخ (فیلترهای سوابق، فیلترهای گزارش‌ها، سال و ماه فرم قبض، مهلت پرداخت، تاریخ پرداخت قبض و پنجرهٔ ویرایش مهلت)
+  به‌جای لیست بومی مرورگر/اندروید، دقیقاً با همان ظاهر کشویی «سال‌های فعال» تنظیمات نمایش داده می‌شوند (کامپوننت جدید `OptionPicker` که همان کلاس‌های `year-picker` / `year-row` را دوباره استفاده می‌کند؛
+  `SelectField` و `JalaliDateField` روی آن ساخته شده‌اند و رفتار قبلی—مقادیر، فیلتر، محدودهٔ روزهای ماه، پاک‌کردن تاریخ—بدون تغییر است). در تنظیمات ← ساختمان، جای‌نگهدار اسم مستعار دیگر مثال «آقای رضایی» ندارد و مثل بقیهٔ ردیف‌ها «واحد ۱»، «واحد ۲»، ... است.
+  امضا با همان کلید جدید `amb632-release.jks` (SHA-256 گواهی `e345788b…03997715`) و همچنان **بدون هیچ مجوزی**؛ روی ۱.۶.۱ به‌صورت به‌روزرسانی نصب می‌شود.
 
 - **۱.۶.۱** (versionCode 9): کد برنامه دقیقاً همان ۱.۶.۰ است؛ فقط **کلید امضای Release عوض شد** (کلید شخصی جدید `amb632-release.jks`، SHA-256 گواهی `e345788b…03997715`)،
   چون نسخه قبلی هیچ‌جا منتشر نشده بود. برای گوشی‌ای که نسخه قدیمی (امضاشده با کلید قبلی) روی آن نصب است: اول از «تنظیمات ← پشتیبان‌گیری» نسخه پشتیبان بگیرید،

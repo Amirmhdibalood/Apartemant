@@ -131,7 +131,7 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
               type="text"
               autoComplete="off"
               maxLength={MAX_ALIAS_LENGTH}
-              placeholder={i === 0 ? 'مثل: آقای رضایی' : unitLabel(i + 1)}
+              placeholder={unitLabel(i + 1)}
               aria-label={`اسم مستعار واحد ${toPersianDigits(i + 1)}`}
               value={r.alias}
               onChange={(e) => update(rows.map((x, j) => (j === i ? { ...x, alias: e.target.value } : x)))}
