@@ -235,3 +235,9 @@ export const IconImageDown = (p: P) => (
     <path d="m15 7.2 3 3 3-3" />
   </S>
 );
+export const IconBell = (p: P) => (
+  <S {...p}>
+    <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.6 1.8H4.4L6 16.5Z" />
+    <path d="M10 20.6a2.2 2.2 0 0 0 4 0" />
+  </S>
+);

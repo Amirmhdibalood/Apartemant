@@ -13,13 +13,16 @@ import App from './App';
 import { ThemeProvider } from './context/ThemeContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { FeedbackProvider } from './context/FeedbackContext';
+import { NotifProvider } from './context/NotifContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <SettingsProvider>
         <FeedbackProvider>
-          <App />
+          <NotifProvider>
+            <App />
+          </NotifProvider>
         </FeedbackProvider>
       </SettingsProvider>
     </ThemeProvider>

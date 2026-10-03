@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { IconChevronLeft, IconHelp } from './Icons';
+import { NotifBell } from './NotifBell';
 import { ThemeToggle } from './ThemeToggle';
 
 interface Props {
@@ -33,6 +34,7 @@ export function AppHeader({ title, onBack, start, onHelp }: Props) {
             <IconChevronLeft size={24} />
           </button>
         )}
+        {onHelp && <NotifBell />}
         {onHelp && <HelpButton onHelp={onHelp} />}
         {onHelp && <ThemeToggle />}
       </div>

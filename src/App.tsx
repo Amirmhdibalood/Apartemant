@@ -20,7 +20,8 @@ import { TutorialScreen } from './screens/TutorialScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { IntroScreen } from './screens/IntroScreen';
 import { BillSavedDialog } from './components/BillSavedDialog';
-import { useDueAlerts } from './hooks/useDueAlerts';
+import { useNotif } from './context/NotifContext';
+import { NotificationsLayer } from './components/NotificationsLayer';
 import { onboardingRepository } from './storage/onboardingRepository';
 
 export default function App() {
@@ -44,6 +45,7 @@ export default function App() {
     if (!Capacitor.isNativePlatform()) return;
     const sub = CapApp.addListener('backButton', () => {
       if (document.querySelector('.intro')) return;
+      if (notifRef.current.open) { notifRef.current.setOpen(false); return; }
       if (document.querySelector('.dialog-backdrop')) {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
         return;
@@ -55,10 +57,12 @@ export default function App() {
   }, [back]);
 
   // هشدار مهلت پرداخت داخل برنامه (صفحه اصلی + عدد روی زبانه سوابق) — بدون اعلان سیستمی و بدون هیچ مجوزی
-  const dueAlerts = useDueAlerts();
+  const notif = useNotif();
+  const notifRef = useRef(notif);
+  notifRef.current = notif;
 
   // اسکرول به بالا هنگام تغییر صفحه
-  useEffect(() => { window.scrollTo(0, 0); }, [route]);
+  useEffect(() => { window.scrollTo(0, 0); notifRef.current.setOpen(false); }, [route]);
 
   // مهاجرت نسخه ۱.۶.۰: در اولین اجرا تنظیمات «ساختمان» از واحدهای جدیدترین قبض ساخته می‌شود
   useEffect(() => { buildingRepository.get().catch(() => undefined); }, []);
@@ -101,9 +105,11 @@ export default function App() {
         <HomeScreen
           onNewBill={startNewBill}
           onOpen={(t) => onTab(t)}
-          alerts={dueAlerts.visible}
+          alerts={notif.visible}
+          mode={notif.mode}
+          onShowAll={() => notif.setOpen(true)}
           onOpenBill={(billId) => push({ name: 'details', billId })}
-          onDismiss={dueAlerts.dismiss}
+          onDismiss={notif.dismissBanner}
           onHelp={openHelp}
         />
       );
@@ -191,8 +197,9 @@ export default function App() {
   return (
     <div className={'app-shell' + (showNav ? ' has-nav' : '')}>
       {screen}
-      {showNav && <BottomNav active={route.name as TabId} onSelect={onTab} badges={{ records: dueAlerts.all.length }} />}
+      {showNav && <BottomNav active={route.name as TabId} onSelect={onTab} badges={{ records: notif.all.length }} />}
       <BillSavedDialog saved={justSaved} onClose={() => setJustSaved(null)} />
+      <NotificationsLayer onOpenBill={(billId) => push({ name: 'details', billId })} />
     </div>
   );
 }
