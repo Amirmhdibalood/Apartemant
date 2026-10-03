@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- اسپلش Android 12+ در حالت تاریک سیستم: سرمه‌ای عمیق هم‌رنگ پس‌زمینه تم تاریک -->
+    <color name="splash_background">#0D121F</color>
+</resources>

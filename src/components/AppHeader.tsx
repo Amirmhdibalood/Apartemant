@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { IconChevronLeft, IconHelp } from './Icons';
+import { ThemeToggle } from './ThemeToggle';
 
 interface Props {
   title: string;
@@ -23,7 +24,7 @@ export function HelpButton({ onHelp }: { onHelp: () => void }) {
 export function AppHeader({ title, onBack, start, onHelp }: Props) {
   const two = !!onBack && !!onHelp;
   return (
-    <header className={'app-header' + (two ? ' app-header--two' : '')}>
+    <header className={'app-header' + (onHelp ? ' app-header--help' : '') + (two ? ' app-header--two' : '')}>
       <div className="app-header__side app-header__start">{start}</div>
       <h1 className="app-header__title">{title}</h1>
       <div className="app-header__side app-header__end">
@@ -33,6 +34,7 @@ export function AppHeader({ title, onBack, start, onHelp }: Props) {
           </button>
         )}
         {onHelp && <HelpButton onHelp={onHelp} />}
+        {onHelp && <ThemeToggle />}
       </div>
     </header>
   );

@@ -433,22 +433,23 @@ building-charge/
 ├─ scripts/sign-release.mjs   ← zipalign + امضای apksigner (v1/v2/v3) با کلید از متغیرهای محیطی
 ├─ scripts/apply-android-branding.mjs ← اعمال نام، آیکون، اسپلش، نسخه، کد بومی (MainActivity/GallerySaver) و حذف مجوز اینترنت روی پوشه android (خودکار بعد از cap sync)
 ├─ scripts/manifest-permissions.mjs ← حذف INTERNET و مجوزهای اعلان/هشدار سیستمی (POST_NOTIFICATIONS، RECEIVE_BOOT_COMPLETED، WAKE_LOCK، SCHEDULE_EXACT_ALARM، USE_EXACT_ALARM) از AndroidManifest (tools:node="remove")
-├─ resources/android/res/     ← آیکون‌ها (adaptive/round/legacy همه تراکم‌ها) و تصاویر اسپلش آماده
+├─ resources/android/res/     ← آیکون‌ها (adaptive/round/legacy همه تراکم‌ها) و تصاویر اسپلش آماده؛ values-night/branding.xml = پس‌زمینه اسپلش تاریک (اندروید ۱۲+)
+├─ scripts/dark-css.mjs · dark-art.mjs ← تولید خودکار src/styles/dark.generated.css از global.css و نسخهٔ شبانهٔ تصویر ورود (npm run theme:generate؛ تست همگامی دارد)
 ├─ resources/android/java/    ← کد بومی: MainActivity (edge-to-edge در همه نسخه‌ها) + افزونه GallerySaver (ذخیره تصویر در گالری با MediaStore)
 ├─ resources/branding/        ← SVGهای منبع طرح ۱ + generate.mjs (ساخت دوباره PNGها؛ اختیاری)
 ├─ tests/                     ← تست‌های واحد (Vitest)
 └─ src/
    ├─ models/      types.ts (Bill, Unit, Settings, Draft) · constants.ts (ماه‌ها، انواع هزینه، رنگ‌ها، سال‌ها)
-   ├─ logic/       calculation · formatting · validation · errors · warnings · settlement · years · settings · backup · split (نحوه تقسیم) · report (گزارش سالانه) · debts (بدهکاران و سابقه پرداخت) · billPaid (پرداخت شد/حذف نرم/مهاجرت) · billStatus (رنگ و متن مهلت) · billFilter (فیلترهای سوابق) · billPaymentReport (گزارش پرداخت قبض‌ها) · dueAlerts (هشدار مهلت پرداخت صفحه اصلی) · jalali (تاریخ شمسی) · payments (پرداخت کامل/جزئی) · building (تنظیمات ساختمان، اسم مستعار، مهاجرت) · unitTemplate (الگوی قدیمی، فقط مهاجرت) · billFactory · date · id
-   ├─ storage/     kvStore (Capacitor Preferences) · billRepository · settingsRepository · backupRepository · buildingRepository · splitDefaultsRepository
+   ├─ logic/       theme · darkColor (پالت تاریک) · calculation · formatting · validation · errors · warnings · settlement · years · settings · backup · split (نحوه تقسیم) · report (گزارش سالانه) · debts (بدهکاران و سابقه پرداخت) · billPaid (پرداخت شد/حذف نرم/مهاجرت) · billStatus (رنگ و متن مهلت) · billFilter (فیلترهای سوابق) · billPaymentReport (گزارش پرداخت قبض‌ها) · dueAlerts (هشدار مهلت پرداخت صفحه اصلی) · jalali (تاریخ شمسی) · payments (پرداخت کامل/جزئی) · building (تنظیمات ساختمان، اسم مستعار، مهاجرت) · unitTemplate (الگوی قدیمی، فقط مهاجرت) · billFactory · date · id
+   ├─ storage/     kvStore (Capacitor Preferences) · billRepository · settingsRepository · backupRepository · buildingRepository · splitDefaultsRepository · themeRepository
    ├─ services/    backupFile (اشتراک‌گذاری/ذخیره فایل پشتیبان روی اندروید، دانلود در وب) · billImage (رسم تصویر قبض با canvas) · billImageExport (اشتراک‌گذاری / ذخیره در گالری)
    ├─ hooks/       useDueAlerts (هشدارهای مهلت پرداخت + بستن فقط در همین اجرا)
-   ├─ context/     SettingsContext · FeedbackContext (مدیریت جدای Error / Warning / Toast)
+   ├─ context/     SettingsContext · FeedbackContext (مدیریت جدای Error / Warning / Toast) · ThemeContext (تم روشن/تاریک، نوار وضعیت/ناوبری)
    ├─ components/  AppHeader, BottomNav, YearPicker (کشوی سال‌های فعال), OptionPicker (انتخابگر تک‌گزینه‌ای با همان ظاهر YearPicker؛ پایهٔ SelectField و JalaliDateField), SelectField, PaymentDialog (پرداخت کامل/جزئی), JalaliDateField (انتخابگر تاریخ شمسی), BackupSection, RestoreConfirmDialog, AmountInput, PersonCountInput, UnitsEditor, ExpenseTypePicker,
    │               ErrorDialog, WarningDialog, LockedDialog, ConfirmDialog, Toast, Checkbox, Switch, Icons, Illustrations ...
    ├─ assets/      intro-art.svg / intro-art-landscape.svg (تصویر صفحه ورود)
    ├─ screens/     Intro (صفحه ورود), Home, NewBill (ثبت/ویرایش), Result, Records, Reports (مرکز گزارش‌ها + reports/YearlyReportView, reports/DebtorsView, reports/BillPaymentsView), UnitHistory (سابقه پرداخت واحد), BillDetails, Tutorial, Settings
-   ├─ styles/      global.css (Design System مطابق تصویر مرجع)
+   ├─ styles/      global.css (Design System مطابق تصویر مرجع) · dark.generated.css (خودکار) · dark.css (موارد دستی تم تاریک)
    ├─ App.tsx      ناوبری (Stack) + دکمه Back اندروید
    └─ main.tsx     فونت Vazirmatn محلی (بدون CDN)
 ```
@@ -460,6 +461,19 @@ building-charge/
   اسکریپت برندینگ علاوه بر `INTERNET`، مجوزهای `POST_NOTIFICATIONS`، `RECEIVE_BOOT_COMPLETED`، `WAKE_LOCK`، `SCHEDULE_EXACT_ALARM` و `USE_EXACT_ALARM` را هم با `tools:node="remove"` از Manifest نهایی کنار می‌گذارد
   (تنها مورد باقی‌مانده، مجوز داخلی `…DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` است که خود اندروید/AndroidX برای برنامه تعریف می‌کند و از کاربر پرسیده نمی‌شود).
 - پوشه `android` عمداً در مخزن نیست (با `npx cap add android` ساخته می‌شود) — در `.gitignore` آمده است.
+
+## حالت تاریک (۱.۶.۳)
+
+- **پالت** («گزینه ۲ — سرمه‌ای عمیق»): پس‌زمینه `#0d121f`، کارت `#151e33`، متن `#d2d8e4`، رنگ اصلی `#4784f2`، موفقیت `#37d383`، خطا `#f15b5b`.
+- **پیاده‌سازی**: متغیرهای CSS با ویژگی `data-theme="dark"` روی `<html>`. یک تابع واحد (`src/logic/darkColor.ts`) هم فایل `src/styles/dark.generated.css` را از روی `global.css` می‌سازد
+  (`npm run theme:generate`) و هم رنگ‌های درون‌خطی (آیکون نوع هزینه، تصویر صفحه اصلی) را در زمان اجرا تبدیل می‌کند؛ پس روشن و تاریک همیشه همگام‌اند (تست همگامی دارد). موارد دستی در `src/styles/dark.css`.
+  دکمه‌های پُر با متن سفید در تم تاریک کمی تیره‌تر می‌شوند تا کنتراست ≥ ۴٫۵ بماند. تصویر صفحه ورود نسخه «شبانه» دارد (`intro-art*-dark.svg`، تولید خودکار).
+- **انتخاب تم**: `src/logic/theme.ts` (`resolveTheme`)، `src/storage/themeRepository.ts` (کلید `theme` در kvStore؛ داخل فایل پشتیبان نیست)، `src/context/ThemeContext.tsx`.
+  اولین اجرا از `prefers-color-scheme` سیستم پیروی می‌کند؛ پس از اولین لمس دکمه ماه/خورشید، انتخاب کاربر ثابت می‌ماند.
+  اسکریپت کوچک `index.html` تم را پیش از اولین رندر اعمال می‌کند (بدون چشمک).
+- **اندروید**: رنگ آیکون‌های نوار وضعیت/ناوبری با `SystemBars.setStyle` از خود `@capacitor/core` (بدون پلاگین و مجوز جدید)؛ نوارها شفاف و edge-to-edge‌اند.
+  اسپلش بومی اندروید ۱۲+ با `values-night/branding.xml` در حالت تاریک سیستم سرمه‌ای است (اندروید ۱۱ و پایین‌تر همان اسپلش روشن را دارد).
+- **تصویر قبض**: تصویر خروجی/اشتراک‌گذاری با canvas و رنگ‌های ثابت رسم می‌شود و به تم وابسته نیست (تست‌شده).
 
 ## نام، آیکون و اسپلش برنامه (برندینگ «آپارتمانت» — طرح ۱)
 
@@ -519,6 +533,7 @@ npm run branding:generate
 
 - **۱.۶.۳** (versionCode 11): **آموزش اجرای اول** (پس از نصب، آموزش یک‌بار خودکار باز می‌شود)؛ زبانهٔ «آموزش» از نوار پایین حذف و با دکمهٔ **«؟»** بالا-چپ جایگزین شد (نوار پایین ۴ زبانه، متعادل)؛
   گزینهٔ **«خالی» برای هر واحد** در تنظیمات ساختمان و فرم قبض (واحد خالی از محاسبه هر دو روش تقسیم، بدهکاران و سابقه پرداخت کنار می‌رود؛ فقط روی همان قبض قابل تغییر؛ عکس لحظه‌ای در قبض)؛
+  **حالت تاریک** (سرمه‌ای عمیق: پس‌زمینه `#0d121f`، کارت `#151e33`): دکمهٔ ماه/خورشید کنار «؟» در بالا-چپ همهٔ صفحه‌هایی که دکمهٔ «؟» دارند؛ در اولین اجرا از تم سیستم (`prefers-color-scheme`) پیروی می‌کند و پس از اولین انتخاب کاربر در kvStore (کلید `theme`، خارج از پشتیبان) ماندگار می‌شود؛ همهٔ صفحه‌ها، پنجره‌ها، انتخابگرها، آموزش، نمودارها، نوار پایین، ورودی‌ها، کارت‌های پرداخت‌شده/نشده/عقب‌افتاده، نوار وضعیت و ناوبری اندروید (بدون مجوز جدید) و اسپلش اندروید ۱۲+؛ تصویر قبض خروجی همیشه روشن و بدون تغییر می‌ماند؛
   پشتیبان قالب ۶ (با مهاجرت: پیش‌فرض خالی نیست). همچنان **بدون هیچ مجوزی**، با همان کلید `amb632-release.jks`.
 - **۱.۶.۲** (versionCode 10): **یکدست‌سازی انتخابگرها**: همه فیلترها و انتخاب‌های ماه/سال/تاریخ (فیلترهای سوابق، فیلترهای گزارش‌ها، سال و ماه فرم قبض، مهلت پرداخت، تاریخ پرداخت قبض و پنجرهٔ ویرایش مهلت)
   به‌جای لیست بومی مرورگر/اندروید، دقیقاً با همان ظاهر کشویی «سال‌های فعال» تنظیمات نمایش داده می‌شوند (کامپوننت جدید `OptionPicker` که همان کلاس‌های `year-picker` / `year-row` را دوباره استفاده می‌کند؛

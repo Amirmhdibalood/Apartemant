@@ -2,6 +2,7 @@ import { BuildingIllustration, CitySkyline } from '../components/Illustrations';
 import { IconAlertTriangle, IconBook, IconChart, IconChevronLeft, IconGear, IconHistory, IconPlus, IconX } from '../components/Icons';
 import type { TabId } from '../components/BottomNav';
 import { HelpButton } from '../components/AppHeader';
+import { ThemeToggle } from '../components/ThemeToggle';
 import type { DueAlert } from '../logic/dueAlerts';
 
 interface Props {
@@ -19,7 +20,7 @@ interface Props {
 export function HomeScreen({ onNewBill, onOpen, alerts = [], onOpenBill, onDismiss, onHelp }: Props) {
   return (
     <main className="screen screen--home">
-      {onHelp && <div className="home-topbar"><HelpButton onHelp={onHelp} /></div>}
+      {onHelp && <div className="home-topbar"><HelpButton onHelp={onHelp} /><ThemeToggle /></div>}
       {alerts.length > 0 && (
         <section className="due-alerts" aria-label="هشدار مهلت پرداخت">
           {alerts.map((a) => (

@@ -77,7 +77,8 @@ h1, h2, h3, p { margin: 0; }
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
-.app-header--two { grid-template-columns: 92px 1fr 92px; }
+.app-header--help { grid-template-columns: 92px 1fr 92px; }
+.app-header--two { grid-template-columns: 132px 1fr 132px; }
 .app-header__end { gap: 0; }
 .help-btn { color: var(--primary); }
 .app-header__title { text-align: center; font-size: 18px; font-weight: 800; color: var(--text); }
@@ -126,7 +127,7 @@ h1, h2, h3, p { margin: 0; }
 
 /* ---------- Home ---------- */
 .screen--home { position: relative; display: flex; flex-direction: column; padding-top: calc(var(--safe-top) + 26px); }
-.home-topbar { position: absolute; top: calc(var(--safe-top) + 6px); left: 8px; z-index: 5; display: flex; gap: 2px; }
+.home-topbar { position: absolute; top: calc(var(--safe-top) + 6px); left: 8px; z-index: 5; display: flex; gap: 0; }
 .home { display: flex; flex-direction: column; align-items: stretch; }
 .illustration { width: 220px; height: 140px; align-self: center; }
 .home__title { text-align: center; font-size: 23px; font-weight: 800; margin-top: 18px; color: #16203b; }
