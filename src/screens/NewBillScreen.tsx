@@ -16,7 +16,7 @@ import { Errors } from '../logic/errors';
 import { CURRENCY, SPLIT_METHOD_LABELS } from '../models/constants';
 import { defaultSplitFor, type SplitDefaults } from '../logic/split';
 import { splitDefaultsRepository } from '../storage/splitDefaultsRepository';
-import { addDraftUnit, removeDraftUnit } from '../logic/billFactory';
+import { addDraftUnit, draftVacant, removeDraftUnit } from '../logic/billFactory';
 import type { BuildingSettings } from '../models/types';
 import { buildingFromDraftUnits, draftMatchesBuilding, draftUnitsFromBuilding } from '../logic/building';
 import { buildingRepository } from '../storage/buildingRepository';
@@ -49,7 +49,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
     buildingRepository.get().then((b) => { if (alive) setBuilding(b); }).catch(() => undefined);
     return () => { alive = false; };
   }, [draft.editingBillId]);
-  const matches = building ? draftMatchesBuilding(draft.personCounts, draft.unitAliases, building) : true;
+  const matches = building ? draftMatchesBuilding(draft.personCounts, draft.unitAliases, building, draft.unitVacant) : true;
 
   const resetToBuilding = () => {
     if (building) set(draftUnitsFromBuilding(building));
@@ -57,7 +57,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
 
   /** «ذخیره به‌عنوان پیش‌فرض»: واحدهای این فرم پیش‌فرض قبض‌های بعدی می‌شوند */
   const saveAsDefault = async () => {
-    const next = buildingFromDraftUnits(draft.personCounts, draft.unitAliases);
+    const next = buildingFromDraftUnits(draft.personCounts, draft.unitAliases, draft.unitVacant);
     if (!next) {
       showErrors([Errors.noUnits()]);
       return;
@@ -213,9 +213,11 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
         <UnitsEditor
           personCounts={draft.personCounts}
           unitAliases={draft.unitAliases}
+          unitVacant={draft.unitVacant}
           onAdd={(persons) => setDraft(addDraftUnit(draft, persons))}
           onRemoveLast={() => setDraft(removeDraftUnit(draft, draft.personCounts.length - 1))}
           onChangeCount={(index, v) => set({ personCounts: draft.personCounts.map((x, j) => (j === index ? v : x)) })}
+          onChangeVacant={(index, v) => set({ unitVacant: draftVacant(draft).map((x, j) => (j === index ? v : x)) })}
           amountDigits={draft.amountDigits}
           splitMethod={draft.splitMethod}
         />

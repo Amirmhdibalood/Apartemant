@@ -47,7 +47,7 @@ describe('برچسب و اسم مستعار واحد', () => {
 describe('تنظیمات ساختمان (منطق)', () => {
   it('اعتبارسنجی', () => {
     expect(sanitizeBuilding({ units: [{ alias: ' آقای رضایی ', defaultPersons: 5 }, { alias: null, defaultPersons: 0 }] }))
-      .toEqual({ units: [{ alias: 'آقای رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 0 }] });
+      .toEqual({ units: [{ alias: 'آقای رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 1, vacant: true }] });
     expect(sanitizeBuilding({ units: [] })).toBeNull();
     expect(sanitizeBuilding({ units: [{ alias: null, defaultPersons: -1 }] })).toBeNull();
     expect(sanitizeBuilding({ units: [{ alias: 3, defaultPersons: 1 }] })).toBeNull();
@@ -99,20 +99,24 @@ describe('تنظیمات ساختمان (منطق)', () => {
   });
 
   it('مقایسه فرم با پیش‌فرض و «ذخیره به‌عنوان پیش‌فرض»', () => {
-    const b = { units: [{ alias: 'رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 0 }] };
+    const b = { units: [{ alias: 'رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 1, vacant: true }] };
     const rows = draftUnitsFromBuilding(b);
-    expect(rows).toEqual({ personCounts: ['5', '0'], unitAliases: ['رضایی', null] });
-    expect(draftMatchesBuilding(rows.personCounts, rows.unitAliases, b)).toBe(true);
-    expect(draftMatchesBuilding(['5', '0', '1'], ['رضایی', null, null], b)).toBe(false);
-    expect(buildingFromDraftUnits(['5', '0', ''], ['رضایی', null, null])).toEqual({
-      units: [{ alias: 'رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 0 }, { alias: null, defaultPersons: 1 }],
+    expect(rows).toEqual({ personCounts: ['5', '1'], unitAliases: ['رضایی', null], unitVacant: [false, true] });
+    expect(draftMatchesBuilding(rows.personCounts, rows.unitAliases, b, rows.unitVacant)).toBe(true);
+    // تفاوت فقط در «خالی» هم یعنی فرم با پیش‌فرض فرق دارد
+    expect(draftMatchesBuilding(rows.personCounts, rows.unitAliases, b, [false, false])).toBe(false);
+    expect(draftMatchesBuilding(['5', '1', '1'], ['رضایی', null, null], b)).toBe(false);
+    expect(buildingFromDraftUnits(['5', '1', ''], ['رضایی', null, null], [false, true, false])).toEqual({
+      units: [{ alias: 'رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 1, vacant: true }, { alias: null, defaultPersons: 1 }],
     });
+    // نفرات ۰ تایپ‌شده در فرم (قدیمی) هنگام «ذخیره به‌عنوان پیش‌فرض» به «خالی» تبدیل می‌شود
+    expect(buildingFromDraftUnits(['0'])).toEqual({ units: [{ alias: null, defaultPersons: 1, vacant: true }] });
     expect(buildingFromDraftUnits([])).toBeNull();
   });
 });
 
 describe('فرم قبض جدید از تنظیمات ساختمان', () => {
-  const building = { units: [{ alias: 'آقای رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 3 }, { alias: null, defaultPersons: 0 }] };
+  const building = { units: [{ alias: 'آقای رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 3 }, { alias: null, defaultPersons: 1, vacant: true }] };
 
   it('بدون تنظیمات: یک واحد ۱ نفره', () => {
     expect(DEFAULT_PERSON_COUNT).toBe('1');
@@ -123,7 +127,8 @@ describe('فرم قبض جدید از تنظیمات ساختمان', () => {
 
   it('واحدها، اسم‌ها و نفرات پیش‌فرض از ساختمان پر می‌شوند', () => {
     const d = emptyDraft(1405, 8, building);
-    expect(d.personCounts).toEqual(['5', '3', '0']);
+    expect(d.personCounts).toEqual(['5', '3', '1']);
+    expect(d.unitVacant).toEqual([false, false, true]);
     expect(d.unitAliases).toEqual(['آقای رضایی', null, null]);
     expect(d.editingBillId).toBeNull();
     expect(d.amountDigits).toBe('');
@@ -132,11 +137,13 @@ describe('فرم قبض جدید از تنظیمات ساختمان', () => {
   it('افزودن/حذف واحد در فرم فقط برای همین قبض؛ اسم همراه ردیف خودش جابه‌جا می‌شود', () => {
     let d = emptyDraft(1405, 8, building);
     d = addDraftUnit(d);
-    expect(d.personCounts).toEqual(['5', '3', '0', '1']);
+    expect(d.personCounts).toEqual(['5', '3', '1', '1']);
     expect(d.unitAliases).toEqual(['آقای رضایی', null, null, null]);
+    expect(d.unitVacant).toEqual([false, false, true, false]);
     d = removeDraftUnit(d, 0);
-    expect(d.personCounts).toEqual(['3', '0', '1']);
+    expect(d.personCounts).toEqual(['3', '1', '1']);
     expect(d.unitAliases).toEqual([null, null, null]);
+    expect(d.unitVacant).toEqual([false, true, false]);
     // فرم قدیمی بدون unitAliases
     const legacy: BillDraft = { ...emptyDraft(1405, 8), personCounts: ['2', '2'], unitAliases: undefined };
     expect(addDraftUnit(legacy).unitAliases).toEqual([null, null, null]);
@@ -144,17 +151,18 @@ describe('فرم قبض جدید از تنظیمات ساختمان', () => {
 
   it('عکس لحظه‌ای: قبض اسم‌ها و نفرات زمان ثبت را نگه می‌دارد؛ واحد خالی سهم ۰ و تسویه‌شده', () => {
     const d: BillDraft = { ...emptyDraft(1405, 8, building), expenseType: 'water', amountDigits: '640000' };
-    const calc = calculateBySplit(640000, [5, 3, 0], 'perPerson');
+    const calc = calculateBySplit(640000, [5, 3, 1], 'perPerson', d.unitVacant);
     const saved = buildBill(d, calc, null, new Date('2026-09-28T08:00:00Z'));
-    expect(saved.units.map((u) => [u.unitNumber, u.alias, u.personCount, u.shareAmount, u.isSettled])).toEqual([
-      [1, 'آقای رضایی', 5, 400000, false],
-      [2, null, 3, 240000, false],
-      [3, null, 0, 0, true],
+    expect(saved.units.map((u) => [u.unitNumber, u.alias, u.personCount, u.shareAmount, u.isSettled, u.vacant])).toEqual([
+      [1, 'آقای رضایی', 5, 400000, false, undefined],
+      [2, null, 3, 240000, false, undefined],
+      [3, null, 1, 0, true, true],
     ]);
     // ویرایش: فرم از روی عکس لحظه‌ای قبض پر می‌شود (نه از تنظیمات فعلی)
     const back = draftFromBill(saved);
     expect(back.unitAliases).toEqual(['آقای رضایی', null, null]);
-    expect(back.personCounts).toEqual(['5', '3', '0']);
+    expect(back.personCounts).toEqual(['5', '3', '1']);
+    expect(back.unitVacant).toEqual([false, false, true]);
   });
 
   it('سهم زنده ردیف‌های فرم', () => {
@@ -162,6 +170,10 @@ describe('فرم قبض جدید از تنظیمات ساختمان', () => {
     expect(liveShares('90000', ['5', '0', '1'], 'perUnit')).toEqual([30000, 30000, 30000]);
     expect(liveShares('', ['1'], 'perPerson')).toBeNull();
     expect(liveShares('1000', ['0', '0'], 'perPerson')).toBeNull();
+    // واحد خالی: در هر دو روش تقسیم سهم ندارد
+    expect(liveShares('100000', ['5', '3', '2'], 'perPerson', [false, true, false])).toEqual([71429, 0, 28571]);
+    expect(liveShares('90000', ['5', '3', '2'], 'perUnit', [false, true, false])).toEqual([45000, 0, 45000]);
+    expect(liveShares('90000', ['5', '3'], 'perUnit', [true, true])).toBeNull();
     expect(liveShares('1000', ['', '1'], 'perPerson')).toBeNull();
   });
 });
@@ -195,8 +207,8 @@ describe('ذخیره تنظیمات ساختمان و مهاجرت اولین ا
   });
 
   it('ذخیره و خواندن دوباره (حافظه ماندگار)', async () => {
-    await buildingRepository.save({ units: [{ alias: ' آقای رضایی ', defaultPersons: 5 }, { alias: '', defaultPersons: 0 }] });
-    expect(await buildingRepository.get()).toEqual({ units: [{ alias: 'آقای رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 0 }] });
+    await buildingRepository.save({ units: [{ alias: ' آقای رضایی ', defaultPersons: 5 }, { alias: '', defaultPersons: 1, vacant: true }] });
+    expect(await buildingRepository.get()).toEqual({ units: [{ alias: 'آقای رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 1, vacant: true }] });
     await expect(buildingRepository.save({ units: [] })).rejects.toThrow();
   });
 

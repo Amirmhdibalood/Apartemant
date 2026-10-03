@@ -7,10 +7,12 @@ interface Props {
   invalid?: boolean;
   /** «بر اساس واحد»: نمایش ۱ کم‌رنگ و غیرقابل ویرایش (مقدار واقعی دست‌نخورده می‌ماند) */
   disabled?: boolean;
+  /** با disabled: به‌جای مقدار واقعی، ۱ (وزن) نشان بده؛ برای واحد خالی false است تا نفرات واقعی دیده شود */
+  showWeight?: boolean;
 }
 
 /** ورودی تعداد نفرات: فقط تایپ دستی، بدون Spinner (type=text + inputMode=numeric) */
-export function PersonCountInput({ value, onChange, unitNumber, invalid, disabled }: Props) {
+export function PersonCountInput({ value, onChange, unitNumber, invalid, disabled, showWeight = true }: Props) {
   return (
     <input
       className={'input input--count' + (invalid ? ' is-invalid' : '') + (disabled ? ' is-weight' : '')}
@@ -21,7 +23,7 @@ export function PersonCountInput({ value, onChange, unitNumber, invalid, disable
       autoComplete="off"
       dir="ltr"
       maxLength={4}
-      value={disabled ? '1' : value}
+      value={disabled && showWeight ? '1' : value}
       aria-label={`تعداد نفرات واحد ${unitNumber}`}
       onChange={(e) => onChange(sanitizePersonCount(e.target.value))}
     />

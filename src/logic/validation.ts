@@ -8,6 +8,8 @@ import { onlyDigits } from './formatting';
 export interface ValidDraft {
   totalAmount: number;
   personCounts: number[];
+  /** واحد خالی بودن هر ردیف (هم‌ردیف personCounts) */
+  vacant: boolean[];
 }
 
 export type ValidationResult =
@@ -32,6 +34,7 @@ export function validateDraft(draft: BillDraft): ValidationResult {
   }
 
   const personCounts: number[] = [];
+  const vacant: boolean[] = draft.personCounts.map((_, i) => draft.unitVacant?.[i] === true);
   if (draft.personCounts.length === 0) {
     errors.push(Errors.noUnits());
   } else {
@@ -43,7 +46,10 @@ export function validateDraft(draft: BillDraft): ValidationResult {
       const digits = onlyDigits(t);
       // از نسخه ۱.۶.۰ صفر مجاز است (واحد خالی)
       const valid = t !== '' && digits === t && Number.isSafeInteger(Number(digits));
-      if (perUnit) {
+      if (vacant[i]) {
+        // واحد خالی: نفراتش در محاسبه اثری ندارد؛ مقدار معتبر حفظ و در غیر این صورت ۰ ذخیره می‌شود
+        personCounts.push(valid ? Number(digits) : 0);
+      } else if (perUnit) {
         // «بر اساس واحد»: نفرات در محاسبه اثری ندارد؛ نفرات معتبر حفظ و خالی/نامعتبر با ۱ ذخیره می‌شود
         personCounts.push(valid ? Number(digits) : 1);
       } else if (t === '') {
@@ -56,9 +62,10 @@ export function validateDraft(draft: BillDraft): ValidationResult {
         personCounts.push(Number(digits));
       }
     });
-    if (!perUnit && !hadPersonError && personCounts.reduce((s, n) => s + n, 0) <= 0) errors.push(Errors.noPersons());
+    if (vacant.every(Boolean)) errors.push(Errors.allVacant());
+    else if (!perUnit && !hadPersonError && personCounts.reduce((s, n, i) => s + (vacant[i] ? 0 : n), 0) <= 0) errors.push(Errors.noPersons());
   }
 
   if (errors.length > 0) return { ok: false, errors };
-  return { ok: true, value: { totalAmount, personCounts } };
+  return { ok: true, value: { totalAmount, personCounts, vacant } };
 }

@@ -17,6 +17,7 @@ export type AppErrorCode =
   | 'STORAGE_FAILED'
   | 'BILL_NOT_FOUND'
   | 'BACKUP_INVALID'
+  | 'ALL_VACANT'
   | 'BACKUP_FAILED'
   | 'RESTORE_FAILED';
 
@@ -37,11 +38,15 @@ export const Errors = {
   }),
   personCountInvalid: (unitNumber: number): AppError => ({
     code: 'PERSON_COUNT_INVALID',
-    message: `تعداد نفرات واحد ${toPersianDigits(unitNumber)} نامعتبر است (باید عدد صحیح صفر یا بیشتر باشد؛ صفر یعنی واحد خالی).`,
+    message: `تعداد نفرات واحد ${toPersianDigits(unitNumber)} نامعتبر است (باید عدد صحیح صفر یا بیشتر باشد).`,
   }),
   noPersons: (): AppError => ({
     code: 'NO_PERSONS',
     message: 'در تقسیم «بر اساس نفرات» حداقل یک واحد باید نفر داشته باشد (همه واحدها صفر نفر هستند).',
+  }),
+  allVacant: (): AppError => ({
+    code: 'ALL_VACANT',
+    message: 'همه واحدها خالی هستند. حداقل یک واحد باید در محاسبه باشد (گزینه «خالی» یک واحد را خاموش کنید).',
   }),
   requiredMissing: (field: string): AppError => ({
     code: 'REQUIRED_MISSING',

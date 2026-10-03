@@ -1,6 +1,7 @@
 import { BuildingIllustration, CitySkyline } from '../components/Illustrations';
 import { IconAlertTriangle, IconBook, IconChart, IconChevronLeft, IconGear, IconHistory, IconPlus, IconX } from '../components/Icons';
 import type { TabId } from '../components/BottomNav';
+import { HelpButton } from '../components/AppHeader';
 import type { DueAlert } from '../logic/dueAlerts';
 
 interface Props {
@@ -10,12 +11,15 @@ interface Props {
   alerts?: DueAlert[];
   onOpenBill?: (billId: string) => void;
   onDismiss?: (key: string) => void;
+  /** باز کردن آموزش (دکمه «؟» بالا-چپ) */
+  onHelp?: () => void;
 }
 
 /** ۱. صفحه اصلی */
-export function HomeScreen({ onNewBill, onOpen, alerts = [], onOpenBill, onDismiss }: Props) {
+export function HomeScreen({ onNewBill, onOpen, alerts = [], onOpenBill, onDismiss, onHelp }: Props) {
   return (
     <main className="screen screen--home">
+      {onHelp && <div className="home-topbar"><HelpButton onHelp={onHelp} /></div>}
       {alerts.length > 0 && (
         <section className="due-alerts" aria-label="هشدار مهلت پرداخت">
           {alerts.map((a) => (

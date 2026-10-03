@@ -21,6 +21,7 @@ import { SettingsScreen } from './screens/SettingsScreen';
 import { IntroScreen } from './screens/IntroScreen';
 import { BillSavedDialog } from './components/BillSavedDialog';
 import { useDueAlerts } from './hooks/useDueAlerts';
+import { onboardingRepository } from './storage/onboardingRepository';
 
 export default function App() {
   const { settings, loaded } = useSettings();
@@ -62,6 +63,17 @@ export default function App() {
   // مهاجرت نسخه ۱.۶.۰: در اولین اجرا تنظیمات «ساختمان» از واحدهای جدیدترین قبض ساخته می‌شود
   useEffect(() => { buildingRepository.get().catch(() => undefined); }, []);
 
+  // اجرای اول بعد از نصب: آموزش یک‌بار خودکار نمایش داده می‌شود (پرچم ماندگار؛ بازیابی پشتیبان آن را دوباره فعال نمی‌کند)
+  useEffect(() => {
+    let alive = true;
+    onboardingRepository.consumeFirstRun().then((first) => {
+      if (alive && first) setStack((s) => (s.length === 1 && s[0].name === 'home' ? [...s, { name: 'tutorial' }] : s));
+    }).catch(() => undefined);
+    return () => { alive = false; };
+  }, []);
+
+  const openHelp = () => { if (route.name !== 'tutorial') push({ name: 'tutorial' }); };
+
   const startNewBill = async () => {
     const now = currentJalali();
     // واحدها (تعداد، اسم مستعار و نفرات پیش‌فرض) از تنظیمات «ساختمان» وارد می‌شوند
@@ -92,6 +104,7 @@ export default function App() {
           alerts={dueAlerts.visible}
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onDismiss={dueAlerts.dismiss}
+          onHelp={openHelp}
         />
       );
       break;
@@ -130,6 +143,7 @@ export default function App() {
           onFilterChange={(f) => replaceTop({ name: 'records', year: f.year, month: f.month, type: f.type, status: f.status })}
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onBack={stack.length > 1 && stack[stack.length - 2].name === 'report' ? back : undefined}
+          onHelp={openHelp}
         />
       );
       break;
@@ -143,6 +157,7 @@ export default function App() {
           onOpenMonth={(year, month) => push({ name: 'records', year, month })}
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onOpenUnit={(unitNumber) => push({ name: 'unitHistory', unitNumber })}
+          onHelp={openHelp}
         />
       );
       break;
@@ -169,7 +184,7 @@ export default function App() {
       screen = <TutorialScreen onBack={back} onDone={() => setStack([{ name: 'home' }])} canGoBack={stack.length > 1} />;
       break;
     case 'settings':
-      screen = <SettingsScreen onBack={back} canGoBack={stack.length > 1} />;
+      screen = <SettingsScreen onBack={back} canGoBack={stack.length > 1} onHelp={openHelp} />;
       break;
   }
 

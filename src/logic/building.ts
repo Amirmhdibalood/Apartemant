@@ -42,6 +42,17 @@ export function newBuildingUnit(): BuildingUnit {
   return { alias: null, defaultPersons: DEFAULT_UNIT_PERSONS };
 }
 
+/**
+ * واحد تنظیمات با نفرات و پرچم «خالی». مقدار قدیمی «۰ نفر» (نسخه‌های ۱.۶.۰ تا ۱.۶.۲) به «خالی» با ۱ نفر پیش‌فرض
+ * تبدیل می‌شود؛ `vacant` فقط وقتی true است ذخیره می‌شود.
+ */
+function makeUnit(alias: string | null, persons: number, vacant: boolean): BuildingUnit {
+  const isVacant = vacant || persons === 0;
+  const unit: BuildingUnit = { alias, defaultPersons: persons === 0 ? DEFAULT_UNIT_PERSONS : persons };
+  if (isVacant) unit.vacant = true;
+  return unit;
+}
+
 export function defaultBuilding(): BuildingSettings {
   return { units: [newBuildingUnit()] };
 }
@@ -63,7 +74,9 @@ export function sanitizeBuilding(input: unknown): BuildingSettings | null {
     if (persons === null) return null;
     const a = (u as BuildingUnit).alias;
     if (a != null && typeof a !== 'string') return null;
-    units.push({ alias: sanitizeAlias(a), defaultPersons: persons });
+    const v = (u as BuildingUnit).vacant;
+    if (v != null && typeof v !== 'boolean') return null;
+    units.push(makeUnit(sanitizeAlias(a), persons, v === true));
   }
   return { units };
 }
@@ -82,7 +95,7 @@ export function buildingFromBills(bills: BillWithUnits[], legacyTemplate?: unkno
     const units = [...latest.units]
       .sort((a, b) => a.unitNumber - b.unitNumber)
       .slice(0, MAX_BUILDING_UNITS)
-      .map((u) => ({ alias: sanitizeAlias(u.alias), defaultPersons: sanitizePersons(u.personCount) ?? DEFAULT_UNIT_PERSONS }));
+      .map((u) => makeUnit(sanitizeAlias(u.alias), sanitizePersons(u.personCount) ?? DEFAULT_UNIT_PERSONS, u.vacant === true));
     return { units };
   }
   const t = sanitizeUnitTemplate(legacyTemplate);
@@ -98,29 +111,34 @@ export function resizeBuilding(b: BuildingSettings, count: number): BuildingSett
 }
 
 /** ردیف‌های فرم قبض جدید از روی تنظیمات ساختمان */
-export function draftUnitsFromBuilding(b: BuildingSettings): { personCounts: string[]; unitAliases: (string | null)[] } {
+export function draftUnitsFromBuilding(b: BuildingSettings): { personCounts: string[]; unitAliases: (string | null)[]; unitVacant: boolean[] } {
   return {
     personCounts: b.units.map((u) => String(u.defaultPersons)),
     unitAliases: b.units.map((u) => u.alias),
+    // واحدهای «خالی» در فرم قبض جدید از پیش کنار گذاشته می‌شوند (در همان قبض می‌توان تغییرشان داد)
+    unitVacant: b.units.map((u) => u.vacant === true),
   };
 }
 
 /** تنظیمات ساختمان از روی ردیف‌های فرم («ذخیره به‌عنوان پیش‌فرض»)؛ نفرات نامعتبر/خالی = ۱ */
-export function buildingFromDraftUnits(personCounts: string[], unitAliases?: (string | null)[]): BuildingSettings | null {
+export function buildingFromDraftUnits(personCounts: string[], unitAliases?: (string | null)[], unitVacant?: boolean[]): BuildingSettings | null {
   if (personCounts.length === 0 || personCounts.length > MAX_BUILDING_UNITS) return null;
   return {
     units: personCounts.map((raw, i) => {
       const t = (raw ?? '').trim();
       const n = /^\d+$/.test(t) ? Number(t) : DEFAULT_UNIT_PERSONS;
-      return { alias: sanitizeAlias(unitAliases?.[i]), defaultPersons: Math.min(n, MAX_DEFAULT_PERSONS) };
+      return makeUnit(sanitizeAlias(unitAliases?.[i]), Math.min(n, MAX_DEFAULT_PERSONS), unitVacant?.[i] === true);
     }),
   };
 }
 
 /** آیا ردیف‌های فرم با تنظیمات ساختمان یکسان‌اند؟ */
-export function draftMatchesBuilding(personCounts: string[], unitAliases: (string | null)[] | undefined, b: BuildingSettings): boolean {
+export function draftMatchesBuilding(personCounts: string[], unitAliases: (string | null)[] | undefined, b: BuildingSettings, unitVacant?: boolean[]): boolean {
   if (personCounts.length !== b.units.length) return false;
-  return b.units.every((u, i) => (personCounts[i] ?? '').trim() === String(u.defaultPersons) && sanitizeAlias(unitAliases?.[i]) === u.alias);
+  return b.units.every((u, i) =>
+    (personCounts[i] ?? '').trim() === String(u.defaultPersons)
+    && sanitizeAlias(unitAliases?.[i]) === u.alias
+    && (unitVacant?.[i] === true) === (u.vacant === true));
 }
 
 export interface RemovedUnitDebt {

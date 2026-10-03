@@ -14,8 +14,9 @@ export function splitMethodOf(bill: Pick<Bill, 'splitMethod'>): SplitMethod {
 }
 
 /** وزن هر واحد در محاسبه */
-export function splitWeights(personCounts: number[], method: SplitMethod): number[] {
-  return method === 'perUnit' ? personCounts.map(() => 1) : [...personCounts];
+export function splitWeights(personCounts: number[], method: SplitMethod, vacant?: boolean[]): number[] {
+  // واحد خالی (از ۱.۶.۳) در هیچ‌کدام از دو روش تقسیم وزن ندارد
+  return personCounts.map((n, i) => (vacant?.[i] ? 0 : method === 'perUnit' ? 1 : n));
 }
 
 export interface SplitCalculation extends CalculationResult {
@@ -26,8 +27,8 @@ export interface SplitCalculation extends CalculationResult {
  * محاسبه سهم‌ها با نحوه تقسیم. در خروجی `shares[i].personCount` همیشه تعداد نفرات واقعی واحد است
  * و `totalPersons` / `perPersonExact` در حالت «بر اساس واحد» یعنی تعداد واحدها / سهم هر واحد.
  */
-export function calculateBySplit(totalAmount: number, personCounts: number[], method: SplitMethod): SplitCalculation {
-  const weights = splitWeights(personCounts, method);
+export function calculateBySplit(totalAmount: number, personCounts: number[], method: SplitMethod, vacant?: boolean[]): SplitCalculation {
+  const weights = splitWeights(personCounts, method, vacant);
   const r = calculateShares(totalAmount, weights.map((w, i) => ({ unitNumber: i + 1, personCount: w })));
   return { ...r, splitMethod: method, shares: r.shares.map((s, i) => ({ ...s, personCount: personCounts[i] })) };
 }
