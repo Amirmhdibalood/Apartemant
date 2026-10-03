@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BuildingSettings, BuildingUnit } from '../models/types';
-import { IconMinus, IconPlus, IconUser } from './Icons';
+import { IconAreaM2, IconMinus, IconPlus, IconUser } from './Icons';
 import { Checkbox } from './Checkbox';
 import { useFeedback } from '../context/FeedbackContext';
 import { buildingRepository } from '../storage/buildingRepository';
@@ -128,7 +128,7 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
           <span>واحد</span>
           <span>اسم مستعار (اختیاری)</span>
           <span className="building-unit__persons-h"><IconUser size={13} /> نفرات</span>
-          {areaMode === 'column' && <span className="building-unit__persons-h">متراژ</span>}
+          {areaMode === 'column' && <span className="building-unit__persons-h"><IconAreaM2 size={13} /> متراژ</span>}
           <span className="building-unit__vacant-h">خالی</span>
         </div>
         {rows.map((r, i) => (

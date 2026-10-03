@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { SplitMethod } from '../models/types';
-import { IconMinus, IconPlus, IconUser } from './Icons';
+import { IconAreaM2, IconMinus, IconPlus, IconUser } from './Icons';
 import { PersonCountInput } from './PersonCountInput';
 import { AreaInput } from './AreaInput';
 import { useAreaMode } from '../context/AreaModeContext';
@@ -110,7 +110,7 @@ export function UnitsEditor({ personCounts, unitAliases, unitVacant, onAdd, onRe
           <span className="units-row__unit">واحد</span>
           <span className="units-row__vacant">خالی</span>
           <span className="units-row__count">
-            <IconUser size={14} />
+            {areaCol ? <IconAreaM2 size={14} /> : <IconUser size={14} />}
             {areaCol ? 'متراژ' : perUnit ? 'سهم (هر واحد ۱)' : 'تعداد نفرات'}
           </span>
         </div>

@@ -450,3 +450,17 @@ describe('متراژ پیش‌فرض ۱ و برچسب‌های بدون «م²»
     }
   });
 });
+
+describe('آیکون m² در حالت متراژ', () => {
+  it('فرم قبض: ستون متراژ آیکون m² دارد و آیکون شخص در هدر نیست؛ ستون نفرات همان آیکون شخص را نگه می‌دارد', () => {
+    const base = { personCounts: ['3', '2'], unitAliases: [null, null], unitVacant: [false, false], unitAreas: ['100', '50'], amountDigits: '3000000', onAdd: () => undefined, onRemoveLast: () => undefined, onChangeCount: () => undefined, onChangeVacant: () => undefined, onChangeArea: () => undefined };
+    mode = 'column';
+    const head = (html: string) => html.match(/units-row--head.*?<\/div>/s)![0];
+    const col = head(renderToStaticMarkup(createElement(UnitsEditor, { ...base, splitMethod: 'perArea' })));
+    expect(col).toContain('>m</text>');
+    expect(col).not.toContain('<circle'); // آیکون شخص دایره دارد
+    const pp = head(renderToStaticMarkup(createElement(UnitsEditor, { ...base, splitMethod: 'perPerson' })));
+    expect(pp).toContain('<circle');
+    expect(pp).not.toContain('>m</text>');
+  });
+});
