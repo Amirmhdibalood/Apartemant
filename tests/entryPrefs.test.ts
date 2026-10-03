@@ -134,7 +134,7 @@ describe('ذخیره و فرم', () => {
     expect(JSON.parse(mem.get('entryPrefs')!)).toEqual({ types: ['gas', 'water'].sort((a, b) => EXPENSE_TYPE_ORDER.indexOf(a as ExpenseType) - EXPENSE_TYPE_ORDER.indexOf(b as ExpenseType)), methods: ['perUnit'] });
     expect((await entryPrefsRepository.get()).methods).toEqual(['perUnit']);
     expect(JSON.stringify(await backupRepository.collect())).not.toContain('entryPrefs');
-    expect(serializeBackup(createBackup(await backupRepository.collect(), '1.6.9'))).not.toContain('entryPrefs');
+    expect(serializeBackup(createBackup(await backupRepository.collect(), '1.6.10'))).not.toContain('entryPrefs');
     mem.set('entryPrefs', '"junk"');
     expect(await entryPrefsRepository.get()).toEqual(DEFAULT_ENTRY_PREFS);
   });

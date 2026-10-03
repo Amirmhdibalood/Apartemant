@@ -133,8 +133,10 @@ describe('محل دکمه‌ها و تصویر قبض', () => {
     const html = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'سوابق', onHelp: () => {}, onBack: () => {} }))));
     expect(html).toContain('راهنما (آموزش)');
     expect(html).toContain('حالت تاریک');
-    expect(html.indexOf('راهنما (آموزش)')).toBeLessThan(html.indexOf('حالت تاریک'));
-    expect(html.indexOf('اعلان‌ها')).toBeLessThan(html.indexOf('راهنما (آموزش)')); // زنگوله کنار «؟»
+    // ترتیب از راست (راست‌به‌چپ): بازگشت ← تم ← «؟» ← زنگوله
+    const pos = ['aria-label="بازگشت"', 'حالت تاریک', 'راهنما (آموزش)', 'aria-label="اعلان‌ها"'].map((x) => html.indexOf(x));
+    expect(pos.every((x) => x >= 0)).toBe(true);
+    expect([...pos].sort((a, b) => a - b)).toEqual(pos);
     expect(html).toContain('app-header--two');
     const noHelp = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'آموزش' }))));
     expect(noHelp).not.toContain('حالت تاریک');

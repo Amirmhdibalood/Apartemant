@@ -21,7 +21,7 @@ export function HelpButton({ onHelp }: { onHelp: () => void }) {
   );
 }
 
-/** هدر صفحات: عنوان وسط، دکمه بازگشت سمت چپ (مطابق تصویر مرجع)؛ «؟» دورترین دکمه سمت چپ */
+/** هدر صفحات. ترتیب دکمه‌ها از راست (خواندن راست‌به‌چپ): بازگشت ← تم روز/شب ← راهنما «؟» ← زنگولهٔ اعلان‌ها */
 export function AppHeader({ title, onBack, start, onHelp }: Props) {
   const two = !!onBack && !!onHelp;
   return (
@@ -34,9 +34,9 @@ export function AppHeader({ title, onBack, start, onHelp }: Props) {
             <IconChevronLeft size={24} />
           </button>
         )}
-        {onHelp && <NotifBell />}
-        {onHelp && <HelpButton onHelp={onHelp} />}
         {onHelp && <ThemeToggle />}
+        {onHelp && <HelpButton onHelp={onHelp} />}
+        {onHelp && <NotifBell />}
       </div>
     </header>
   );

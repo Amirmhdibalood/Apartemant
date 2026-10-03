@@ -195,3 +195,4 @@
 :root[data-theme="dark"] .split-badge.is-perArea { background: #203a33; color: #53e9dd; }
 :root[data-theme="dark"] .icon-opt.is-active { box-shadow: 0 0 0 3px rgba(71,132,242,0.12); }
 :root[data-theme="dark"] .icon-opt__glyph--area { color: #9eb2e0; }
+:root[data-theme="dark"] .acc__head:focus-visible { outline: 3px solid rgba(71,132,242,0.35); }

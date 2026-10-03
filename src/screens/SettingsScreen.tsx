@@ -1,3 +1,4 @@
+import { Accordion } from '../components/Accordion';
 import { AppHeader } from '../components/AppHeader';
 import { Switch } from '../components/Switch';
 import { IconAlertTriangle } from '../components/Icons';
@@ -46,18 +47,18 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
     <>
       <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} onHelp={onHelp} />
       <main className="screen screen--settings">
-        <section className="card settings-card">
-          <h2 className="card__title">سال‌ها</h2>
+        <Accordion id="years" title="سال‌ها">
           <p className="card__hint">
             فهرست را باز کنید و سال‌های مورد نیاز را فعال یا غیرفعال کنید. فقط سال‌های فعال در کشوی سال صفحه «ثبت قبض جدید» و «سوابق» نمایش داده می‌شوند. حداقل یک سال باید فعال بماند.
           </p>
           <YearPicker years={years} active={settings.activeYears} onToggle={onYear} />
-        </section>
+        </Accordion>
 
-        <BuildingSection reloadKey={restoreKey} />
+        <Accordion id="building" title="ساختمان">
+          <BuildingSection reloadKey={restoreKey} />
+        </Accordion>
 
-        <section className="card settings-card entry-prefs" aria-labelledby="entry-prefs-title">
-          <h2 className="card__title" id="entry-prefs-title">انواع قبض و روش‌های محاسبه</h2>
+        <Accordion id="entry-prefs" title="انواع قبض و روش‌های محاسبه" className="entry-prefs">
           <p className="card__hint">
             نوع خاموش از فرم ثبت، سوابق، فیلترها، گزارش‌ها و جمع‌ها کنار می‌رود و با روشن شدن دوباره برمی‌گردد (داده پاک نمی‌شود).
             روش خاموش در انتخاب نحوه تقسیم نمی‌آید. از هر گروه دست‌کم یکی باید روشن بماند.
@@ -88,10 +89,9 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
             );
           })}
           {prefs.methods.length === 1 && <p className="card__hint entry-prefs__note">فقط یک روش روشن است؛ انتخابگر نحوه تقسیم در فرم ثبت قبض پنهان و همین روش استفاده می‌شود.</p>}
-        </section>
+        </Accordion>
 
-        <section className="card settings-card appearance-card" aria-labelledby="appearance-title">
-          <h2 className="card__title" id="appearance-title">تنظیمات ظاهری</h2>
+        <Accordion id="appearance" title="تنظیمات ظاهری" className="appearance-card">
           <p className="card__hint">فقط شکل نمایش را عوض می‌کند؛ روی قبض‌ها و محاسبه‌ها اثری ندارد و در فایل پشتیبان نیست.</p>
           <div className="settings-group" role="group" aria-labelledby="area-mode-title">
             <h3 className="settings-sub" id="area-mode-title">نحوه نمایش متراژ</h3>
@@ -175,10 +175,9 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
             <p className="card__hint notif-mode-hint">{NOTIF_MODES.find((m) => m.id === mode)?.hint}</p>
           </div>
 
-        </section>
+        </Accordion>
 
-        <section className="card settings-card">
-          <h2 className="card__title">هشدارها</h2>
+        <Accordion id="warnings" title="هشدارها">
           <div className="setting-row">
             <label htmlFor="sw-save" className="setting-row__text">
               <span className="setting-row__label">نمایش هشدار قبل از ذخیره</span>
@@ -204,9 +203,11 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
               <span>نمایش دوباره سایر هشدارهای پنهان‌شده</span>
             </button>
           )}
-        </section>
+        </Accordion>
 
-        <BackupSection onRestored={() => setRestoreKey((k) => k + 1)} />
+        <Accordion id="backup" title="پشتیبان‌گیری و بازیابی">
+          <BackupSection onRestored={() => setRestoreKey((k) => k + 1)} />
+        </Accordion>
         <p className="app-version">آپارتمانت — {APP_VERSION_FA} — کاملاً آفلاین</p>
         <p className="app-credit">
           سازنده: <span dir="ltr">{DEVELOPER_NAME}</span>

@@ -133,8 +133,7 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
   };
 
   return (
-    <section className="card settings-card backup-card">
-      <h2 className="card__title">پشتیبان‌گیری و بازیابی</h2>
+    <div className="backup-card">
       <p className="card__hint">
         برای اینکه با خرابی یا تعویض گوشی اطلاعاتتان از بین نرود، هر چند وقت یک‌بار نسخه پشتیبان بگیرید و فایل را در جایی بیرون از گوشی
         (تلگرام، Google Drive، ایمیل یا کامپیوتر) نگه دارید. روی گوشی جدید با «بازیابی از فایل پشتیبان» همه قبض‌ها و تنظیمات برمی‌گردند.
@@ -171,6 +170,6 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
         confirmLabel={pending?.kind === 'undo' ? 'برگرداندن و جایگزینی' : 'بازیابی و جایگزینی'}
         onResult={onConfirm}
       />
-    </section>
+    </div>
   );
 }

@@ -89,11 +89,10 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
     void setCount(Number(t));
   };
 
-  if (!rows) return <section className="card settings-card building-card" aria-busy="true"><h2 className="card__title">ساختمان</h2></section>;
+  if (!rows) return <div className="building-card" aria-busy="true" />;
 
   return (
-    <section className="card settings-card building-card">
-      <h2 className="card__title">ساختمان</h2>
+    <div className="building-card">
       <p className="card__hint">
         واحدهای پیش‌فرض قبض جدید. در فرم قبض هم می‌توانید واحد اضافه/حذف کنید یا نفرات را تغییر دهید (فقط برای همان قبض).
         تغییر این تنظیمات روی قبض‌های ثبت‌شده، گزارش‌ها و بدهی‌ها اثری ندارد.
@@ -199,6 +198,6 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
       </div>
       <p className="building-note-small">متراژ (اعشار مجاز مثل ۷۵٫۵؛ پیش‌فرض هر واحد ۱) فقط برای تقسیم «بر اساس متراژ» به‌کار می‌رود و در فرم قبض پیش‌فرض می‌شود؛ ظاهر آن را در «نحوه نمایش متراژ» پایین‌تر انتخاب کنید.</p>
       <p className="building-note-small">واحد «خالی» در قبض‌های جدید از محاسبه کنار گذاشته می‌شود (در هیچ‌کدام از دو روش تقسیم سهمی ندارد و در بدهکاران نمی‌آید)؛ در فرم قبض می‌توانید برای همان قبض تغییرش دهید. نام واحد بدون اسم مستعار: «واحد ۱»، «واحد ۲»، ...</p>
-    </section>
+    </div>
   );
 }
