@@ -22,6 +22,8 @@ export interface UnitInput {
 
 export interface UnitShare extends UnitInput {
   shareAmount: number;
+  /** متراژ واحد (مترمربع) — فقط در تقسیم «بر اساس متراژ» */
+  area?: number | null;
   /** آیا ۱ تومان از باقیمانده گرد کردن به این واحد اضافه شده است */
   roundedUp: boolean;
 }

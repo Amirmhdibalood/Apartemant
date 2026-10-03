@@ -14,15 +14,24 @@ import { ThemeProvider } from './context/ThemeContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { FeedbackProvider } from './context/FeedbackContext';
 import { NotifProvider } from './context/NotifContext';
+import { AreaModeProvider } from './context/AreaModeContext';
+import { EntryPrefsProvider } from './context/EntryPrefsContext';
+import { IconPrefsProvider } from './context/IconPrefsContext';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <SettingsProvider>
         <FeedbackProvider>
+          <EntryPrefsProvider>
           <NotifProvider>
-            <App />
+            <AreaModeProvider>
+              <IconPrefsProvider>
+                <App />
+              </IconPrefsProvider>
+            </AreaModeProvider>
           </NotifProvider>
+          </EntryPrefsProvider>
         </FeedbackProvider>
       </SettingsProvider>
     </ThemeProvider>

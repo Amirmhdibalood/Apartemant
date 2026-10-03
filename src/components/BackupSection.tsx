@@ -19,6 +19,7 @@ import {
 } from '../logic/backup';
 import { backupRepository } from '../storage/backupRepository';
 import { exportBackupFile, readPickedFile } from '../services/backupFile';
+import { exportFailureError } from '../logic/backupExport';
 import { APP_VERSION } from '../appVersion';
 
 /** انواع فایل قابل انتخاب (فایل‌های دریافتی از تلگرام گاهی نوع octet-stream دارند) */
@@ -61,15 +62,17 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
       const now = new Date();
       const backup = createBackup(await backupRepository.collect(), APP_VERSION, now);
       const res = await exportBackupFile(backupFileName(now), serializeBackup(backup));
-      if (res.shared || res.savedPath) {
-        await backupRepository.setLastBackupAt(now.toISOString());
-        await refresh();
+      if (!res.ok) {
+        // لغو پنجره اشتراک‌گذاری، ذخیره‌نشدن فایل یا خطا: پیام ناموفق با دلیل؛ «آخرین پشتیبان» تغییر نمی‌کند
+        showErrors([exportFailureError(res)]);
+        return;
       }
+      await backupRepository.setLastBackupAt(now.toISOString());
+      await refresh();
       const n = toPersianDigits(backup.data.bills.length);
-      if (res.savedPath) toast(`نسخه پشتیبان (${n} قبض) در ${res.savedPath} ذخیره شد.`);
-      else if (res.shared) toast(`نسخه پشتیبان (${n} قبض) آماده شد.`);
-    } catch {
-      showErrors(Errors.backupFailed());
+      toast(`نسخه پشتیبان (${n} قبض) به اشتراک گذاشته شد${res.savedPath ? ` و یک نسخه در ${res.savedPath} ذخیره شد` : ''}.`);
+    } catch (e) {
+      showErrors([exportFailureError({ ok: false, reason: 'error', detail: String((e as Error)?.message ?? '') || 'خطای ناشناخته', savedPath: null })]);
     } finally {
       setBusy(false);
     }
@@ -130,8 +133,7 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
   };
 
   return (
-    <section className="card settings-card backup-card">
-      <h2 className="card__title">پشتیبان‌گیری و بازیابی</h2>
+    <div className="backup-card">
       <p className="card__hint">
         برای اینکه با خرابی یا تعویض گوشی اطلاعاتتان از بین نرود، هر چند وقت یک‌بار نسخه پشتیبان بگیرید و فایل را در جایی بیرون از گوشی
         (تلگرام، Google Drive، ایمیل یا کامپیوتر) نگه دارید. روی گوشی جدید با «بازیابی از فایل پشتیبان» همه قبض‌ها و تنظیمات برمی‌گردند.
@@ -168,6 +170,6 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
         confirmLabel={pending?.kind === 'undo' ? 'برگرداندن و جایگزینی' : 'بازیابی و جایگزینی'}
         onResult={onConfirm}
       />
-    </section>
+    </div>
   );
 }

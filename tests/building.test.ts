@@ -57,7 +57,7 @@ describe('تنظیمات ساختمان (منطق)', () => {
 
   it('تغییر تعداد واحدها: افزایش با واحد بدون اسم ۱ نفره، کاهش از آخر، حداقل ۱', () => {
     const b = { units: [{ alias: 'الف', defaultPersons: 3 }, { alias: null, defaultPersons: 2 }] };
-    expect(resizeBuilding(b, 4).units).toEqual([...b.units, { alias: null, defaultPersons: 1 }, { alias: null, defaultPersons: 1 }]);
+    expect(resizeBuilding(b, 4).units).toEqual([...b.units, { alias: null, defaultPersons: 1, area: 1 }, { alias: null, defaultPersons: 1, area: 1 }]);
     expect(resizeBuilding(b, 1).units).toEqual([b.units[0]]);
     expect(resizeBuilding(b, 0).units).toHaveLength(1);
   });
@@ -74,7 +74,7 @@ describe('تنظیمات ساختمان (منطق)', () => {
   it('مهاجرت بدون قبض: الگوی نسخه قبلی، وگرنه ۱ واحد با ۱ نفر', () => {
     expect(buildingFromBills([], [2, 4])).toEqual({ units: [{ alias: null, defaultPersons: 2 }, { alias: null, defaultPersons: 4 }] });
     expect(buildingFromBills([], null)).toEqual(defaultBuilding());
-    expect(defaultBuilding()).toEqual({ units: [{ alias: null, defaultPersons: 1 }] });
+    expect(defaultBuilding()).toEqual({ units: [{ alias: null, defaultPersons: 1, area: 1 }] }); // واحد جدید = متراژ پیش‌فرض ۱
   });
 
   it('هشدار کاهش واحدها: واحدهای حذف‌شونده که هنوز بدهی دارند', () => {
@@ -101,7 +101,7 @@ describe('تنظیمات ساختمان (منطق)', () => {
   it('مقایسه فرم با پیش‌فرض و «ذخیره به‌عنوان پیش‌فرض»', () => {
     const b = { units: [{ alias: 'رضایی', defaultPersons: 5 }, { alias: null, defaultPersons: 1, vacant: true }] };
     const rows = draftUnitsFromBuilding(b);
-    expect(rows).toEqual({ personCounts: ['5', '1'], unitAliases: ['رضایی', null], unitVacant: [false, true] });
+    expect(rows).toEqual({ personCounts: ['5', '1'], unitAliases: ['رضایی', null], unitVacant: [false, true], unitAreas: ['1', '1'] }); // تنظیمات قدیمی بدون متراژ ← پیش‌فرض ۱ در فرم
     expect(draftMatchesBuilding(rows.personCounts, rows.unitAliases, b, rows.unitVacant)).toBe(true);
     // تفاوت فقط در «خالی» هم یعنی فرم با پیش‌فرض فرق دارد
     expect(draftMatchesBuilding(rows.personCounts, rows.unitAliases, b, [false, false])).toBe(false);

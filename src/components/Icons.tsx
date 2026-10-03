@@ -98,6 +98,13 @@ export const IconUser = (p: P) => (
     <path d="M5 21a7 7 0 0 1 14 0" />
   </S>
 );
+/** نماد m² (مترمربع) — جایگزین آیکون شخص کنار «متراژ» در حالت «بر اساس متراژ» */
+export const IconAreaM2 = (p: P) => (
+  <S {...p} stroke="none" fill="currentColor">
+    <text x="11" y="18" textAnchor="middle" fontSize="16" fontWeight="800" fontFamily="Arial, sans-serif">m</text>
+    <text x="20" y="11" textAnchor="middle" fontSize="10" fontWeight="800" fontFamily="Arial, sans-serif">2</text>
+  </S>
+);
 export const IconHistory = (p: P) => (
   <S {...p}>
     <path d="M3 12a9 9 0 1 0 2.64-6.36L3 8.3" />

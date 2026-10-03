@@ -46,10 +46,10 @@ export function percentOf(part: number, whole: number): number {
   return Math.round((part / whole) * 1000) / 10;
 }
 
-export function yearlyReport(bills: BillWithUnits[], year: number): YearlyReport {
+export function yearlyReport(bills: BillWithUnits[], year: number, types: ExpenseType[] = EXPENSE_TYPE_ORDER): YearlyReport {
   const own = bills.filter((b) => b.bill.year === year);
   const totals = new Map<ExpenseType, { total: number; count: number }>(
-    EXPENSE_TYPE_ORDER.map((t) => [t, { total: 0, count: 0 }]),
+    types.map((t) => [t, { total: 0, count: 0 }]),
   );
   const byMonth: MonthTotal[] = Array.from({ length: 12 }, (_, i) => ({ month: i + 1, total: 0, count: 0, byType: {} }));
   let grandTotal = 0;

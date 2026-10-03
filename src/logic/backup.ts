@@ -12,6 +12,7 @@ import { buildingFromBills, sanitizeAlias, sanitizeBuilding } from './building';
 import { isSplitMethod, sanitizeSplitDefaults, type SplitDefaults } from './split';
 import { isBillDeleted, migrateBill, normalizePaidDate } from './billPaid';
 import { parseJalaliKey } from './jalali';
+import { parseArea } from './area';
 
 export const BACKUP_APP_ID = 'apartemant';
 /**
@@ -25,10 +26,13 @@ export const BACKUP_APP_ID = 'apartemant';
  *    (وگرنه از unitTemplate، وگرنه ۱ واحد با ۱ نفر) ساخته می‌شود.
  * ۶: نسخه ۱٫۶٫۳ برنامه (+ پرچم «خالی» هر واحد در قبض `vacant` و در تنظیمات ساختمان `building.units[].vacant`)
  *    در فایل‌های ۱ تا ۵ پرچم وجود ندارد = خالی نیست؛ فقط «نفرات پیش‌فرض ۰» تنظیمات ساختمان به «خالی» تبدیل می‌شود.
- * همه قالب‌های قدیمی‌تر (۱ تا ۵) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
+ * ۷: نسخه ۱٫۶٫۵ برنامه (+ تقسیم «بر اساس متراژ» `splitMethod: "perArea"`، متراژ هر واحد در قبض `area` و در تنظیمات ساختمان
+ *    `building.units[].area`؛ متراژ مترمربع است و تا ۳ رقم اعشار دارد). در فایل‌های ۱ تا ۶ متراژی وجود ندارد = وارد نشده
+ *    (مهاجرت: همه متراژها خالی). «نحوه نمایش متراژ» یک ترجیح ظاهری است و داخل پشتیبان نیست.
+ * همه قالب‌های قدیمی‌تر (۱ تا ۶) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
  * بدون dueDate = بدون مهلت پرداخت، بدون deletedAt = حذف‌نشده).
  */
-export const BACKUP_VERSION = 6;
+export const BACKUP_VERSION = 7;
 /** حداکثر حجم قابل قبول فایل پشتیبان */
 export const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
 
@@ -211,7 +215,8 @@ function parseUnits(raw: unknown, bills: Bill[]): Unit[] {
     const ok = isId(u.id) && isId(u.billId) && isInt(u.unitNumber, 1, 100000) && isInt(u.personCount, 0, 1000000)
       && isInt(u.shareAmount, 0) && typeof u.isSettled === 'boolean'
       && (u.alias == null || (typeof u.alias === 'string' && u.alias.length <= 200)) // اسم مستعار (از قالب ۵، اختیاری)
-      && (u.vacant === undefined || (typeof u.vacant === 'boolean' && (u.vacant === false || u.shareAmount === 0))); // واحد خالی (از قالب ۶)
+      && (u.vacant === undefined || (typeof u.vacant === 'boolean' && (u.vacant === false || u.shareAmount === 0))) // واحد خالی (از قالب ۶)
+      && (u.area == null || parseArea(u.area) !== null); // متراژ (از قالب ۷، اختیاری)
     if (!ok) bad(`اطلاعات واحد ${nth(i)} نامعتبر است.`);
     if (!billIds.has(u.billId as string)) bad(`واحد ${nth(i)} به هیچ قبضی تعلق ندارد.`);
     if (ids.has(u.id as string)) bad(`شناسه واحد ${nth(i)} تکراری است.`);
@@ -223,6 +228,7 @@ function parseUnits(raw: unknown, bills: Bill[]): Unit[] {
       personCount: u.personCount as number,
       ...(u.alias !== undefined ? { alias: sanitizeAlias(u.alias) } : {}),
       ...(u.vacant === true ? { vacant: true } : {}),
+      ...(u.area != null ? { area: parseArea(u.area) } : {}),
       shareAmount: u.shareAmount as number,
       isSettled: u.isSettled as boolean,
       ...parsePayments(u.payments, u.shareAmount as number, i),
@@ -258,6 +264,10 @@ export function parseBackup(text: string): ParseBackupResult {
       if (new Set(own.map((u) => u.unitNumber)).size !== own.length) bad('شماره واحدهای یک قبض تکراری است.');
       // وضعیت کلی تسویه همیشه از روی واحدها محاسبه می‌شود
       bill.isFullySettled = own.every((u) => u.isSettled);
+      // تقسیم «بر اساس متراژ»: متراژ همه واحدهای غیرخالی باید ثبت شده باشد
+      if (bill.splitMethod === 'perArea' && own.some((u) => !u.vacant && parseArea(u.area ?? null) === null)) {
+        bad(`متراژ واحدهای قبض «${EXPENSE_TYPES[bill.expenseType].label} ${toPersianDigits(bill.month)}/${toPersianDigits(bill.year)}» (تقسیم بر اساس متراژ) ثبت نشده است.`);
+      }
     }
     const settings = sanitizeSettings(isObj(data.settings) ? (data.settings as Partial<AppSettings>) : null);
     // الگوی واحدها (از قالب ۲)؛ نبودنش مشکلی نیست (از آخرین قبض ساخته می‌شود)

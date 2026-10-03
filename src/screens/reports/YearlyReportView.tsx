@@ -10,6 +10,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { currentJalali } from '../../logic/date';
 import { formatAmount } from '../../logic/formatting';
 import { recordYearOptions } from '../../logic/years';
+import { useEntryPrefs } from '../../context/EntryPrefsContext';
 import { pickReportYear, yearlyReport } from '../../logic/report';
 
 interface Props {
@@ -25,6 +26,7 @@ const pct = (p: number) => `${Number.isInteger(p) ? p : p.toFixed(1)}%`;
 
 /** گزارش هزینه‌های سال: جمع هر نوع هزینه، جمع کل، سهم درصدی و ریز ماه‌به‌ماه */
 export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMonth }: Props) {
+  const { prefs } = useEntryPrefs();
   const { settings } = useSettings();
   const { theme } = useTheme();
   const now = currentJalali();
@@ -33,7 +35,7 @@ export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMont
   // سال‌های فعال + سال‌هایی که قبض دارند (مثل صفحه سوابق)
   const years = recordYearOptions(settings.activeYears, billYears);
   const year = yearProp && years.includes(yearProp) ? yearProp : pickReportYear(years, billYears, now.year);
-  const report = useMemo(() => yearlyReport(all ?? [], year), [all, year]);
+  const report = useMemo(() => yearlyReport(all ?? [], year, prefs.types), [all, year, prefs.types]);
   const withCost = report.byType.filter((t) => t.total > 0);
   const withoutCost = report.byType.filter((t) => t.total === 0);
 

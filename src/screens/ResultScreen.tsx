@@ -1,9 +1,11 @@
+import { UnitIcon } from '../components/PrefIcons';
+import { useIconPrefs } from '../context/IconPrefsContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BillDraft, BillWithUnits } from '../models/types';
 import { CURRENCY, EXPENSE_TYPES, SPLIT_METHOD_LABELS, monthName } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
 import { ExpenseIcon } from '../components/ExpenseIcon';
-import { IconCalendarSave, IconMinus, IconPlus, IconTrash, IconUser } from '../components/Icons';
+import { IconCalendarSave, IconMinus, IconPlus, IconTrash } from '../components/Icons';
 import { formatJalaliSlash, parseJalaliKey } from '../logic/jalali';
 import { useFeedback } from '../context/FeedbackContext';
 import { validateDraft } from '../logic/validation';
@@ -13,6 +15,9 @@ import { formatAmount } from '../logic/formatting';
 import { addDraftUnit, buildBill, draftAliases, draftVacant, removeDraftUnit } from '../logic/billFactory';
 import { unitLabel } from '../logic/building';
 import { Errors } from '../logic/errors';
+import { useAreaMode } from '../context/AreaModeContext';
+import { formatArea } from '../logic/area';
+import { toPersianDigits } from '../logic/formatting';
 import { billRepository } from '../storage/billRepository';
 
 interface Props {
@@ -27,11 +32,13 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
   const { showErrors, confirmWarning } = useFeedback();
   const [saving, setSaving] = useState(false);
   const roundingShownFor = useRef<string>('');
+  const { areaMode } = useAreaMode();
+  const { unitIcon } = useIconPrefs();
 
   const validation = useMemo(() => validateDraft(draft), [draft]);
   const calc = useMemo(() => {
     if (!validation.ok) return null;
-    return calculateBySplit(validation.value.totalAmount, validation.value.personCounts, draft.splitMethod, validation.value.vacant);
+    return calculateBySplit(validation.value.totalAmount, validation.value.personCounts, draft.splitMethod, validation.value.vacant, validation.value.areas);
   }, [validation, draft.splitMethod]);
 
   // اگر فرم نامعتبر شد (مثلاً همه واحدها حذف شدند) به فرم برگرد
@@ -91,6 +98,12 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
   };
 
   const perUnit = calc.splitMethod === 'perUnit';
+  const perArea = calc.splitMethod === 'perArea';
+  const areaCol = perArea && areaMode === 'column';
+  const areaLine = perArea && areaMode === 'line';
+  const faMoney = (n: number) => toPersianDigits(formatAmount(n)).replace(/,/g, '٬');
+  const ppm = calc.pricePerArea ?? 0;
+  const ppmText = calc.isExact ? faMoney(ppm) : '≈ ' + faMoney(Math.round(ppm));
   const aliases = draftAliases(draft);
   const vacants = draftVacant(draft);
   const dueKey = parseJalaliKey(draft.dueDate);
@@ -109,7 +122,12 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
             </h2>
             <div className="kv"><span className="kv__k">مبلغ کل قبض:</span><b className="num">{formatAmount(calc.totalAmount)}</b> {CURRENCY}</div>
             <div className="kv"><span className="kv__k">نحوه تقسیم:</span><span className={'split-badge is-' + calc.splitMethod}>{SPLIT_METHOD_LABELS[calc.splitMethod]}</span></div>
-            {perUnit ? (
+            {perArea ? (
+              <>
+                <div className="kv"><span className="kv__k">مجموع متراژ:</span><b className="num">{formatArea(calc.totalArea ?? 0)}</b> مترمربع</div>
+                {areaCol && <div className="kv"><span className="kv__k">قیمت هر مترمربع:</span><b className="num">{ppmText}</b> {CURRENCY}</div>}
+              </>
+            ) : perUnit ? (
               <>
                 <div className="kv"><span className="kv__k">تعداد واحدها:</span><b className="num">{calc.totalPersons}</b> واحد</div>
                 <div className="kv"><span className="kv__k">سهم هر واحد:</span><b className="num">{perPerson}</b> {CURRENCY}</div>
@@ -127,6 +145,15 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
           <ExpenseIcon type={draft.expenseType} size={46} plain />
         </section>
 
+        {areaLine && (
+          <div className="ppm" role="status">
+            <div>
+              <div className="ppm__k">قیمت هر مترمربع</div>
+              <div className="ppm__f num">{faMoney(calc.totalAmount)} ÷ {formatArea(calc.totalArea ?? 0)} م²</div>
+            </div>
+            <div className="ppm__v num">{ppmText} <span className="ppm__cur">{CURRENCY}</span></div>
+          </div>
+        )}
         <div className="section-head">
           <h2 className="section-title">واحدها</h2>
           <div className="section-head__actions">
@@ -144,7 +171,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
             <thead>
               <tr>
                 <th className="col-unit">واحد</th>
-                {!perUnit && <th className="col-count">تعداد نفرات</th>}
+                {!perUnit && !areaLine && <th className="col-count">{areaCol ? 'متراژ' : 'تعداد نفرات'}</th>}
                 <th>مبلغ سهم</th>
                 <th className="col-action" aria-label="حذف" />
               </tr>
@@ -154,11 +181,16 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
                 <tr key={s.unitNumber} className={vacants[i] ? 'is-vacant' : undefined}>
                   <td className="col-unit">
                     <span className="unit-cell">
-                      <span className="unit-avatar"><IconUser size={16} /></span>
-                      <span className="unit-cell__name">{unitLabel(s.unitNumber, aliases[i])}</span>
+                      <span className="unit-avatar"><UnitIcon id={unitIcon} number={s.unitNumber} /></span>
+                      <span className="unit-cell__name">
+                        {unitLabel(s.unitNumber, aliases[i])}
+                        {areaLine && !vacants[i] && s.area != null && (
+                          <span className="unit-cell__sub num">{formatArea(s.area)} م² × {faMoney(Math.round(ppm))} · {toPersianDigits(Math.round((s.area / (calc.totalArea || 1)) * 100))}٪</span>
+                        )}
+                      </span>
                     </span>
                   </td>
-                  {!perUnit && <td className="col-count num">{vacants[i] ? '—' : s.personCount}</td>}
+                  {!perUnit && !areaLine && <td className="col-count num">{vacants[i] ? '—' : areaCol ? (s.area != null ? formatArea(s.area) : '—') : s.personCount}</td>}
                   <td className="num strong">{vacants[i] ? <span className="no-share">خالی</span> : formatAmount(s.shareAmount)}</td>
                   <td className="col-action">
                     <button type="button" className="icon-btn icon-btn--danger" aria-label={`حذف ${unitLabel(s.unitNumber, aliases[i])}`} onClick={() => removeUnit(i)}>

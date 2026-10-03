@@ -13,7 +13,9 @@ import { JalaliDateField } from '../components/JalaliDateField';
 import { IconCalendar, IconCheck, IconEdit, IconLock, IconRestore, IconTrash } from '../components/Icons';
 import { useFeedback } from '../context/FeedbackContext';
 import { billRepository } from '../storage/billRepository';
-import { formatAmount } from '../logic/formatting';
+import { formatAmount, toPersianDigits } from '../logic/formatting';
+import { useAreaMode } from '../context/AreaModeContext';
+import { formatArea, sumAreas } from '../logic/area';
 import { allSettled } from '../logic/settlement';
 import { addPayment, clearPayments, completesBill, paidAmount, remainingAmount, settleFully } from '../logic/payments';
 import { draftFromBill } from '../logic/billFactory';
@@ -54,6 +56,14 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
   }
 
   const { bill, units } = data;
+  const { areaMode } = useAreaMode();
+  const perArea = splitMethodOf(bill) === 'perArea';
+  const areaCol = perArea && areaMode === 'column';
+  const areaLine = perArea && areaMode === 'line';
+  const totalArea = perArea ? sumAreas(units.map((u) => u.area), units.map((u) => u.vacant === true)) : 0;
+  const ppmExact = totalArea > 0 ? bill.totalAmount / totalArea : 0;
+  const faMoney = (n: number) => toPersianDigits(formatAmount(n)).replace(/,/g, '٬');
+  const ppmText = (Number.isInteger(ppmExact) ? '' : '≈ ') + faMoney(Math.round(ppmExact));
   const type = EXPENSE_TYPES[bill.expenseType];
   const locked = bill.isFullySettled;
   const deleted = isBillDeleted(bill);
@@ -196,6 +206,12 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
             )}
             <div className="kv"><span className="kv__k">مبلغ کل قبض:</span><b className="num">{formatAmount(bill.totalAmount)}</b> {CURRENCY}</div>
             <div className="kv"><span className="kv__k">نحوه تقسیم:</span><span className={'split-badge is-' + splitMethodOf(bill)}>{SPLIT_METHOD_LABELS[splitMethodOf(bill)]}</span></div>
+            {perArea && totalArea > 0 && (
+              <div className="kv"><span className="kv__k">مجموع متراژ:</span><b className="num">{formatArea(totalArea)}</b> مترمربع</div>
+            )}
+            {areaCol && totalArea > 0 && (
+              <div className="kv"><span className="kv__k">قیمت هر مترمربع:</span><b className="num">{ppmText}</b> {CURRENCY}</div>
+            )}
             <div className="kv kv--due">
               <span className="kv__k">مهلت پرداخت:</span>
               {due ? <b className="num">{formatJalaliSlash(due)}</b> : <span className="kv__none">تعیین نشده</span>}
@@ -247,13 +263,22 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
           </section>
         )}
 
+        {areaLine && totalArea > 0 && (
+          <div className="ppm" role="status">
+            <div>
+              <div className="ppm__k">قیمت هر مترمربع</div>
+              <div className="ppm__f num">{faMoney(bill.totalAmount)} ÷ {formatArea(totalArea)} م²</div>
+            </div>
+            <div className="ppm__v num">{ppmText} <span className="ppm__cur">{CURRENCY}</span></div>
+          </div>
+        )}
         <h2 className="section-title section-title--solo">واحدها</h2>
         <div className="table-card">
           <table className="table table--details">
             <thead>
               <tr>
                 <th>واحد</th>
-                <th>تعداد نفرات</th>
+                {!areaLine && <th>{areaCol ? 'متراژ' : 'تعداد نفرات'}</th>}
                 <th>مبلغ سهم</th>
                 <th>پرداخت</th>
               </tr>
@@ -264,8 +289,11 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
                   <td className="unit-td">
                     <span className="num">{u.unitNumber}</span>
                     {u.alias && <span className="unit-td__alias">{u.alias}</span>}
+                    {areaLine && !u.vacant && u.area != null && (
+                      <span className="unit-td__alias num">{formatArea(u.area)} م² × {faMoney(Math.round(ppmExact))} · {toPersianDigits(Math.round((u.area / (totalArea || 1)) * 100))}٪</span>
+                    )}
                   </td>
-                  <td className="num">{u.vacant ? '—' : u.personCount}</td>
+                  {!areaLine && <td className="num">{u.vacant ? '—' : areaCol ? (u.area != null ? formatArea(u.area) : '—') : u.personCount}</td>}
                   <td className="num">{formatAmount(u.shareAmount)}</td>
                   <td>
                     {u.shareAmount === 0 ? (

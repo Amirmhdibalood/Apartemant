@@ -3,9 +3,9 @@ import { useTheme } from '../context/ThemeContext';
 import { typeColors } from '../logic/typeColor';
 import { IconBolt, IconBroom, IconBuilding, IconDots, IconDrop, IconFlame, IconSparkles, IconWrench } from './Icons';
 
-export function ExpenseGlyph({ type, size = 22 }: { type: ExpenseType; size?: number }) {
-  const { theme } = useTheme();
-  const props = { size, style: { color: typeColors(type, theme).color } };
+/** آیکون نوع هزینه با رنگ صریح (بدون وابستگی به ThemeProvider؛ برای ساخت تصویر قبض در ریشه جدا) */
+export function GlyphSvg({ type, size = 22, color }: { type: ExpenseType; size?: number; color: string }) {
+  const props = { size, style: { color } };
   switch (type) {
     case 'water': return <IconDrop {...props} />;
     case 'electricity': return <IconBolt {...props} />;
@@ -16,6 +16,11 @@ export function ExpenseGlyph({ type, size = 22 }: { type: ExpenseType; size?: nu
     case 'beautification': return <IconSparkles {...props} />;
     default: return <IconDots {...props} />;
   }
+}
+
+export function ExpenseGlyph({ type, size = 22 }: { type: ExpenseType; size?: number }) {
+  const { theme } = useTheme();
+  return <GlyphSvg type={type} size={size} color={typeColors(type, theme).color} />;
 }
 
 /** دایره رنگی با آیکون نوع هزینه */

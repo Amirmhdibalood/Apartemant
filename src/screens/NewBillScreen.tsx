@@ -6,6 +6,8 @@ import { SelectField } from '../components/SelectField';
 import { JalaliDateField } from '../components/JalaliDateField';
 import { addJalaliDays, dateYearOptions, todayJalali } from '../logic/jalali';
 import { DEFAULT_DUE_OFFSET_DAYS } from '../logic/billStatus';
+import { useEntryPrefs } from '../context/EntryPrefsContext';
+import { resolveMethod } from '../logic/entryPrefs';
 import { ExpenseTypePicker } from '../components/ExpenseTypePicker';
 import { AmountInput } from '../components/AmountInput';
 import { UnitsEditor } from '../components/UnitsEditor';
@@ -16,7 +18,9 @@ import { Errors } from '../logic/errors';
 import { CURRENCY, SPLIT_METHOD_LABELS } from '../models/constants';
 import { defaultSplitFor, type SplitDefaults } from '../logic/split';
 import { splitDefaultsRepository } from '../storage/splitDefaultsRepository';
-import { addDraftUnit, draftVacant, removeDraftUnit } from '../logic/billFactory';
+import { addDraftUnit, draftAreas, draftAliases, draftVacant, removeDraftUnit } from '../logic/billFactory';
+import { formatArea, sumAreas, unitsMissingArea } from '../logic/area';
+import { unitLabel } from '../logic/building';
 import type { BuildingSettings } from '../models/types';
 import { buildingFromDraftUnits, draftMatchesBuilding, draftUnitsFromBuilding } from '../logic/building';
 import { buildingRepository } from '../storage/buildingRepository';
@@ -34,12 +38,24 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
   const { settings } = useSettings();
   const { showErrors, confirmDanger, toast } = useFeedback();
   const set = (patch: Partial<BillDraft>) => setDraft({ ...draft, ...patch });
+  const { prefs } = useEntryPrefs();
+  // روش‌های قابل انتخاب: روش‌های فعال (+ روش خودِ قبض در حال ویرایش، تا ویرایش بی‌صدا آن را عوض نکند)
+  const methodOptions = (['perPerson', 'perUnit', 'perArea'] as const).filter(
+    (m) => prefs.methods.includes(m) || (!!draft.editingBillId && draft.splitMethod === m),
+  );
   const [splitDefaults, setSplitDefaults] = useState<SplitDefaults>({});
   useEffect(() => {
     let alive = true;
     splitDefaultsRepository.get().then((d) => { if (alive) setSplitDefaults(d); }).catch(() => undefined);
     return () => { alive = false; };
   }, []);
+
+  // روش خاموش‌شده (یادآوری‌شده یا پیش‌فرض) ← اولین روش فعال؛ با یک روش فعال، همان استفاده می‌شود
+  useEffect(() => {
+    if (draft.editingBillId) return;
+    const next = resolveMethod(prefs, draft.splitMethod);
+    if (next !== draft.splitMethod) setDraft({ ...draft, splitMethod: next });
+  }, [prefs, draft.splitMethod, draft.editingBillId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // پیش‌فرض واحدها از تنظیمات «ساختمان» (فقط قبض جدید)
   const [building, setBuilding] = useState<BuildingSettings | null>(null);
@@ -49,7 +65,14 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
     buildingRepository.get().then((b) => { if (alive) setBuilding(b); }).catch(() => undefined);
     return () => { alive = false; };
   }, [draft.editingBillId]);
-  const matches = building ? draftMatchesBuilding(draft.personCounts, draft.unitAliases, building, draft.unitVacant) : true;
+  const matches = building ? draftMatchesBuilding(draft.personCounts, draft.unitAliases, building, draft.unitVacant, draft.unitAreas) : true;
+
+  // «بر اساس متراژ»: واحدهای غیرخالی که متراژ معتبر ندارند (مانع محاسبه)
+  const perArea = draft.splitMethod === 'perArea';
+  const vacantFlags = draftVacant(draft);
+  const missingAreas = perArea ? unitsMissingArea(draftAreas(draft), vacantFlags, draft.personCounts.length) : [];
+  const aliases = draftAliases(draft);
+  const totalArea = sumAreas(draftAreas(draft), vacantFlags);
 
   const resetToBuilding = () => {
     if (building) set(draftUnitsFromBuilding(building));
@@ -57,7 +80,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
 
   /** «ذخیره به‌عنوان پیش‌فرض»: واحدهای این فرم پیش‌فرض قبض‌های بعدی می‌شوند */
   const saveAsDefault = async () => {
-    const next = buildingFromDraftUnits(draft.personCounts, draft.unitAliases, draft.unitVacant);
+    const next = buildingFromDraftUnits(draft.personCounts, draft.unitAliases, draft.unitVacant, draft.unitAreas);
     if (!next) {
       showErrors([Errors.noUnits()]);
       return;
@@ -115,7 +138,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
               set({
                 expenseType,
                 // تا وقتی کاربر خودش انتخاب نکرده، نحوه تقسیم از آخرین روش همین نوع هزینه پیروی می‌کند
-                ...(draft.editingBillId || draft.splitChosen ? {} : { splitMethod: defaultSplitFor(expenseType, splitDefaults) }),
+                ...(draft.editingBillId || draft.splitChosen ? {} : { splitMethod: resolveMethod(prefs, defaultSplitFor(expenseType, splitDefaults)) }),
               })
             }
           />
@@ -174,9 +197,10 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
         </div>
 
         <div className="field split-field">
-          <span className="field__label" id="split-label">نحوه تقسیم</span>
-          <div className="seg" role="radiogroup" aria-labelledby="split-label">
-            {(['perPerson', 'perUnit'] as const).map((m) => (
+          {methodOptions.length > 1 && <span className="field__label" id="split-label">نحوه تقسیم</span>}
+          {methodOptions.length > 1 && (
+          <div className={'seg seg--' + methodOptions.length} role="radiogroup" aria-labelledby="split-label">
+            {methodOptions.map((m) => (
               <button
                 key={m}
                 type="button"
@@ -189,6 +213,18 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
               </button>
             ))}
           </div>
+          )}
+          {perArea && (
+            <p className="split-hint">قیمت هر مترمربع = مبلغ قبض ÷ مجموع متراژ واحدهای غیرخالی؛ سهم هر واحد = متراژ × قیمت هر مترمربع. متراژ از «تنظیمات ← ساختمان» پر می‌شود و برای همین قبض قابل ویرایش است (نفرات اثری ندارد).</p>
+          )}
+          {perArea && missingAreas.length > 0 && (
+            <div className="area-warn" role="alert">
+              متراژ {missingAreas.map((n) => unitLabel(n, aliases[n - 1])).join('، ')} وارد نشده است. برای تقسیم «بر اساس متراژ» متراژ همه واحدهای غیرخالی لازم است؛ آن را در فهرست واحدها پر کنید یا واحد را «خالی» کنید.
+            </div>
+          )}
+          {perArea && missingAreas.length === 0 && totalArea > 0 && (
+            <p className="area-total">مجموع متراژ واحدهای غیرخالی: <b className="num">{formatArea(totalArea)}</b> مترمربع</p>
+          )}
           {draft.splitMethod === 'perUnit' && (
             <p className="split-hint">هر واحد یک سهم برابر دارد و تعداد نفرات در محاسبه اثری ندارد (نفرات واحدها حفظ می‌شود).</p>
           )}
@@ -220,10 +256,12 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
           onChangeVacant={(index, v) => set({ unitVacant: draftVacant(draft).map((x, j) => (j === index ? v : x)) })}
           amountDigits={draft.amountDigits}
           splitMethod={draft.splitMethod}
+          unitAreas={draft.unitAreas}
+          onChangeArea={(index, v) => set({ unitAreas: draftAreas(draft).map((x, j) => (j === index ? v : x)) })}
         />
       </main>
       <div className="sticky-action">
-        <button type="button" className="btn btn--primary btn--block btn--lg" onClick={submit}>
+        <button type="button" className={'btn btn--primary btn--block btn--lg' + (missingAreas.length > 0 ? ' is-blocked' : '')} aria-disabled={missingAreas.length > 0} onClick={submit}>
           محاسبه و ادامه
         </button>
       </div>

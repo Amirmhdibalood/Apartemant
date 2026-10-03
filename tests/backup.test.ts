@@ -102,7 +102,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     const e = errorOf(text((o) => { o.backupVersion = BACKUP_VERSION + 1; }));
     expect(e).toContain('نسخه جدیدتری');
     expect(e).toContain(String(BACKUP_VERSION + 1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]));
-    expect(BACKUP_VERSION).toBe(6);
+    expect(BACKUP_VERSION).toBe(7);
   });
 
   it('نسخه نامعتبر قالب', () => {
@@ -181,7 +181,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     expect(r.backup.data.bills[1].splitMethod).toBe('perUnit');
     expect('splitMethod' in r.backup.data.bills[0]).toBe(false); // قبض قدیمی = بر اساس نفرات
     expect(r.backup.data.splitDefaults).toEqual({ gas: 'perUnit', water: 'perPerson' });
-    expect(errorOf(text((o) => { o.data.bills[0].splitMethod = 'perArea'; }))).toContain('قبض ۱');
+    expect(errorOf(text((o) => { o.data.bills[0].splitMethod = 'perVolume'; }))).toContain('قبض ۱');
   });
 
   it('پشتیبان قالب ۲ (نسخه ۱٫۲، بدون نحوه تقسیم) همچنان بازیابی می‌شود', () => {

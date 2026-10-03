@@ -4,6 +4,7 @@ import { ExpenseIcon } from './ExpenseIcon';
 import { IconBell, IconChevronLeft, IconX } from './Icons';
 import { useNotif } from '../context/NotifContext';
 import { alertChipText, groupAlerts, type DueAlert } from '../logic/dueAlerts';
+import { popoverAnchor } from '../logic/popoverAnchor';
 import { toPersianDigits } from '../logic/formatting';
 
 const fmtDue = (d: string | null) => (d ? toPersianDigits(d.replace(/-/g, '/')) : '');
@@ -43,8 +44,7 @@ export function NotificationsLayer({ onOpenBill }: { onOpenBill: (billId: string
     const bell = document.querySelector('.bell-btn');
     if (!bell) return;
     const r = bell.getBoundingClientRect();
-    const left = 10;
-    setAnchor({ top: r.bottom + 8, left, arrowLeft: r.left + r.width / 2 - left - 7 });
+    setAnchor(popoverAnchor(r, document.documentElement.clientWidth));
   }, [open, mode]);
 
   if (!open) return null;

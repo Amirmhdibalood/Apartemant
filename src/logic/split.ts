@@ -5,32 +5,62 @@
 import type { Bill, ExpenseType, SplitMethod } from '../models/types';
 import { DEFAULT_SPLIT_METHOD, EXPENSE_TYPES } from '../models/constants';
 import { calculateShares, type CalculationResult } from './calculation';
+import { areaToMilli, parseArea, AREA_SCALE } from './area';
 
-export const isSplitMethod = (v: unknown): v is SplitMethod => v === 'perPerson' || v === 'perUnit';
+export const isSplitMethod = (v: unknown): v is SplitMethod => v === 'perPerson' || v === 'perUnit' || v === 'perArea';
 
 /** نحوه تقسیم یک قبض (قبض‌های قدیمی = بر اساس نفرات) */
 export function splitMethodOf(bill: Pick<Bill, 'splitMethod'>): SplitMethod {
   return isSplitMethod(bill.splitMethod) ? bill.splitMethod : DEFAULT_SPLIT_METHOD;
 }
 
-/** وزن هر واحد در محاسبه */
-export function splitWeights(personCounts: number[], method: SplitMethod, vacant?: boolean[]): number[] {
-  // واحد خالی (از ۱.۶.۳) در هیچ‌کدام از دو روش تقسیم وزن ندارد
-  return personCounts.map((n, i) => (vacant?.[i] ? 0 : method === 'perUnit' ? 1 : n));
+/**
+ * وزن هر واحد در محاسبه. در «بر اساس متراژ» وزن = متراژ مقیاس‌شده به عدد صحیح (هزارم مترمربع)؛
+ * واحد خالی در هر سه روش وزن ندارد. متراژ نامعتبر یک واحد غیرخالی خطا می‌دهد.
+ */
+export function splitWeights(personCounts: number[], method: SplitMethod, vacant?: boolean[], areas?: (number | null | undefined)[]): number[] {
+  // واحد خالی (از ۱.۶.۳) در هیچ‌کدام از روش‌های تقسیم وزن ندارد
+  return personCounts.map((n, i) => {
+    if (vacant?.[i]) return 0;
+    if (method === 'perUnit') return 1;
+    if (method === 'perArea') {
+      const a = parseArea(areas?.[i] ?? null);
+      if (a === null) throw new Error(`area missing for unit ${i + 1}`);
+      return areaToMilli(a);
+    }
+    return n;
+  });
 }
 
 export interface SplitCalculation extends CalculationResult {
   splitMethod: SplitMethod;
+  /** فقط «بر اساس متراژ»: جمع متراژ واحدهای غیرخالی (مترمربع) */
+  totalArea?: number;
+  /** فقط «بر اساس متراژ»: قیمت دقیق هر مترمربع (ممکن است اعشاری باشد) */
+  pricePerArea?: number;
 }
 
 /**
  * محاسبه سهم‌ها با نحوه تقسیم. در خروجی `shares[i].personCount` همیشه تعداد نفرات واقعی واحد است
  * و `totalPersons` / `perPersonExact` در حالت «بر اساس واحد» یعنی تعداد واحدها / سهم هر واحد.
+ * در «بر اساس متراژ»: `totalPersons` = تعداد واحدهای غیرخالی، `totalArea` = جمع متراژ (مترمربع)،
+ * `pricePerArea` = مبلغ ÷ جمع متراژ و `perPersonExact` برابر همان قیمت هر مترمربع است؛
+ * سهم‌ها با همان روش «بزرگ‌ترین باقیمانده» گرد می‌شوند (جمع سهم‌ها دقیقاً برابر مبلغ کل).
  */
-export function calculateBySplit(totalAmount: number, personCounts: number[], method: SplitMethod, vacant?: boolean[]): SplitCalculation {
-  const weights = splitWeights(personCounts, method, vacant);
+export function calculateBySplit(totalAmount: number, personCounts: number[], method: SplitMethod, vacant?: boolean[], areas?: (number | null | undefined)[]): SplitCalculation {
+  const weights = splitWeights(personCounts, method, vacant, areas);
   const r = calculateShares(totalAmount, weights.map((w, i) => ({ unitNumber: i + 1, personCount: w })));
-  return { ...r, splitMethod: method, shares: r.shares.map((s, i) => ({ ...s, personCount: personCounts[i] })) };
+  const base = { ...r, splitMethod: method, shares: r.shares.map((s, i) => ({ ...s, personCount: personCounts[i] })) };
+  if (method !== 'perArea') return base;
+  const totalArea = r.totalPersons / AREA_SCALE;
+  return {
+    ...base,
+    totalPersons: weights.filter((w) => w > 0).length,
+    totalArea,
+    pricePerArea: totalAmount / totalArea,
+    perPersonExact: totalAmount / totalArea,
+    shares: base.shares.map((s, i) => ({ ...s, area: weights[i] > 0 ? weights[i] / AREA_SCALE : null })),
+  };
 }
 
 /** پیش‌فرض نحوه تقسیم برای هر نوع هزینه (آخرین روش استفاده‌شده) */

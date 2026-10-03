@@ -39,6 +39,10 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 html, body { margin: 0; padding: 0; background: var(--bg); }
+/* هیچ اسکرول/کشیدن افقی در هیچ صفحه‌ای نباشد (clip برای body/root: بدون ساختن ظرف اسکرول، پس sticky سالم می‌ماند) */
+html { overflow-x: hidden; max-width: 100%; }
+body, #root { overflow-x: clip; max-width: 100%; }
+body { touch-action: pan-y pinch-zoom; overscroll-behavior-x: none; }
 body { direction: rtl; font-size: 15px; line-height: 1.6; overscroll-behavior-y: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; border: 0; background: none; padding: 0; }
@@ -78,7 +82,8 @@ h1, h2, h3, p { margin: 0; }
   -webkit-backdrop-filter: blur(8px);
 }
 .app-header--help { grid-template-columns: 132px 1fr 132px; }
-.app-header--two { grid-template-columns: 172px 1fr 172px; }
+/* ۴ دکمه (بازگشت، زنگوله، راهنما، تم) در عرض ۳۶۰–۳۹۰ جا نمی‌شد و سرصفحه از صفحه بیرون می‌زد */
+.app-header--two { grid-template-columns: auto 1fr auto; }
 .app-header__end { gap: 0; }
 .help-btn { color: var(--primary); }
 .app-header__title { text-align: center; font-size: 18px; font-weight: 800; color: var(--text); }
@@ -173,6 +178,7 @@ h1, h2, h3, p { margin: 0; }
 .tiles__row { display: grid; gap: 10px; }
 .tiles__row--3 { grid-template-columns: repeat(3, 1fr); }
 .tiles__row--2 { grid-template-columns: repeat(2, 1fr); }
+.tiles__row--1 { grid-template-columns: repeat(3, 1fr); }
 .tile {
   height: 86px; border-radius: 12px; border: 1.5px solid transparent;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
@@ -305,6 +311,7 @@ h1, h2, h3, p { margin: 0; }
 .switch__thumb { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); transition: right 0.2s; }
 .switch.is-on { background: var(--primary); }
 .switch.is-on .switch__thumb { right: 23px; }
+.switch.is-disabled { opacity: 0.55; cursor: not-allowed; }
 .app-version { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 18px; }
 
 /* Backup & restore (پشتیبان‌گیری و بازیابی) */
@@ -888,3 +895,84 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
 .bp-result { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 10px; font-size: 13px; color: var(--text-2); }
 .bp-result b { color: var(--text); }
 .bp-result__clear { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 16px; background: var(--primary-soft); color: var(--primary); font-weight: 800; font-size: 12.5px; }
+
+/* ---------- تقسیم «بر اساس متراژ» (از نسخه ۱.۶.۵) ---------- */
+.input--area { text-align: center; padding: 0 4px; }
+.units-row__count .input--area { width: 78px; height: 40px; font-size: 14px; }
+.area-unit { font-size: 11.5px; color: var(--muted); font-weight: 600; white-space: nowrap; }
+/* تنظیمات ساختمان: ستون اضافه */
+.building-units.area-column .building-unit { grid-template-columns: 28px 1fr 46px 62px 34px; gap: 6px; padding: 7px 8px; }
+.building-units.area-column .building-unit__persons { width: 46px; }
+.building-units.area-column .building-unit__area { width: 62px; height: 40px; font-size: 14px; }
+.building-units.area-column .building-unit--head { font-size: 11.5px; }
+/* تنظیمات ساختمان: خط دوم */
+.building-units.area-line .building-unit { row-gap: 6px; padding-bottom: 9px; }
+.building-unit__area-line { grid-column: 2 / -1; display: flex; align-items: center; gap: 8px; background: var(--soft-panel); border-radius: 10px; padding: 5px 10px; }
+.building-unit__area-line label { font-size: 12.5px; font-weight: 700; color: var(--text-2); }
+.building-unit__area-line .input { width: 92px; height: 38px; font-size: 14px; }
+/* فرم قبض */
+.area-warn { margin-top: 10px; border: 1px solid #f3c6c0; background: var(--danger-soft); color: #b42318; border-radius: 12px; padding: 9px 12px; font-size: 12.8px; line-height: 1.8; }
+.area-total { margin-top: 6px; font-size: 12.5px; color: var(--muted); line-height: 1.8; }
+.area-total b { color: var(--text); }
+.units-row.has-line { flex-wrap: wrap; row-gap: 6px; padding-bottom: 10px; }
+.units-row__line2 { flex: 0 0 calc(100% - 42px); width: calc(100% - 42px); margin-right: 42px; display: flex; align-items: center; gap: 8px; background: var(--soft-panel); border-radius: 10px; padding: 5px 10px; }
+.units-row__line2 label { font-size: 12.5px; font-weight: 700; color: var(--text-2); }
+.units-row__line2 .input { width: 92px; height: 38px; font-size: 14px; }
+.units-row__line2 .pct { margin-right: auto; font-size: 12px; color: var(--muted); font-weight: 600; }
+.btn.is-blocked { opacity: .5; }
+/* نتیجه / جزئیات */
+.ppm { margin: 12px 0 2px; display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--primary-soft); border: 1px solid #cfe0fb; border-radius: 14px; padding: 11px 14px; }
+.ppm__k { font-size: 12.5px; color: var(--text-2); font-weight: 700; }
+.ppm__v { font-size: 18px; font-weight: 900; color: var(--primary); }
+.ppm__cur { font-size: 12px; font-weight: 700; }
+.ppm__f { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.split-badge.is-perArea { background: #e0f7f1; color: #0f766e; }
+.unit-cell__sub { display: block; font-size: 11.5px; color: var(--muted); font-weight: 500; }
+
+/* ---------- انتخاب «نماد واحد» / «نماد متراژ» در تنظیمات ---------- */
+.icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.icon-opt {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 4px 8px;
+  border-radius: 12px; border: 1.6px solid var(--border-2); background: var(--card); color: var(--text-2);
+  font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+.icon-opt.is-active { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); box-shadow: 0 0 0 3px rgba(47, 116, 240, 0.12); }
+.icon-opt__glyph { width: 38px; height: 38px; }
+.icon-opt__glyph--area { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--primary-soft); color: #3a5fb5; }
+.icon-opt__none { font-size: 18px; color: var(--muted); }
+.icon-opt__label { line-height: 1.4; text-align: center; }
+.unit-num { font-weight: 900; line-height: 1; }
+
+/* ---------- آکاردئون بخش‌های تنظیمات (پیش‌فرض بسته) ---------- */
+.acc { padding: 0; }
+.acc__title { font-size: 15.5px; font-weight: 800; margin: 0; }
+.acc__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 56px;
+  padding: 14px 16px; text-align: right; font-weight: 800; font-size: 15.5px; color: var(--text); border-radius: var(--radius-lg);
+}
+.acc__head:active { background: var(--soft-panel); }
+.acc__head:focus-visible { outline: 3px solid rgba(47, 116, 240, 0.35); outline-offset: -3px; }
+.acc__label { flex: 1; min-width: 0; }
+.acc__chevron { flex-shrink: 0; color: var(--text-2); transition: transform 0.25s ease, color 0.25s; }
+.acc.is-open .acc__chevron { transform: rotate(180deg); color: var(--primary); }
+.acc__body { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows 0.28s ease, visibility 0s linear 0.28s; }
+.acc.is-open .acc__body { grid-template-rows: 1fr; visibility: visible; transition: grid-template-rows 0.28s ease, visibility 0s; }
+.acc__inner { min-height: 0; min-width: 0; overflow: hidden; }
+.acc__pad { padding: 0 16px 16px; min-width: 0; }
+.acc__pad > :first-child { margin-top: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .acc__body, .acc__chevron { transition: none; }
+}
+
+/* ---------- یکدستی صفحهٔ تنظیمات: هر بخش یک کارت؛ زیرگروه‌ها با h3 و خط جداکننده ---------- */
+.settings-sub { font-size: 14px; font-weight: 800; color: var(--text); margin: 0 0 6px; }
+.settings-sub:not(:first-child) { margin-top: 16px; }
+.settings-group + .settings-group { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border-2); }
+.settings-group .card__hint { margin-bottom: 12px; }
+.settings-group .seg { margin-bottom: 10px; }
+.settings-group .notif-mode-hint { margin: 0; }
+
+/* ---------- انواع قبض و روش‌های محاسبه (تنظیمات) ---------- */
+.entry-prefs__row { margin-bottom: 6px; }
+.entry-prefs__label { flex-direction: row; align-items: center; gap: 10px; flex: 1; }
+.entry-prefs__note { margin: 6px 0 0; }

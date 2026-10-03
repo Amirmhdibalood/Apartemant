@@ -4,12 +4,15 @@
 import type { BillDraft } from '../models/types';
 import { Errors, type AppError } from './errors';
 import { onlyDigits } from './formatting';
+import { parseArea, parseAreaInput } from './area';
 
 export interface ValidDraft {
   totalAmount: number;
   personCounts: number[];
   /** واحد خالی بودن هر ردیف (هم‌ردیف personCounts) */
   vacant: boolean[];
+  /** متراژ معتبر هر ردیف (هم‌ردیف personCounts)؛ ذخیره‌نشده/نامعتبر = null — در «بر اساس متراژ» برای همه واحدهای غیرخالی عدد است */
+  areas: (number | null)[];
 }
 
 export type ValidationResult =
@@ -38,7 +41,8 @@ export function validateDraft(draft: BillDraft): ValidationResult {
   if (draft.personCounts.length === 0) {
     errors.push(Errors.noUnits());
   } else {
-    const perUnit = draft.splitMethod === 'perUnit';
+    // «بر اساس واحد» و «بر اساس متراژ»: نفرات در محاسبه اثری ندارد
+    const perUnit = draft.splitMethod === 'perUnit' || draft.splitMethod === 'perArea';
     let hadPersonError = false;
     draft.personCounts.forEach((raw, i) => {
       const unitNumber = i + 1;
@@ -62,10 +66,18 @@ export function validateDraft(draft: BillDraft): ValidationResult {
         personCounts.push(Number(digits));
       }
     });
+    if (draft.splitMethod === 'perArea') {
+      draft.personCounts.forEach((_, i) => {
+        if (vacant[i]) return;
+        const raw = (draft.unitAreas?.[i] ?? '').trim();
+        // خالی = متراژ پیش‌فرض (۱)؛ فقط مقدار نامعتبر (مثلاً صفر) مسدود می‌کند
+        if (raw !== '' && parseArea(raw) === null) errors.push(Errors.areaInvalid(i + 1));
+      });
+    }
     if (vacant.every(Boolean)) errors.push(Errors.allVacant());
     else if (!perUnit && !hadPersonError && personCounts.reduce((s, n, i) => s + (vacant[i] ? 0 : n), 0) <= 0) errors.push(Errors.noPersons());
   }
 
   if (errors.length > 0) return { ok: false, errors };
-  return { ok: true, value: { totalAmount, personCounts, vacant } };
+  return { ok: true, value: { totalAmount, personCounts, vacant, areas: draft.personCounts.map((_, i) => parseAreaInput(draft.unitAreas?.[i] ?? '')) } };
 }

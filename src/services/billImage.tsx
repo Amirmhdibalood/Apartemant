@@ -7,7 +7,7 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import type { BillWithUnits } from '../models/types';
 import { buildBillImageModel, type BillImageModel, type UnitStatusKind } from '../logic/billImage';
-import { ExpenseGlyph } from '../components/ExpenseIcon';
+import { GlyphSvg } from '../components/ExpenseIcon';
 import appIconUrl from '../assets/app-icon.png';
 
 /** عرض منطقی تصویر (خروجی نهایی ۲ برابر: ۱۰۸۰ پیکسل) */
@@ -27,6 +27,8 @@ const C = {
   primarySoft: '#EAF1FE',
   purple: '#7C3AED',
   purpleSoft: '#F3E8FF',
+  tealSoft: '#E0F7F1',
+  teal: '#0F766E',
 };
 const STATUS_STYLE: Record<UnitStatusKind, { fg: string; bg: string }> = {
   settled: { fg: '#1F9557', bg: '#E8F7EF' },
@@ -60,7 +62,7 @@ async function glyphImage(model: BillImageModel, type: BillWithUnits['bill']['ex
   try {
     const host = document.createElement('div');
     const root = createRoot(host);
-    flushSync(() => root.render(<ExpenseGlyph type={type} size={64} />));
+    flushSync(() => root.render(<GlyphSvg type={type} size={64} color={model.typeColor} />));
     let svg = host.innerHTML;
     root.unmount();
     if (!svg.startsWith('<svg')) return null;
@@ -182,10 +184,11 @@ function paint(ctx: CanvasRenderingContext2D, m: BillImageModel, a: Assets, draw
   const bw = width(m.splitLabel, badgeF) + 22;
   if (draw) {
     const perUnit = m.splitMethod === 'perUnit';
+    const perArea = m.splitMethod === 'perArea';
     roundRect(ctx, L, y + 17, bw, 26, 13);
-    ctx.fillStyle = perUnit ? C.purpleSoft : C.primarySoft;
+    ctx.fillStyle = perArea ? C.tealSoft : perUnit ? C.purpleSoft : C.primarySoft;
     ctx.fill();
-    text(m.splitLabel, L + bw / 2, y + 30.5, badgeF, perUnit ? C.purple : C.primary, 'center');
+    text(m.splitLabel, L + bw / 2, y + 30.5, badgeF, perArea ? C.teal : perUnit ? C.purple : C.primary, 'center');
   }
   y += circle + 18;
 
@@ -203,7 +206,7 @@ function paint(ctx: CanvasRenderingContext2D, m: BillImageModel, a: Assets, draw
   text(m.total, L + 16 + cw + 8, y + 35, font(800, 27), C.text, 'left');
   if (m.perShareLine) {
     text(m.perShareLine, R - 16, y + 69, font(500, 12.5), C.muted);
-    const cnt = m.showOccupants ? `${m.unitCount} واحد • ${m.totalPersons} نفر` : `${m.unitCount} واحد`;
+    const cnt = m.showOccupants ? `${m.unitCount} واحد • ${m.totalPersons} نفر` : m.showArea ? `${m.unitCount} واحد • ${m.totalArea} مترمربع` : `${m.unitCount} واحد`;
     text(cnt, L + 16, y + 69, font(500, 12.5), C.muted, 'left');
   }
   y += boxH + 14;
@@ -223,10 +226,11 @@ function paint(ctx: CanvasRenderingContext2D, m: BillImageModel, a: Assets, draw
   if (m.billNumber || m.description) y += 6;
 
   // --- جدول واحدها
-  type Col = { key: 'unit' | 'occupants' | 'share' | 'status'; title: string; w: number };
+  type Col = { key: 'unit' | 'occupants' | 'area' | 'share' | 'status'; title: string; w: number };
   // با اسم مستعار، ستون واحد پهن‌تر می‌شود (برچسب‌های بلند با «…» کوتاه می‌شوند)
   const cols: Col[] = [{ key: 'unit', title: 'واحد', w: m.hasAliases ? 2.6 : 1 }];
   if (m.showOccupants) cols.push({ key: 'occupants', title: 'نفرات', w: 1 });
+  if (m.showArea) cols.push({ key: 'area', title: 'متراژ', w: 1.3 });
   cols.push({ key: 'share', title: 'سهم (تومان)', w: 2 });
   if (m.showStatus) cols.push({ key: 'status', title: 'وضعیت', w: 2 });
   const totalW = cols.reduce((s, c) => s + c.w, 0);
@@ -266,6 +270,7 @@ function paint(ctx: CanvasRenderingContext2D, m: BillImageModel, a: Assets, draw
         text(label, mid, cy, f, C.text, 'center');
       }
       else if (c.key === 'occupants') text(r.occupants, mid, cy, font(500, 15), C.text2, 'center');
+      else if (c.key === 'area') text(r.area, mid, cy, font(500, 15), C.text2, 'center');
       else if (c.key === 'share') text(r.share, mid, cy, font(700, 15), C.text, 'center');
       else {
         const st = STATUS_STYLE[r.status.kind];
@@ -286,6 +291,7 @@ function paint(ctx: CanvasRenderingContext2D, m: BillImageModel, a: Assets, draw
   const sumY = y + rowH / 2 + 2;
   text('جمع', (colX[0].x0 + colX[0].x1) / 2, sumY, font(800, 14), C.text, 'center');
   if (m.showOccupants) text(m.totalPersons, (colX[1].x0 + colX[1].x1) / 2, sumY, font(700, 14), C.text2, 'center');
+  if (m.showArea) text(m.totalArea, (colX[1].x0 + colX[1].x1) / 2, sumY, font(700, 14), C.text2, 'center');
   const si = cols.findIndex((c) => c.key === 'share');
   text(m.total, (colX[si].x0 + colX[si].x1) / 2, sumY, font(800, 15), C.text, 'center');
   y += rowH + 8;
