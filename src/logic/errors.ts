@@ -26,6 +26,8 @@ export type AppErrorCode =
 export interface AppError {
   code: AppErrorCode;
   message: string;
+  /** عنوان اختصاصی دیالوگ (پیش‌فرض «خطا») */
+  title?: string;
 }
 
 export const ERROR_TITLE = 'خطا';

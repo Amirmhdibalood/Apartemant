@@ -11,7 +11,7 @@ export function ErrorDialog({ errors, onClose }: { errors: AppError[] | null; on
   return (
     <Dialog open={open} onClose={onClose} labelledBy="error-title" variant="error">
       <div className="dialog__icon"><IconErrorCircle size={48} /></div>
-      <h2 id="error-title" className="dialog__title">{ERROR_TITLE}</h2>
+      <h2 id="error-title" className="dialog__title">{errors && errors.length === 1 && errors[0].title ? errors[0].title : ERROR_TITLE}</h2>
       {errors && errors.length === 1 && <p className="dialog__text">{errors[0].message}</p>}
       {errors && errors.length > 1 && (
         <ul className="dialog__list">
