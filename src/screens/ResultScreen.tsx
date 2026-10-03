@@ -168,7 +168,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
             <thead>
               <tr>
                 <th className="col-unit">واحد</th>
-                {!perUnit && !areaLine && <th className="col-count">{areaCol ? 'متراژ (م²)' : 'تعداد نفرات'}</th>}
+                {!perUnit && !areaLine && <th className="col-count">{areaCol ? 'متراژ' : 'تعداد نفرات'}</th>}
                 <th>مبلغ سهم</th>
                 <th className="col-action" aria-label="حذف" />
               </tr>

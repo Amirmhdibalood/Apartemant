@@ -4,7 +4,7 @@
 import type { BillDraft } from '../models/types';
 import { Errors, type AppError } from './errors';
 import { onlyDigits } from './formatting';
-import { parseArea } from './area';
+import { parseArea, parseAreaInput } from './area';
 
 export interface ValidDraft {
   totalAmount: number;
@@ -70,8 +70,8 @@ export function validateDraft(draft: BillDraft): ValidationResult {
       draft.personCounts.forEach((_, i) => {
         if (vacant[i]) return;
         const raw = (draft.unitAreas?.[i] ?? '').trim();
-        if (raw === '') errors.push(Errors.areaMissing(i + 1));
-        else if (parseArea(raw) === null) errors.push(Errors.areaInvalid(i + 1));
+        // خالی = متراژ پیش‌فرض (۱)؛ فقط مقدار نامعتبر (مثلاً صفر) مسدود می‌کند
+        if (raw !== '' && parseArea(raw) === null) errors.push(Errors.areaInvalid(i + 1));
       });
     }
     if (vacant.every(Boolean)) errors.push(Errors.allVacant());
@@ -79,5 +79,5 @@ export function validateDraft(draft: BillDraft): ValidationResult {
   }
 
   if (errors.length > 0) return { ok: false, errors };
-  return { ok: true, value: { totalAmount, personCounts, vacant, areas: draft.personCounts.map((_, i) => parseArea(draft.unitAreas?.[i] ?? null)) } };
+  return { ok: true, value: { totalAmount, personCounts, vacant, areas: draft.personCounts.map((_, i) => parseAreaInput(draft.unitAreas?.[i] ?? '')) } };
 }

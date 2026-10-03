@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -56,7 +57,7 @@ describe('متراژ: تبدیل و اعتبارسنجی', () => {
     expect(areaToMilli(1.005)).toBe(1005);
     expect(sumAreas([0.1, 0.2, 0.3])).toBe(0.6); // با جمع مستقیم اعشاری ۰٫۶۰۰۰۰۰۰۰۰۰۰۰۰۰۰۱ می‌شد
     expect(sumAreas([100, 50, 75, 75], [false, true, false, false])).toBe(250);
-    expect(sumAreas(['100', '', 'x', '50.5'])).toBe(150.5);
+    expect(sumAreas(['100', '', 'x', '50.5'])).toBe(151.5); // خالی = متراژ پیش‌فرض ۱، «x» نامعتبر نادیده
   });
 
   it('نمایش و رشته ویرایشی', () => {
@@ -70,8 +71,10 @@ describe('متراژ: تبدیل و اعتبارسنجی', () => {
   });
 
   it('unitsMissingArea: فقط واحدهای غیرخالیِ بدون متراژ معتبر', () => {
-    expect(unitsMissingArea(['100', '', 'x', '5'], [false, false, false, true], 4)).toEqual([2, 3]);
-    expect(unitsMissingArea(['100', '50'], undefined, 3)).toEqual([3]);
+    // خالی = متراژ پیش‌فرض ۱ (مسدودکننده نیست)؛ فقط مقدار نامعتبر گزارش می‌شود
+    expect(unitsMissingArea(['100', '', 'x', '5'], [false, false, false, true], 4)).toEqual([3]);
+    expect(unitsMissingArea(['100', '50'], undefined, 3)).toEqual([]);
+    expect(unitsMissingArea(['100', '0'], undefined, 2)).toEqual([2]);
     expect(unitsMissingArea(['100', '50'], [false, false], 2)).toEqual([]);
   });
 });
@@ -159,11 +162,14 @@ describe('اعتبارسنجی فرم و سهم زنده (UI)', () => {
     if (r.ok) expect(r.value.areas).toEqual([100, 50, 75, 75]);
   });
 
-  it('متراژ واحد غیرخالی خالی/نامعتبر ← خطای مسدودکننده با شماره واحد', () => {
+  it('متراژ خالی = پیش‌فرض ۱ (مسدود نمی‌کند)؛ متراژ نامعتبر ← خطای مسدودکننده با شماره واحد', () => {
     const r = validateDraft({ ...base, unitAreas: ['100', '', '75', '75'] });
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errors.map((e) => e.code)).toEqual(['AREA_MISSING']);
-    if (!r.ok) expect(r.errors[0].message).toContain('واحد ۲');
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(r.value.areas).toEqual([100, 1, 75, 75]);
+    const r0 = validateDraft({ ...base, unitAreas: ['100', '0', '75', '75'] });
+    expect(r0.ok).toBe(false);
+    if (!r0.ok) expect(r0.errors.map((e) => e.code)).toEqual(['AREA_INVALID']);
+    if (!r0.ok) expect(r0.errors[0].message).toContain('واحد ۲');
     const bad = validateDraft({ ...base, unitAreas: ['100', '50', '0', '75.1234'] });
     if (!bad.ok) expect(bad.errors.map((e) => e.code)).toEqual(['AREA_INVALID', 'AREA_INVALID']);
     else throw new Error('should fail');
@@ -182,15 +188,17 @@ describe('اعتبارسنجی فرم و سهم زنده (UI)', () => {
 
   it('liveShares: سهم زنده فقط وقتی همه متراژها معتبر باشند', () => {
     expect(liveShares('3000000', base.personCounts, 'perArea', base.unitVacant, base.unitAreas)).toEqual([1_000_000, 500_000, 750_000, 750_000]);
-    expect(liveShares('3000000', base.personCounts, 'perArea', base.unitVacant, ['100', '', '75', '75'])).toBeNull();
+    expect(liveShares('3000000', base.personCounts, 'perArea', base.unitVacant, ['100', 'x', '75', '75'])).toBeNull();
+    // خالی = ۱ مترمربع
+    expect(liveShares('3000000', ['1', '1'], 'perArea', [false, false], ['2', ''])).toEqual([2_000_000, 1_000_000]);
     expect(liveShares('3000000', ['1', '1'], 'perArea', [false, true], ['10', ''])).toEqual([3_000_000, 0]);
     expect(liveShares('', base.personCounts, 'perArea', base.unitVacant, base.unitAreas)).toBeNull();
   });
 
   it('افزودن/حذف واحد در فرم، متراژ را هم‌ردیف نگه می‌دارد', () => {
     const added = addDraftUnit(base, '1');
-    expect(added.unitAreas).toEqual(['100', '50', '75', '75', '']);
-    expect(removeDraftUnit(added, 1).unitAreas).toEqual(['100', '75', '75', '']);
+    expect(added.unitAreas).toEqual(['100', '50', '75', '75', '1']); // واحد جدید = متراژ پیش‌فرض ۱
+    expect(removeDraftUnit(added, 1).unitAreas).toEqual(['100', '75', '75', '1']);
   });
 
   const render = (m: 'column' | 'line', method: 'perPerson' | 'perArea') => {
@@ -203,7 +211,8 @@ describe('اعتبارسنجی فرم و سهم زنده (UI)', () => {
 
   it('فرم قبض: «ستون» ← ستون متراژ جای نفرات؛ «خط جدا» ← خط دوم برای هر واحد', () => {
     const col = render('column', 'perArea');
-    expect(col).toContain('متراژ (م²)');
+    expect(col).toContain('>متراژ<');
+    expect(col).not.toContain('م²)');
     expect(col).not.toContain('units-row__line2');
     expect(col).toContain('value="100"');
     const line = render('line', 'perArea');
@@ -237,7 +246,7 @@ describe('عکس لحظه‌ای قبض و ساختمان', () => {
     expect(b.units[3].vacant).toBe(true);
     expect(b.units[3].shareAmount).toBe(0);
     const back = draftFromBill(b);
-    expect(back.unitAreas).toEqual(['100', '50', '75.5', '']);
+    expect(back.unitAreas).toEqual(['100', '50', '75.5', '1']); // واحد خالیِ بدون متراژ ← پیش‌فرض ۱
     expect(back.splitMethod).toBe('perArea');
   });
 
@@ -245,11 +254,11 @@ describe('عکس لحظه‌ای قبض و ساختمان', () => {
     const b = sanitizeBuilding({ units: [{ alias: null, defaultPersons: 2, area: 80.25 }, { alias: 'x', defaultPersons: 1, area: -3 }, { alias: null, defaultPersons: 1 }, { alias: null, defaultPersons: 1, area: '55' }] });
     expect(b?.units.map((u) => u.area)).toEqual([80.25, undefined, undefined, 55]);
     const rows = draftUnitsFromBuilding(b!);
-    expect(rows.unitAreas).toEqual(['80.25', '', '', '55']);
+    expect(rows.unitAreas).toEqual(['80.25', '1', '1', '55']); // بدون متراژ ← پیش‌فرض ۱
     expect(draftMatchesBuilding(rows.personCounts, rows.unitAliases, b!, rows.unitVacant, rows.unitAreas)).toBe(true);
     // تغییر فقط در متراژ هم «فرق با پیش‌فرض» حساب می‌شود
     expect(draftMatchesBuilding(rows.personCounts, rows.unitAliases, b!, rows.unitVacant, ['81', '', '', '55'])).toBe(false);
-    expect(buildingFromDraftUnits(rows.personCounts, rows.unitAliases, rows.unitVacant, ['90', 'x', '', '5.5'])!.units.map((u) => u.area)).toEqual([90, undefined, undefined, 5.5]);
+    expect(buildingFromDraftUnits(rows.personCounts, rows.unitAliases, rows.unitVacant, ['90', 'x', '', '5.5'])!.units.map((u) => u.area)).toEqual([90, 1, 1, 5.5]); // خالی/نامعتبر ← ۱
   });
 
   it('تغییر تنظیمات ساختمان روی قبض ثبت‌شده اثر ندارد (فقط قبض بعدی)', () => {
@@ -386,6 +395,58 @@ describe('آیکون تصویر قبض', () => {
       const html = renderToStaticMarkup(createElement(GlyphSvg, { type: t, size: 64, color: '#0F766E' }));
       expect(html.startsWith('<svg')).toBe(true);
       expect(html).toContain('#0F766E');
+    }
+  });
+});
+
+describe('متراژ پیش‌فرض ۱ و برچسب‌های بدون «م²»', () => {
+  it('ثابت و تبدیل ورودی', async () => {
+    const { DEFAULT_AREA, parseAreaInput } = await import('../src/logic/area');
+    expect(DEFAULT_AREA).toBe(1);
+    expect(parseAreaInput('')).toBe(1);
+    expect(parseAreaInput('  ')).toBe(1);
+    expect(parseAreaInput('0')).toBeNull();
+    expect(parseAreaInput('75.5')).toBe(75.5);
+  });
+
+  it('واحد جدید (تنظیمات ساختمان و فرم قبض) متراژ ۱ دارد؛ فرم تازه هم', async () => {
+    const { newBuildingUnit, resizeBuilding, defaultBuilding } = await import('../src/logic/building');
+    expect(newBuildingUnit().area).toBe(1);
+    expect(defaultBuilding().units[0].area).toBe(1);
+    expect(resizeBuilding(defaultBuilding(), 3).units.map((u) => u.area)).toEqual([1, 1, 1]);
+    expect(emptyDraft(1405, 7).unitAreas).toEqual(['1']);
+  });
+
+  it('بدون متراژ وارد‌شده، «بر اساس متراژ» مسدود نمی‌شود و مثل تقسیم برابر است', () => {
+    const d: BillDraft = { ...emptyDraft(1405, 7), expenseType: 'gas', amountDigits: '3000000', personCounts: ['1', '1', '1'], unitAreas: ['', '', ''], splitMethod: 'perArea' };
+    const v = validateDraft(d);
+    expect(v.ok).toBe(true);
+    if (!v.ok) return;
+    const calc = calculateBySplit(v.value.totalAmount, v.value.personCounts, 'perArea', v.value.vacant, v.value.areas);
+    expect(calc.shares.map((s) => s.shareAmount)).toEqual([1_000_000, 1_000_000, 1_000_000]);
+    expect(buildBill(d, calc, null, new Date('2026-10-03T08:00:00Z')).units.map((u) => u.area)).toEqual([1, 1, 1]);
+  });
+
+  it('قبض غیر متراژی متراژ ذخیره نمی‌کند', () => {
+    const d: BillDraft = { ...emptyDraft(1405, 7), expenseType: 'gas', amountDigits: '3000000', personCounts: ['2', '1'], unitAreas: ['1', '1'] };
+    const v = validateDraft(d);
+    if (!v.ok) throw new Error('invalid');
+    const calc = calculateBySplit(v.value.totalAmount, v.value.personCounts, 'perPerson', v.value.vacant, v.value.areas);
+    expect(buildBill(d, calc, null, new Date('2026-10-03T08:00:00Z')).units.map((u) => u.area)).toEqual([undefined, undefined]);
+  });
+
+  it('مهاجرت: تنظیمات/فایل قدیمی بدون متراژ دست‌نخورده می‌ماند و فقط فرم ۱ را نشان می‌دهد', async () => {
+    const { sanitizeBuilding, draftUnitsFromBuilding } = await import('../src/logic/building');
+    const b = sanitizeBuilding({ units: [{ alias: null, defaultPersons: 2 }] })!;
+    expect(b.units[0].area).toBeUndefined();
+    expect(draftUnitsFromBuilding(b).unitAreas).toEqual(['1']);
+  });
+
+  it('هیچ برچسب ستون/فیلد «م²» ندارد', () => {
+    const files = ['src/components/UnitsEditor.tsx', 'src/components/BuildingSection.tsx', 'src/screens/ResultScreen.tsx', 'src/screens/BillDetailsScreen.tsx', 'src/services/billImage.tsx'];
+    for (const f of files) {
+      const src = readFileSync(f, 'utf-8');
+      expect(src, f).not.toContain('متراژ (م²)');
     }
   });
 });

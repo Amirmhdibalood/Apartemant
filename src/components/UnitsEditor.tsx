@@ -4,7 +4,7 @@ import { IconMinus, IconPlus, IconUser } from './Icons';
 import { PersonCountInput } from './PersonCountInput';
 import { AreaInput } from './AreaInput';
 import { useAreaMode } from '../context/AreaModeContext';
-import { formatArea, parseArea, sumAreas } from '../logic/area';
+import { formatArea, parseAreaInput, sumAreas } from '../logic/area';
 import { Checkbox } from './Checkbox';
 import { DEFAULT_PERSON_COUNT } from '../logic/billFactory';
 import { unitLabel } from '../logic/building';
@@ -47,7 +47,7 @@ export function liveShares(amountDigits: string, personCounts: string[], method:
     // نفرات در این روش اثری ندارد؛ متراژ همه واحدهای غیرخالی باید معتبر باشد
     if (vacant && personCounts.length > 0 && vacant.slice(0, personCounts.length).filter(Boolean).length >= personCounts.length) return null;
     try {
-      return calculateBySplit(total, personCounts.map(() => 0), method, vacant, personCounts.map((_, i) => parseArea(unitAreas?.[i] ?? null))).shares.map((s) => s.shareAmount);
+      return calculateBySplit(total, personCounts.map(() => 0), method, vacant, personCounts.map((_, i) => parseAreaInput(unitAreas?.[i] ?? ''))).shares.map((s) => s.shareAmount);
     } catch {
       return null;
     }
@@ -111,7 +111,7 @@ export function UnitsEditor({ personCounts, unitAliases, unitVacant, onAdd, onRe
           <span className="units-row__vacant">خالی</span>
           <span className="units-row__count">
             <IconUser size={14} />
-            {areaCol ? 'متراژ (م²)' : perUnit ? 'سهم (هر واحد ۱)' : 'تعداد نفرات'}
+            {areaCol ? 'متراژ' : perUnit ? 'سهم (هر واحد ۱)' : 'تعداد نفرات'}
           </span>
         </div>
         {personCounts.length === 0 && <div className="units-empty">هنوز واحدی اضافه نشده است. با دکمه + واحد اضافه کنید.</div>}
@@ -121,7 +121,7 @@ export function UnitsEditor({ personCounts, unitAliases, unitVacant, onAdd, onRe
           const vacant = unitVacant?.[i] === true;
           const empty = vacant;
           const share = shares ? shares[i] : null;
-          const areaVal = parseArea(unitAreas[i] ?? null);
+          const areaVal = parseAreaInput(unitAreas[i] ?? '');
           const pct = areaVal !== null && totalArea > 0 && !vacant ? Math.round((areaVal / totalArea) * 100) : null;
           return (
             <div className={'units-row' + (vacant ? ' is-empty' : '') + (areaLine ? ' has-line' : '')} key={i}>

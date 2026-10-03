@@ -278,7 +278,7 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
             <thead>
               <tr>
                 <th>واحد</th>
-                {!areaLine && <th>{areaCol ? 'متراژ (م²)' : 'تعداد نفرات'}</th>}
+                {!areaLine && <th>{areaCol ? 'متراژ' : 'تعداد نفرات'}</th>}
                 <th>مبلغ سهم</th>
                 <th>پرداخت</th>
               </tr>

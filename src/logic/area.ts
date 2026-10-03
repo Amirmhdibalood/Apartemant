@@ -24,6 +24,9 @@ export function sanitizeAreaInput(input: string): string {
   return (intPart === '' ? '0' : intPart) + '.' + frac;
 }
 
+/** متراژ پیش‌فرض واحد: برای واحد جدید و وقتی خالی است (تا «بر اساس متراژ» به‌ندرت مسدود شود) */
+export const DEFAULT_AREA = 1;
+
 /** مقدار معتبر متراژ (عدد مثبت، حداکثر ۳ رقم اعشار، ≤ MAX_AREA)؛ در غیر این صورت null */
 export function parseArea(input: unknown): number | null {
   let n: number;
@@ -38,6 +41,12 @@ export function parseArea(input: unknown): number | null {
   const milli = Math.round(n * AREA_SCALE);
   if (milli <= 0 || Math.abs(n * AREA_SCALE - milli) > 1e-6) return null; // بیش از ۳ رقم اعشار
   return milli / AREA_SCALE;
+}
+
+/** متن ورودی فرم/تنظیمات: خالی ← متراژ پیش‌فرض (۱)، وگرنه parseArea (نامعتبر ← null) */
+export function parseAreaInput(input: unknown): number | null {
+  if (typeof input === 'string' && input.trim() === '') return DEFAULT_AREA;
+  return parseArea(input);
 }
 
 /** متراژ ← عدد صحیح (هزارم مترمربع) برای محاسبه */
@@ -63,18 +72,18 @@ export function sumAreas(areas: (string | number | null | undefined)[], vacant?:
   let milli = 0;
   areas.forEach((a, i) => {
     if (vacant?.[i]) return;
-    const p = parseArea(a ?? null);
+    const p = parseAreaInput(a ?? null);
     if (p !== null) milli += areaToMilli(p);
   });
   return milli / AREA_SCALE;
 }
 
-/** شماره‌های (۱-مبنا) واحدهای غیرخالی که متراژ معتبر ندارند */
+/** شماره‌های (۱-مبنا) واحدهای غیرخالی که متراژ نامعتبر دارند (خالی = متراژ پیش‌فرض ۱، مسدودکننده نیست) */
 export function unitsMissingArea(areas: (string | number | null | undefined)[], vacant: boolean[] | undefined, count: number): number[] {
   const out: number[] = [];
   for (let i = 0; i < count; i++) {
     if (vacant?.[i]) continue;
-    if (parseArea(areas[i] ?? null) === null) out.push(i + 1);
+    if (parseAreaInput(areas[i] ?? '') === null) out.push(i + 1);
   }
   return out;
 }

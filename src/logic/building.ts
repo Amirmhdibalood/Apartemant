@@ -12,7 +12,7 @@ import type { BillWithUnits, BuildingSettings, BuildingUnit } from '../models/ty
 import { toPersianDigits } from './formatting';
 import { remainingAmount } from './payments';
 import { sanitizeUnitTemplate } from './unitTemplate';
-import { areaToInput, parseArea } from './area';
+import { areaToInput, DEFAULT_AREA, parseArea, parseAreaInput } from './area';
 
 export const MAX_BUILDING_UNITS = 500;
 export const MAX_ALIAS_LENGTH = 40;
@@ -40,7 +40,7 @@ export function unitShortLabel(unitNumber: number, alias?: string | null): strin
 }
 
 export function newBuildingUnit(): BuildingUnit {
-  return { alias: null, defaultPersons: DEFAULT_UNIT_PERSONS };
+  return { alias: null, defaultPersons: DEFAULT_UNIT_PERSONS, area: DEFAULT_AREA };
 }
 
 /**
@@ -51,6 +51,7 @@ function makeUnit(alias: string | null, persons: number, vacant: boolean, area?:
   const isVacant = vacant || persons === 0;
   const unit: BuildingUnit = { alias, defaultPersons: persons === 0 ? DEFAULT_UNIT_PERSONS : persons };
   if (isVacant) unit.vacant = true;
+  // تنظیمات/پشتیبان قدیمی بدون متراژ دست‌نخورده می‌ماند (مهاجرت بی‌خطر)؛ پیش‌فرض ۱ هنگام نمایش/ساخت فرم اعمال می‌شود
   const a = parseArea(area ?? null);
   if (a !== null) unit.area = a;
   return unit;
@@ -122,7 +123,7 @@ export function draftUnitsFromBuilding(b: BuildingSettings): { personCounts: str
     // واحدهای «خالی» در فرم قبض جدید از پیش کنار گذاشته می‌شوند (در همان قبض می‌توان تغییرشان داد)
     unitVacant: b.units.map((u) => u.vacant === true),
     // متراژ پیش‌فرض (در همان قبض قابل ویرایش)
-    unitAreas: b.units.map((u) => areaToInput(u.area)),
+    unitAreas: b.units.map((u) => areaToInput(u.area ?? DEFAULT_AREA)),
   };
 }
 
@@ -133,7 +134,7 @@ export function buildingFromDraftUnits(personCounts: string[], unitAliases?: (st
     units: personCounts.map((raw, i) => {
       const t = (raw ?? '').trim();
       const n = /^\d+$/.test(t) ? Number(t) : DEFAULT_UNIT_PERSONS;
-      return makeUnit(sanitizeAlias(unitAliases?.[i]), Math.min(n, MAX_DEFAULT_PERSONS), unitVacant?.[i] === true, unitAreas?.[i]);
+      return makeUnit(sanitizeAlias(unitAliases?.[i]), Math.min(n, MAX_DEFAULT_PERSONS), unitVacant?.[i] === true, unitAreas?.[i] === undefined ? undefined : parseAreaInput(unitAreas[i]) ?? DEFAULT_AREA);
     }),
   };
 }
@@ -145,7 +146,7 @@ export function draftMatchesBuilding(personCounts: string[], unitAliases: (strin
     (personCounts[i] ?? '').trim() === String(u.defaultPersons)
     && sanitizeAlias(unitAliases?.[i]) === u.alias
     && (unitVacant?.[i] === true) === (u.vacant === true)
-    && parseArea(unitAreas?.[i] ?? null) === (u.area ?? null));
+    && (parseAreaInput(unitAreas?.[i] ?? '') ?? -1) === (u.area ?? DEFAULT_AREA));
 }
 
 export interface RemovedUnitDebt {

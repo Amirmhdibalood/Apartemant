@@ -10,19 +10,18 @@ import { Errors } from '../logic/errors';
 import { confirmUnitReduction } from './confirmUnitReduction';
 import { AreaInput } from './AreaInput';
 import { useAreaMode } from '../context/AreaModeContext';
-import { areaToInput, parseArea } from '../logic/area';
+import { areaToInput, DEFAULT_AREA, parseArea } from '../logic/area';
 
 interface Row { alias: string; persons: string; vacant: boolean; area: string }
 
-const toRows = (b: BuildingSettings): Row[] => b.units.map((u) => ({ alias: u.alias ?? '', persons: String(u.defaultPersons), vacant: u.vacant === true, area: areaToInput(u.area) }));
+const toRows = (b: BuildingSettings): Row[] => b.units.map((u) => ({ alias: u.alias ?? '', persons: String(u.defaultPersons), vacant: u.vacant === true, area: areaToInput(u.area ?? DEFAULT_AREA) }));
 const fromRows = (rows: Row[], prev: BuildingSettings | null): BuildingSettings => ({
   units: rows.map((r, i) => {
     // نفرات خالی یا ۰ (در حال تایپ) = مقدار قبلی ذخیره‌شده، وگرنه ۱
     const typed = /^\d+$/.test(r.persons.trim()) ? Number(r.persons.trim()) : 0;
     const unit: BuildingUnit = { alias: sanitizeAlias(r.alias), defaultPersons: typed >= 1 ? typed : prev?.units[i]?.defaultPersons || 1 };
     if (r.vacant) unit.vacant = true;
-    const area = parseArea(r.area);
-    if (area !== null) unit.area = area;
+    unit.area = parseArea(r.area) ?? DEFAULT_AREA; // خالی/نامعتبر ← پیش‌فرض ۱
     return unit;
   }),
 });
@@ -129,7 +128,7 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
           <span>واحد</span>
           <span>اسم مستعار (اختیاری)</span>
           <span className="building-unit__persons-h"><IconUser size={13} /> نفرات</span>
-          {areaMode === 'column' && <span className="building-unit__persons-h">متراژ (م²)</span>}
+          {areaMode === 'column' && <span className="building-unit__persons-h">متراژ</span>}
           <span className="building-unit__vacant-h">خالی</span>
         </div>
         {rows.map((r, i) => (
@@ -173,7 +172,7 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
                 value={r.area}
                 ariaLabel={`متراژ واحد ${toPersianDigits(i + 1)}`}
                 onChange={(v) => update(rows.map((x, j) => (j === i ? { ...x, area: v } : x)))}
-                onBlur={() => update(rows, true)}
+                onBlur={(v) => update(rows.map((x, j) => (j === i ? { ...x, area: v } : x)), true)}
               />
             )}
             <span className="building-unit__vacant">
@@ -185,10 +184,9 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
                 <AreaInput
                   id={`bu-area-${i}`}
                   value={r.area}
-                  placeholder="مثلاً ۷۵٫۵"
                   ariaLabel={`متراژ واحد ${toPersianDigits(i + 1)}`}
                   onChange={(v) => update(rows.map((x, j) => (j === i ? { ...x, area: v } : x)))}
-                  onBlur={() => update(rows, true)}
+                  onBlur={(v) => update(rows.map((x, j) => (j === i ? { ...x, area: v } : x)), true)}
                 />
                 <span className="area-unit">مترمربع</span>
               </span>
@@ -196,7 +194,7 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
           </div>
         ))}
       </div>
-      <p className="building-note-small">متراژ (اختیاری، اعشار مجاز مثل ۷۵٫۵) فقط برای تقسیم «بر اساس متراژ» لازم است و در فرم قبض پیش‌فرض می‌شود؛ ظاهر آن را در «نحوه نمایش متراژ» پایین‌تر انتخاب کنید.</p>
+      <p className="building-note-small">متراژ (اعشار مجاز مثل ۷۵٫۵؛ پیش‌فرض هر واحد ۱) فقط برای تقسیم «بر اساس متراژ» به‌کار می‌رود و در فرم قبض پیش‌فرض می‌شود؛ ظاهر آن را در «نحوه نمایش متراژ» پایین‌تر انتخاب کنید.</p>
       <p className="building-note-small">واحد «خالی» در قبض‌های جدید از محاسبه کنار گذاشته می‌شود (در هیچ‌کدام از دو روش تقسیم سهمی ندارد و در بدهکاران نمی‌آید)؛ در فرم قبض می‌توانید برای همان قبض تغییرش دهید. نام واحد بدون اسم مستعار: «واحد ۱»، «واحد ۲»، ...</p>
     </section>
   );

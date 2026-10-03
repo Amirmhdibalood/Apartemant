@@ -230,7 +230,7 @@ function paint(ctx: CanvasRenderingContext2D, m: BillImageModel, a: Assets, draw
   // با اسم مستعار، ستون واحد پهن‌تر می‌شود (برچسب‌های بلند با «…» کوتاه می‌شوند)
   const cols: Col[] = [{ key: 'unit', title: 'واحد', w: m.hasAliases ? 2.6 : 1 }];
   if (m.showOccupants) cols.push({ key: 'occupants', title: 'نفرات', w: 1 });
-  if (m.showArea) cols.push({ key: 'area', title: 'متراژ (م²)', w: 1.3 });
+  if (m.showArea) cols.push({ key: 'area', title: 'متراژ', w: 1.3 });
   cols.push({ key: 'share', title: 'سهم (تومان)', w: 2 });
   if (m.showStatus) cols.push({ key: 'status', title: 'وضعیت', w: 2 });
   const totalW = cols.reduce((s, c) => s + c.w, 0);

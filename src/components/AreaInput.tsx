@@ -1,9 +1,10 @@
-import { sanitizeAreaInput } from '../logic/area';
+import { DEFAULT_AREA, parseArea, sanitizeAreaInput } from '../logic/area';
 
 interface Props {
   value: string;
   onChange: (v: string) => void;
-  onBlur?: () => void;
+  /** بعد از پایان ویرایش، با مقدار نهایی (نقطهٔ آخر حذف؛ خالی/نامعتبر ← متراژ پیش‌فرض ۱) */
+  onBlur?: (finalValue: string) => void;
   ariaLabel: string;
   id?: string;
   className?: string;
@@ -13,7 +14,7 @@ interface Props {
 }
 
 /** ورودی متراژ (مترمربع، اعشار مجاز تا ۳ رقم): type=text + inputMode=decimal؛ ارقام فارسی و «٫» هنگام تایپ نرمال می‌شوند */
-export function AreaInput({ value, onChange, onBlur, ariaLabel, id, className = '', disabled, invalid, placeholder = '—' }: Props) {
+export function AreaInput({ value, onChange, onBlur, ariaLabel, id, className = '', disabled, invalid, placeholder = '۱' }: Props) {
   return (
     <input
       id={id}
@@ -28,7 +29,12 @@ export function AreaInput({ value, onChange, onBlur, ariaLabel, id, className = 
       aria-label={ariaLabel}
       value={value}
       onChange={(e) => onChange(sanitizeAreaInput(e.target.value))}
-      onBlur={() => { if (value.endsWith('.')) onChange(value.slice(0, -1)); onBlur?.(); }}
+      onBlur={() => {
+        let v = value.endsWith('.') ? value.slice(0, -1) : value;
+        if (parseArea(v) === null) v = String(DEFAULT_AREA);
+        if (v !== value) onChange(v);
+        onBlur?.(v);
+      }}
     />
   );
 }
