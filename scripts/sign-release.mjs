@@ -6,7 +6,7 @@
  *   ANDROID_KEYSTORE_PATH      مسیر فایل keystore (.jks)
  *   ANDROID_KEYSTORE_PASSWORD  رمز keystore
  *   ANDROID_KEY_ALIAS          نام کلید (alias)
- *   ANDROID_KEY_PASSWORD       رمز کلید (اختیاری؛ پیش‌فرض = رمز keystore)
+ *   ANDROID_KEY_PASSWORD       رمز کلید (اختیاری؛ PKCS12 = همان رمز keystore، پیش‌فرض)
  * مسیر SDK از ANDROID_HOME / ANDROID_SDK_ROOT / android/local.properties / مسیر پیش‌فرض ویندوز پیدا می‌شود.
  *
  * اجرا:  node scripts/sign-release.mjs [--in <unsigned.apk>] [--out <signed.apk>]

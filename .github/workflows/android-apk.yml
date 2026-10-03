@@ -2,7 +2,8 @@
 # خروجی‌ها (صفحه Actions → Run → Artifacts):
 #   building-charge-debug-apk   ← همیشه
 #   apartemant-release-apk      ← فقط اگر Secretهای کلید امضا تعریف شده باشند:
-#     ANDROID_KEYSTORE_BASE64 (محتوای فایل jks به base64)، ANDROID_KEYSTORE_PASSWORD، ANDROID_KEY_ALIAS، ANDROID_KEY_PASSWORD
+#     ANDROID_KEYSTORE_BASE64 (محتوای فایل amb632-release.jks به base64)، ANDROID_KEYSTORE_PASSWORD،
+#     ANDROID_KEY_ALIAS (= amb632)، ANDROID_KEY_PASSWORD (همان رمز keystore)
 name: Build Android APK
 
 on:

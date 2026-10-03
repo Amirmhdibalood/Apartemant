@@ -161,10 +161,10 @@ npm run preview  REM اجرای نسخه build شده
 
    | نام Secret | مقدار |
    | --- | --- |
-   | `ANDROID_KEYSTORE_BASE64` | محتوای فایل `apartemant-release.jks` به صورت base64 — در PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("D:\keys\apartemant-release.jks")) \| Set-Clipboard` |
+   | `ANDROID_KEYSTORE_BASE64` | محتوای فایل `amb632-release.jks` به صورت base64 — در PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("D:\keys\amb632-release.jks")) \| Set-Clipboard` |
    | `ANDROID_KEYSTORE_PASSWORD` | رمز keystore |
-   | `ANDROID_KEY_ALIAS` | `apartemant` |
-   | `ANDROID_KEY_PASSWORD` | رمز کلید (برای این keystore همان رمز keystore) |
+   | `ANDROID_KEY_ALIAS` | `amb632` |
+   | `ANDROID_KEY_PASSWORD` | رمز کلید (در قالب PKCS12 **همان رمز keystore** است؛ در `AMB632-KEYSTORE-PASSWORDS.txt` آمده) |
 
    از آن به بعد هر اجرا علاوه بر نسخه دیباگ، Artifact دیگری با نام **apartemant-release-apk** هم می‌سازد. اگر Secretها تعریف نشده باشند، فقط نسخه دیباگ ساخته می‌شود.
 
@@ -173,21 +173,24 @@ npm run preview  REM اجرای نسخه build شده
 ## ۶) نسخه Release امضاشده، نسخه‌گذاری و انتشار در مایکت
 
 ### کلید امضا (keystore) — مهم‌ترین فایل پروژه
-- نسخه Release با یک کلید خصوصی ثابت امضا می‌شود: فایل **`apartemant-release.jks`** (alias: `apartemant`) که رمزهایش در فایل
-  **`KEYSTORE-PASSWORDS.txt`** کنار آن آمده است. این دو فایل جدا از پروژه تحویل داده می‌شوند و **عمداً در git و zip پروژه نیستند**
+- نسخه Release با یک کلید خصوصی ثابت امضا می‌شود: فایل **`amb632-release.jks`** (alias: `amb632`، PKCS12، RSA 4096، SHA256withRSA، اعتبار ۱۰۰۰۰ روز،
+  مشخصات گواهی: `CN=AmirMahdi Balood, OU=AMB632, O=AMB632, L=Tehran, ST=Tehran, C=IR`) که رمزهایش در فایل
+  **`AMB632-KEYSTORE-PASSWORDS.txt`** کنار آن آمده است. اثر انگشت SHA-256 گواهی: `E3:45:78:8B:D0:44:5F:61:28:67:1C:08:77:12:38:B8:F6:87:ED:C7:1B:BE:DD:7F:85:C9:9C:8F:03:99:77:15`.
+  از نسخه **۱.۶.۱** این کلید جدید جایگزین کلید قدیمی (`apartemant-release.jks` با گواهی `CN=Touraj Msky, O=RDST`، که فایل‌هایش در `keystore/old-rdst/` نگه داشته شده) شده است؛
+  چون اندروید نسخه امضاشده با کلید دیگر را روی نسخه قبلی نصب نمی‌کند، روی گوشی‌ای که نسخه‌های ≤ ۱.۶.۰ نصب است باید **اول پشتیبان بگیرید، برنامه را حذف کنید و بعد ۱.۶.۱ را نصب کنید و پشتیبان را بازیابی کنید**. این دو فایل جدا از پروژه تحویل داده می‌شوند و **عمداً در git و zip پروژه نیستند**
   (در `.gitignore` قوانین `keystore/`، `*.jks`، `*.keystore`، `keystore.properties` و ... اضافه شده است).
 - مایکت (و اندروید) فقط به‌روزرسانی‌ای را می‌پذیرد که **با همان کلید** امضا شده باشد.
   > ⚠️ **اگر keystore یا رمز آن گم شود، انتشار به‌روزرسانی برای برنامه فعلی دیگر ممکن نیست**؛ کاربران باید برنامه را حذف و نسخه جدید (با شناسه/کلید جدید) را نصب کنند.
-  > از `apartemant-release.jks` و `KEYSTORE-PASSWORDS.txt` حداقل **دو نسخه پشتیبان** در جاهای جدا نگه دارید (مثلاً فلش/هارد خارجی + یک فضای ابری رمزدار) و هرگز آن‌ها را در گیت، تلگرام عمومی یا ایمیل رمزنشده نگذارید.
+  > از `amb632-release.jks` و `AMB632-KEYSTORE-PASSWORDS.txt` حداقل **دو نسخه پشتیبان** در جاهای جدا نگه دارید (مثلاً فلش/هارد خارجی + یک فضای ابری رمزدار) و هرگز آن‌ها را در گیت، تلگرام عمومی یا ایمیل رمزنشده نگذارید.
 
 ### ساخت APK نسخه Release در ویندوز
 در یک Command Prompt (رمزها را جایگزین کنید؛ آن‌ها را داخل فایل‌های پروژه ننویسید):
 ```bat
 cd /d F:\Balood\building-charge
-set ANDROID_KEYSTORE_PATH=D:\keys\apartemant-release.jks
+set ANDROID_KEYSTORE_PATH=D:\keys\amb632-release.jks
 set ANDROID_KEYSTORE_PASSWORD=<رمز keystore>
-set ANDROID_KEY_ALIAS=apartemant
-set ANDROID_KEY_PASSWORD=<رمز کلید>
+set ANDROID_KEY_ALIAS=amb632
+set ANDROID_KEY_PASSWORD=<رمز کلید = همان رمز keystore>
 scripts\build-apk.bat release
 ```
 خروجی: **`apartemant-release.apk`** در پوشه پروژه. این اسکریپت `gradlew assembleRelease` را اجرا می‌کند و سپس
@@ -201,8 +204,8 @@ scripts\build-apk.bat release
 
 ### نسخه‌گذاری (فقط در یک جا: `package.json`)
 ```json
-"version": "1.6.0",
-"versionCode": 8,
+"version": "1.6.1",
+"versionCode": 9,
 ```
 - `version` ← `versionName` اندروید و متن «نسخه ۱.۳.۰» پایین صفحه تنظیمات.
 - `versionCode` ← عدد صحیحی که اندروید و مایکت برای تشخیص نسخه جدیدتر استفاده می‌کنند. **در هر انتشار باید حتماً بیشتر از نسخه قبلی باشد** (۱، ۲، ۳، ...)؛ هرگز کم یا تکراری نشود.
@@ -210,9 +213,9 @@ scripts\build-apk.bat release
 
 ### انتشار به‌روزرسانی در مایکت (قدم‌به‌قدم)
 1. تغییرات کد را انجام دهید و `npm test` را اجرا کنید.
-2. در `package.json` مقدار `version` را بالا ببرید (مثلاً `1.6.0` → `1.6.1` یا `1.7.0`) و `versionCode` را **یک واحد افزایش دهید** (مثلاً `8` → `9`).
-3. با **همان keystore قبلی** نسخه Release بسازید: `scripts\build-apk.bat release` (یا GitHub Actions با Secretها).
-4. (اختیاری) امضا را با `apksigner verify --print-certs` بررسی کنید؛ اثر انگشت SHA-256 گواهی باید با نسخه‌های قبلی یکسان باشد.
+2. در `package.json` مقدار `version` را بالا ببرید (مثلاً `1.6.1` → `1.6.2` یا `1.7.0`) و `versionCode` را **یک واحد افزایش دهید** (مثلاً `9` → `10`).
+3. با **همان keystore (`amb632-release.jks`)** نسخه Release بسازید: `scripts\build-apk.bat release` (یا GitHub Actions با Secretها).
+4. (اختیاری) امضا را با `apksigner verify --print-certs` بررسی کنید؛ اثر انگشت SHA-256 گواهی باید `e345788b…03997715` (همان نسخه ۱.۶.۱) باشد.
 5. در پنل توسعه‌دهندگان مایکت (myket.ir) وارد صفحه برنامه شوید، بخش **نسخه جدید / بارگذاری APK** را انتخاب و `apartemant-release.apk` را بارگذاری کنید،
    تغییرات نسخه را به فارسی بنویسید و برای بررسی ارسال کنید.
 6. تغییرات را در git ثبت کنید (مثلاً `git commit -am "v1.0.1"` و یک tag مثل `v1.0.1`).
@@ -512,6 +515,9 @@ npm run branding:generate
 
 ## تاریخچه نسخه‌ها
 
+- **۱.۶.۱** (versionCode 9): کد برنامه دقیقاً همان ۱.۶.۰ است؛ فقط **کلید امضای Release عوض شد** (کلید شخصی جدید `amb632-release.jks`، SHA-256 گواهی `e345788b…03997715`)،
+  چون نسخه قبلی هیچ‌جا منتشر نشده بود. برای گوشی‌ای که نسخه قدیمی (امضاشده با کلید قبلی) روی آن نصب است: اول از «تنظیمات ← پشتیبان‌گیری» نسخه پشتیبان بگیرید،
+  برنامه را حذف کنید، ۱.۶.۱ را نصب کنید و پشتیبان را بازیابی کنید. همچنان **بدون هیچ مجوزی**.
 - **۱.۶.۰** (versionCode 8): بخش **«ساختمان»** در تنظیمات (تعداد واحدها، اسم مستعار و نفرات پیش‌فرض هر واحد)؛ فرم قبض جدید خودکار از آن پر می‌شود
   (افزودن/حذف واحد و تغییر نفرات مثل قبل فقط برای همان قبض + «ذخیره به‌عنوان پیش‌فرض» / «پیش‌فرض ساختمان»)؛ سهم زنده هر واحد در فرم؛
   **واحد خالی** (۰ نفر = بدون سهم)؛ هر قبض عکس لحظه‌ای واحدهایش (شماره، اسم، نفرات، سهم) را نگه می‌دارد؛ اسم‌ها در جزئیات قبض، تصویر قبض،

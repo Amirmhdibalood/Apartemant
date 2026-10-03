@@ -4,10 +4,10 @@ REM اجرا از پوشه پروژه:
 REM   scripts\build-apk.bat            => APK دیباگ (app-debug.apk)
 REM   scripts\build-apk.bat release    => APK نسخه Release امضاشده (apartemant-release.apk)
 REM برای release قبل از اجرا این متغیرها را تنظیم کنید (رمزها را در فایل‌های پروژه ننویسید):
-REM   set ANDROID_KEYSTORE_PATH=D:\keys\apartemant-release.jks
+REM   set ANDROID_KEYSTORE_PATH=D:\keys\amb632-release.jks
 REM   set ANDROID_KEYSTORE_PASSWORD=...
-REM   set ANDROID_KEY_ALIAS=apartemant
-REM   set ANDROID_KEY_PASSWORD=...        (اختیاری؛ پیش‌فرض همان رمز keystore)
+REM   set ANDROID_KEY_ALIAS=amb632
+REM   set ANDROID_KEY_PASSWORD=...        (اختیاری؛ برای amb632-release.jks همان رمز keystore است)
 setlocal
 cd /d "%~dp0\.."
 
