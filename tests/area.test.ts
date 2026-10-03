@@ -296,7 +296,7 @@ describe('تصویر قبض', () => {
   it('واحد خالی و متراژ اعشاری', () => {
     const d: BillWithUnits = { bill: { ...bill, totalAmount: 600_000 }, units: [mk(1, 1, 75.5, 300_000), mk(2, 1, 99, 0, true), mk(3, 1, 75.5, 300_000)] };
     const m = buildBillImageModel(d);
-    expect(m.rows.map((r) => r.area)).toEqual(['۷۵٫۵', '—', '۷۵٫۵']);
+    expect(m.rows.map((r) => r.area)).toEqual(['۷۵٫۵', 'خالی', '۷۵٫۵']);
     expect(m.totalArea).toBe('۱۵۱');
   });
 

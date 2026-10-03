@@ -10,6 +10,7 @@
       try {
         var d = window.matchMedia('(prefers-color-scheme: dark)').matches;
         document.documentElement.dataset.theme = d ? 'dark' : 'light';
+        document.documentElement.dataset.palette = 'navy';
         if (d) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d121f');
       } catch (e) {}
     </script>

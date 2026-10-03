@@ -1,6 +1,6 @@
 # Full project briefing for "Apartemant" (for any AI coding assistant)
 
-> Describes the project up to **v1.6.11 (versionCode 19)**. It contains no passwords, tokens or keys. (Persian original: `PROJECT-PROMPT-fa.md`.)
+> Describes the project up to **v1.6.12 (versionCode 20)**. It contains no passwords, tokens or keys. (Persian original: `PROJECT-PROMPT-fa.md`.)
 
 ## 1) Purpose and user
 "آپارتمانت" (Apartemant; package id `ir.buildingcharge.app`) is a **fully offline, Persian (RTL) Android app** for a **building manager**. It records shared bills (water, electricity, gas, building charge, cleaning, repairs, beautification, misc), splits each one fairly across the units, tracks every unit's payments, and reports (yearly costs, debtors, per-unit payment history, bill-payment timing). A bill can be shared as an image (e.g. to the building's Telegram group). It requests **no Android permissions at all** (not even internet), has no accounts and no server; all data lives on the phone and moves between phones via a JSON backup file.
@@ -10,7 +10,7 @@ The user (Raidana System / developer AmirMahdi Balood) speaks Persian and cares 
 - React 19 + TypeScript 5.9 + Vite 8, no UI library, no router (stack navigation in `src/navigation.ts` and `App.tsx`).
 - Capacitor 8 (Android); plugins `app`, `filesystem`, `preferences`, `share`, `splash-screen`. Key/value storage via `@capacitor/preferences` behind `src/storage/kvStore.ts`; in a browser it falls back to `localStorage` with prefix `bc.`.
 - Vazirmatn font bundled in the APK; own Jalali (Persian) calendar implementation (`src/logic/jalali.ts`).
-- Tests: Vitest 5 (`npm test`), node environment, no jsdom (components are tested with `renderToStaticMarkup`). **331 tests in 33 files** as of 1.6.11 + QA.
+- Tests: Vitest 5 (`npm test`), node environment, no jsdom (components are tested with `renderToStaticMarkup`). **375 tests in 35 files** (1.6.12).
 - Android: minSdk 24, **compileSdk 36, targetSdk 36**, no minification, Node ≥ 22.12, JDK 21.
 
 ## 3) Repository layout (only the `app/` folder is under git)
@@ -38,7 +38,7 @@ Outside the repo (in `/workspace/building-charge`): `SPEC-fa.md` (per-version sp
 - **Bill**: `id, year (Jalali), month (1..12), expenseType, billNumber?, description?, totalAmount (integer toman), createdAt (ISO), isFullySettled, splitMethod? ('perPerson'|'perUnit'|'perArea'; absent = perPerson), billPaid?, billPaidDate? ('1405-07-15'), dueDate? (Jalali), deletedAt? (soft delete)`.
 - **Unit** (one unit's share in one bill — a per-bill snapshot): `id, billId, unitNumber, personCount (0 = vacant), alias?, vacant?, area? (m², up to 3 decimals, area bills only), shareAmount, isSettled (always derived from the remaining amount), payments? [{id, amount, paidAt|null}]`. A legacy unit with only `isSettled=true` means one full payment with unknown date.
 - **Building settings** (`building`): `units[{alias, defaultPersons, vacant?, area?}]`; pre-fills the new-bill form; changing it affects **only future bills** (saved bills keep their own snapshot).
-- **kvStore keys**: `bills, units, schemaVersion (=2), settings (activeYears, showSaveWarning, dismissedWarnings), building, splitDefaults (last method per type), theme, tutorialSeen, areaMode, notifMode, unitIcon, areaIcon, entryPrefs, lastBackupAt, safetyBackup`. Only bills/units/settings/building/splitDefaults go into backups; **appearance prefs and `entryPrefs` are deliberately outside backups**.
+- **kvStore keys**: `bills, units, schemaVersion (=2), settings (activeYears, showSaveWarning, dismissedWarnings), building, splitDefaults (last method per type), theme, darkPalette, tutorialSeen, areaMode, notifMode, unitIcon, areaIcon, entryPrefs, lastBackupAt, safetyBackup`. Only bills/units/settings/building/splitDefaults go into backups; **appearance prefs (theme, dark palette, icons, …) and `entryPrefs` are deliberately outside backups**.
 
 ## 5) Backup format (`apartemant-backup-YYYY-MM-DD.json`, `src/logic/backup.ts`)
 `{app:"apartemant", backupVersion, appVersion, createdAt, data:{bills, units, settings, building?, splitDefaults?}}` — current **version 7**; versions 1–7 are restorable, newer ones are rejected.
@@ -46,7 +46,7 @@ v1 (1.1) base • v2 (1.2) `payments` + `unitTemplate` • v3 (1.3) `splitMethod
 Strict validation on restore: structure, duplicate ids, **per-bill share sum = bill total**, payments ≤ share, area present for area bills, max 20 MB. Restore first takes a safety copy of the current state (undoable). The "backup succeeded" message appears only when the share sheet actually reached a target / the file was written with the expected size (`backupExport.ts`).
 
 ## 6) Exact calculation rules (the heart of the app; `calculation.ts`, `split.ts`, `area.ts`)
-**Weight per unit** (a vacant unit has weight 0 in all three methods: share 0, debt 0, and it never receives a leftover toman):
+**Weight per unit** (a vacant unit counts neither as a unit nor its occupants — in every count and calculation: bill image, "N of M units settled", the "Units (N)" title, debtors/history; tables and the bill image print "خالی" (Vacant) instead of the occupant count or area — `src/logic/vacant.ts`; it has weight 0 in all three methods: share 0, debt 0, and it never receives a leftover toman):
 - per person: `w = personCount`; per unit: `w = 1` (real persons are still stored); per area: `w = round(area × 1000)` (integer thousandths of m²; missing area on a non-vacant unit = default 1; invalid such as 0 blocks saving).
 **Largest-remainder (Hamilton) method in BigInt** for total `T` (positive safe integer) and `W = Σ w`:
 1. `base_i = ⌊T·w_i / W⌋`, `frac_i = (T·w_i) mod W`.
@@ -64,15 +64,15 @@ Limitation: aggregate sums beyond `Number.MAX_SAFE_INTEGER` (≈ 9 quadrillion t
 - **Everything Persian and RTL** (`body{direction:rtl}`), Persian digits for display, "٬" thousands separator; short, fluent copy.
 - Mobile layout (max 520px), **no horizontal scrolling at all** (`html{overflow-x:hidden}`, `body,#root{overflow-x:clip}`, `touch-action:pan-y`); verify at 360 and 390px (`scrollWidth === clientWidth`).
 - **Shared header** (`AppHeader`): on screen, left→right: **back, theme toggle, "?" help, bell**; the DOM order is reversed because of RTL; the grid is `auto 1fr auto`. Home has no back: theme, "?", bell. The notification panel anchors under the real bell (`popoverAnchor`) or falls back to a bottom sheet.
-- **Theme**: the light theme lives in `global.css` (CSS variables); the **dark theme is generated**: `npm run theme:generate` → `dark.generated.css` (via `darkColor.ts`); only special cases go in manual `dark.css`. Any change to `global.css` requires re-running it (a test enforces sync). First launch follows `prefers-color-scheme`. Exported bill images are always light. Four other dark palettes sit in `docs/theme-ideas` (only option 2, deep navy `#0d121f` / card `#151e33`, ships). Water colour: `#14307A` (light) / `#B6D4FF` (dark).
+- **Theme**: the light theme lives in `global.css` (CSS variables); the **dark theme is generated and parameterised (since 1.6.12)**: palettes live in `src/logic/darkPalettes.ts` (bg/card lightness, neutral hue, text saturation, accent hue and per-palette "manual" colours), colour mapping in `darkColor.ts`, and `npm run theme:generate` writes `dark.generated.css`: the default palette (deep navy) under `:root[data-theme="dark"]`, every other palette as a diff only under `:root[data-theme="dark"][data-palette="…"]`; night intro art is generated per palette too. Manual rules in `dark.css` use palette variables only (`--primary-fill`, `--sw-off-bg`, …) with a `[data-palette]` selector. Any change to `global.css` or the palettes requires re-running it (tests enforce sync and per-palette contrast). The 4 palettes: **Deep navy** (default), **Neutral charcoal**, **AMOLED black**, **Warm brown** (teal accent). `ThemeProvider` applies `theme` + `palette` to `<html data-theme data-palette>`, the meta colour and the status-bar style; first launch follows `prefers-color-scheme`. Exported bill images are always light. Components with inline colours must take `palette` from `useTheme()/useAdapt()`. Water colour: `#14307A` (light) / `#B6D4FF` (dark, navy palette).
 - Month/year/date/filters use the unified `OptionPicker` bottom sheet (no native `<select>`). Expense types are coloured 3-per-row tiles.
-- **Settings** (all accordions, collapsed by default, state per session only): 1) Years 2) Building (unit count, alias, persons, vacant, area) 3) Bill types and calculation methods 4) Appearance (area display mode, unit icon, area icon, notification display) 5) Alerts 6) Backup & restore; version/developer lines stay visible below. The theme is toggled from the header, not Settings.
+- **Settings** (all accordions, collapsed by default, state per session only): 1) Years 2) Building (unit count, alias, persons, vacant, area) 3) Bill types and calculation methods 4) Appearance (**Theme** [1.6.12: collapsible "Dark" with 4 palettes + "Light" with a "soon" pill], area display mode, unit icon, area icon, notification display) 5) Alerts 6) Backup & restore; version/developer lines stay visible below. Light/dark can be switched from the header button and from the "Theme" group (kept in sync).
 - A first-run tutorial, re-openable via "?".
 
-## 8) Feature history (1.0 → 1.6.11)
+## 8) Feature history (1.0 → 1.6.12)
 - **1.0.0** bill entry, per-person split with largest remainder • **1.1.0** backup/restore • **1.2.0** reports, partial payments, remembered units, 3 new types (backup v2) • **1.3.0** per-unit split, internet permission removed (v3) • **1.4.0** shareable bill image, edge-to-edge.
 - **1.5.0** "bill paid", due dates, status colours, filters, soft delete, bill-payments report (v4) • **1.5.1** system notifications and all permissions removed; in-app alert card.
-- **1.6.0** Building settings, alias, vacant units, snapshots (v5) • **1.6.1** new personal signing key • **1.6.2** unified pickers • **1.6.3** first-run tutorial, "?", dark mode, vacant flag (v6) • **1.6.4** water colour, notification centre (bell), payment-status filter • **1.6.5** per-area split (3-decimal areas), area display mode (v7) • **1.6.6** honest backup message, clearer switches in dark, default area 1 • **1.6.7** selectable unit and area icons • **1.6.8** toggles for bill types and methods (affects reports) • **1.6.9** Settings restructure + "Appearance" section + header overflow fix • **1.6.10** accordion Settings, horizontal-scroll fix • **1.6.11** header button order (left→right: back, theme, "?", bell) and bell panel anchor.
+- **1.6.0** Building settings, alias, vacant units, snapshots (v5) • **1.6.1** new personal signing key • **1.6.2** unified pickers • **1.6.3** first-run tutorial, "?", dark mode, vacant flag (v6) • **1.6.4** water colour, notification centre (bell), payment-status filter • **1.6.5** per-area split (3-decimal areas), area display mode (v7) • **1.6.6** honest backup message, clearer switches in dark, default area 1 • **1.6.7** selectable unit and area icons • **1.6.8** toggles for bill types and methods (affects reports) • **1.6.9** Settings restructure + "Appearance" section + header overflow fix • **1.6.10** accordion Settings, horizontal-scroll fix • **1.6.11** header button order (left→right: back, theme, "?", bell) and bell panel anchor • **1.6.12** "Theme" group (4 dark palettes, parameterised generator, stored in `darkPalette` outside backups) + vacant-unit fix (counts neither as a unit nor its occupants; "Vacant" instead of a number).
 
 ## 9) Build, sign, release (no secrets)
 1. `npm ci` → `npm run build` (tsc -b + vite build) → `npx cap sync android` (`npm run android:sync`).
@@ -83,7 +83,7 @@ Limitation: aggregate sums beyond `Number.MAX_SAFE_INTEGER` (≈ 9 quadrillion t
 6. GitHub repo `Amirmhdibalood/Apartemant` (branch `main`): local history is merged in a temp clone using `git merge -X ours --allow-unrelated-histories`, trees are compared; never commit APKs, keystores, `node_modules` or secrets. The token is read only from the `GITHUB_TOKEN` environment variable.
 
 ## 10) Tests and quality
-`npm test` (331 tests): split maths, area, validation, payments, reports, backups of every version, generated dark theme, Settings/header layout, and **seeded randomized tests** (`tests/qaRandom.test.ts`: 2000+ split cases with invariants, Persian/Arabic digit input, bill build/edit, payments, yearly/debtor reports with soft delete and disabled types, v7 backup round-trip and v1..v6 migration). Every logic change needs tests. UI checks: Playwright scripts with Chrome measuring horizontal overflow at 360/390px. There is no ESLint; typecheck is `tsc -b` inside the build.
+`npm test` (375 tests): split maths, area, validation, payments, reports, backups of every version, generated dark theme, Settings/header layout, and **seeded randomized tests** (`tests/qaRandom.test.ts`: 2000+ split cases with invariants, Persian/Arabic digit input, bill build/edit, payments, yearly/debtor reports with soft delete and disabled types, v7 backup round-trip and v1..v6 migration). Every logic change needs tests. UI checks: Playwright scripts with Chrome measuring horizontal overflow at 360/390px. There is no ESLint; typecheck is `tsc -b` inside the build.
 
 ## 11) Known limitations
 - Android doesn't say whether the target app (e.g. Telegram) finished or cancelled a share; "success" means the share sheet reached a target.
@@ -103,6 +103,6 @@ Limitation: aggregate sums beyond `Number.MAX_SAFE_INTEGER` (≈ 9 quadrillion t
 ## 13) Pending ideas
 - Pie/bar charts in the yearly report (type share, monthly trend).
 - A native file picker for backup restore and direct save into Documents.
-- Multiple themes from `docs/theme-ideas` (neutral charcoal, AMOLED black, warm brown-slate; deep navy is already active).
+- Light-theme variants (the "Light" mode currently carries a "soon" pill) and more dark palettes; the 4 dark palettes shipped in 1.6.12 (original idea: `docs/theme-ideas`).
 - Myket publication (resolve the earlier rejection/key) and Play Protect status; possibly Google Play.
 - Configurable on-time grace period (currently fixed at 7 days), CSV/PDF export of reports.

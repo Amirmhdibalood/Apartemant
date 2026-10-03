@@ -91,7 +91,7 @@ describe('گزارش‌ها و تصویر قبض', () => {
   it('تصویر قبض: وضعیت «خالی»', () => {
     const m = buildBillImageModel(data[0], new Date('2026-09-26T08:00:00Z'));
     expect(m.rows[1].status.text).toBe('خالی');
-    expect(m.rows[1].occupants).toBe('—');
+    expect(m.rows[1].occupants).toBe('خالی');
   });
 });
 

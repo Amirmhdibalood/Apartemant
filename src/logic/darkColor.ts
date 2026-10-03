@@ -7,10 +7,14 @@
  * پس هر دو همیشه یک پالت دارند. پالت: پس‌زمینه #0d121f، کارت #151e33، متن #d2d8e4.
  */
 
+import { DARK_PALETTES, DEFAULT_DARK_PALETTE, PREVIEW_LIGHT_COLORS, type DarkPalette, type DarkPaletteId } from './darkPalettes.ts';
+
 export type RGB = [number, number, number];
 
-/** پارامترهای پالت تاریک (روشنایی HSL پس‌زمینه/کارت و رنگ‌مایه خنثی) */
-export const DARK_PALETTE = { bgL: 0.085, cardL: 0.14, neutralHue: 222, neutralSat: 0.42 } as const;
+/** پارامترهای پالت پیش‌فرض (سرمه‌ای عمیق)؛ پالت‌های دیگر در darkPalettes.ts */
+export const DARK_PALETTE = DARK_PALETTES.navy;
+type PaletteArg = DarkPalette | DarkPaletteId | undefined;
+const pal = (p: PaletteArg): DarkPalette => (typeof p === 'string' ? DARK_PALETTES[p] : p ?? DARK_PALETTES[DEFAULT_DARK_PALETTE]);
 
 export function hexToRgb(hex: string): RGB {
   let h = hex.replace('#', '');
@@ -48,10 +52,11 @@ export function hslToRgb([h0, s, l]: [number, number, number]): RGB {
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 
 /** معادل تاریک یک رنگ (RGB) */
-export function darkRgb(rgb: RGB): RGB {
-  const P = DARK_PALETTE;
+export function darkRgb(rgb: RGB, palette?: PaletteArg): RGB {
+  const P = pal(palette);
   const [h, s, l] = rgbToHsl(rgb);
   const blueish = h >= 195 && h <= 250;
+  const accent = P.accentHue !== null && blueish ? P.accentHue : h; // تأکید پالت جایگزین رنگ‌مایهٔ آبی
   let nh = h, ns = s, nl = l;
   if (l >= 0.995) { // سفید ← کارت
     nh = P.neutralHue; ns = P.neutralSat; nl = P.cardL;
@@ -62,29 +67,38 @@ export function darkRgb(rgb: RGB): RGB {
   } else if (l >= 0.8) { // پس‌زمینه‌های رنگی ملایم (آبی/سبز/قرمز/زرد روشن)
     nl = clamp(0.15 + (1 - l) * 0.35, 0.12, 0.3);
     ns = clamp(s * 0.5, 0.15, 0.55);
+    nh = accent;
   } else if ((l < 0.45 && s < 0.45) || (l < 0.3 && blueish && s < 0.75)) { // متن و آیکون تیره (خاکستری یا سرمه‌ای)
     nl = clamp(0.95 - l * 0.5, 0.62, 0.95);
-    ns = 0.25; nh = P.neutralHue;
+    ns = P.textSat; nh = P.neutralHue;
   } else if (l < 0.5) { // رنگ‌های اشباع تیره (متن خطا/تسویه)
     nl = clamp(l + 0.28, 0.62, 0.76);
+    nh = accent;
   } else if (s < 0.45) { // خاکستری‌های میانی (متن کم‌رنگ، placeholder)
     nl = clamp(0.72 - (l - 0.45) * 0.5, 0.45, 0.72);
-    nh = P.neutralHue; ns = Math.min(s, 0.15);
+    nh = P.neutralHue; ns = Math.min(s, P.greyCap);
   } else { // رنگ‌های برند اشباع
     nl = clamp(l + 0.05, 0.5, 0.7);
+    nh = accent;
+    if (P.accentHue !== null && blueish) { ns = s * 0.72; nl = clamp(l - 0.03, 0.45, 0.62); }
   }
   return hslToRgb([nh, ns, nl]);
 }
 
 /** معادل تاریک یک رنگ هگز (۳ یا ۶ رقمی)؛ ورودی نامعتبر بدون تغییر برمی‌گردد */
-export function darkHex(hex: string): string {
+export function darkHex(hex: string, palette?: PaletteArg): string {
   if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) return hex;
-  return rgbToHex(darkRgb(hexToRgb(hex)));
+  return rgbToHex(darkRgb(hexToRgb(hex), palette));
 }
 
 /** رنگ درون‌خطی متناسب با تم: در حالت روشن همان رنگ، در حالت تاریک معادل تاریک */
-export function adaptColor(hex: string, theme: 'light' | 'dark'): string {
-  return theme === 'dark' ? darkHex(hex) : hex;
+export function adaptColor(hex: string, theme: 'light' | 'dark', palette?: PaletteArg): string {
+  return theme === 'dark' ? darkHex(hex, palette) : hex;
+}
+
+/** شش رنگ پیش‌نمایش پالت (پس‌زمینه، کارت، متن، اصلی، موفق، خطا) از روی همان تبدیل واقعی */
+export function paletteSwatches(palette: PaletteArg): string[] {
+  return PREVIEW_LIGHT_COLORS.map((c) => darkHex(c, palette));
 }
 
 const relLum = ([r, g, b]: RGB) => {
@@ -93,8 +107,8 @@ const relLum = ([r, g, b]: RGB) => {
 };
 
 /** تیره‌ترین‌کردنِ لازم برای خوانایی متن سفید روی زمینه رنگی (کنتراست ≥ ۴٫۶) */
-export function darkRgbForWhiteText(rgb: RGB): RGB {
-  const base = darkRgb(rgb);
+export function darkRgbForWhiteText(rgb: RGB, palette?: PaletteArg): RGB {
+  const base = darkRgb(rgb, palette);
   const [h, s, l0] = rgbToHsl(base);
   if (s < 0.25) return base; // زمینه خنثی تغییری لازم ندارد
   let l = l0, out = base;
@@ -109,8 +123,8 @@ const isShadowLike = (rgb: RGB, alpha: number) => rgbToHsl(rgb)[2] < 0.3 && alph
  * `keepWhite`: برای ویژگی‌هایی مثل color/fill که سفید باید روشن بماند (متن روی دکمه‌های رنگی).
  * سایه‌های تیره (کم‌آلفا) تیره‌تر می‌شوند، نه روشن.
  */
-export function darkenCssValue(value: string, keepWhite = false, onWhiteText = false): string {
-  const map = onWhiteText ? darkRgbForWhiteText : darkRgb;
+export function darkenCssValue(value: string, keepWhite = false, onWhiteText = false, palette?: PaletteArg): string {
+  const map = (rgb: RGB): RGB => (onWhiteText ? darkRgbForWhiteText(rgb, palette) : darkRgb(rgb, palette));
   let out = value.replace(/#([0-9a-fA-F]{6})([0-9a-fA-F]{2})(?![0-9a-fA-F])/g, (_m, hx: string, al: string) => {
     const rgb = hexToRgb(hx);
     const a = parseInt(al, 16) / 255;

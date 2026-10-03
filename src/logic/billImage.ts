@@ -10,6 +10,7 @@ import { paidAmount, remainingAmount } from './payments';
 import { jalaliDateTime, jalaliIsoDate } from './date';
 import { sanitizeAlias, unitShortLabel } from './building';
 import { formatArea, parseArea, sumAreas } from './area';
+import { occupantTotal, occupiedCount, VACANT_LABEL } from './vacant';
 
 export const APP_NAME_FA = 'آپارتمانت';
 
@@ -101,19 +102,21 @@ export function buildBillImageModel({ bill, units }: BillWithUnits, now: Date = 
       unit: toPersianDigits(u.unitNumber),
       alias: sanitizeAlias(u.alias),
       unitLabel: unitShortLabel(u.unitNumber, u.alias),
-      occupants: u.vacant ? '—' : toPersianDigits(u.personCount),
-      area: u.vacant ? '—' : parseArea(u.area ?? null) !== null ? formatArea(u.area as number) : '—',
+      occupants: u.vacant ? VACANT_LABEL : toPersianDigits(u.personCount),
+      area: u.vacant ? VACANT_LABEL : parseArea(u.area ?? null) !== null ? formatArea(u.area as number) : '—',
       share: faAmount(u.shareAmount),
       status,
     };
   });
 
-  const persons = sorted.reduce((s, u) => s + u.personCount, 0);
+  // واحد خالی نه واحد حساب می‌شود نه نفراتش
+  const persons = occupantTotal(sorted);
+  const occupied = occupiedCount(sorted);
   let perShareLine: string | null = null;
   if (method === 'perPerson' && persons > 0) {
     perShareLine = `سهم هر نفر: ${faAmount(Math.round(bill.totalAmount / persons))} ${CURRENCY}`;
-  } else if (method === 'perUnit' && sorted.length > 0) {
-    perShareLine = `سهم هر واحد: ${faAmount(Math.round(bill.totalAmount / sorted.length))} ${CURRENCY}`;
+  } else if (method === 'perUnit' && occupied > 0) {
+    perShareLine = `سهم هر واحد: ${faAmount(Math.round(bill.totalAmount / occupied))} ${CURRENCY}`;
   }
 
   const totalAreaM2 = sumAreas(sorted.map((u) => u.area), sorted.map((u) => u.vacant === true));
@@ -142,7 +145,7 @@ export function buildBillImageModel({ bill, units }: BillWithUnits, now: Date = 
     rows,
     hasAliases: rows.some((r) => r.alias !== null),
     totalPersons: toPersianDigits(persons),
-    unitCount: toPersianDigits(sorted.length),
+    unitCount: toPersianDigits(occupied),
     perShareLine,
     billNumber: bill.billNumber ? toPersianDigits(bill.billNumber) : null,
     description: bill.description?.trim() ? bill.description.trim() : null,

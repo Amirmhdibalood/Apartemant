@@ -22,6 +22,7 @@ import { ExpenseIcon } from '../components/ExpenseIcon';
 import { useIconPrefs } from '../context/IconPrefsContext';
 import { AREA_ICONS, UNIT_ICONS } from '../logic/iconPrefs';
 import { AreaIcon, UnitIcon } from '../components/PrefIcons';
+import { ThemePicker } from '../components/ThemePicker';
 
 /** ۱۵. تنظیمات */
 export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => void; canGoBack: boolean; onHelp?: () => void }) {
@@ -93,6 +94,8 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
 
         <Accordion id="appearance" title="تنظیمات ظاهری" className="appearance-card">
           <p className="card__hint">فقط شکل نمایش را عوض می‌کند؛ روی قبض‌ها و محاسبه‌ها اثری ندارد و در فایل پشتیبان نیست.</p>
+          <ThemePicker />
+
           <div className="settings-group" role="group" aria-labelledby="area-mode-title">
             <h3 className="settings-sub" id="area-mode-title">نحوه نمایش متراژ</h3>
             <p className="card__hint">شکل ورودی و نمایش متراژ واحدها در «ساختمان»، فرم قبض، نتیجه و جزئیات قبض (برای تقسیم «بر اساس متراژ»).</p>

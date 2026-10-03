@@ -19,17 +19,17 @@ export function GlyphSvg({ type, size = 22, color }: { type: ExpenseType; size?:
 }
 
 export function ExpenseGlyph({ type, size = 22 }: { type: ExpenseType; size?: number }) {
-  const { theme } = useTheme();
-  return <GlyphSvg type={type} size={size} color={typeColors(type, theme).color} />;
+  const { theme, palette } = useTheme();
+  return <GlyphSvg type={type} size={size} color={typeColors(type, theme, palette).color} />;
 }
 
 /** دایره رنگی با آیکون نوع هزینه */
 export function ExpenseIcon({ type, size = 44, plain = false }: { type: ExpenseType; size?: number; plain?: boolean }) {
-  const { theme } = useTheme();
+  const { theme, palette } = useTheme();
   return (
     <span
       className="expense-icon"
-      style={{ width: size, height: size, background: plain ? 'transparent' : typeColors(type, theme).iconBg }}
+      style={{ width: size, height: size, background: plain ? 'transparent' : typeColors(type, theme, palette).iconBg }}
     >
       <ExpenseGlyph type={type} size={Math.round(size * (plain ? 0.82 : 0.52))} />
     </span>

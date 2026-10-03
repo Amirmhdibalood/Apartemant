@@ -82,11 +82,13 @@ export function UnitsEditor({ personCounts, unitAliases, unitVacant, onAdd, onRe
   const { unitIcon, areaIcon } = useIconPrefs();
   const totalArea = sumAreas(unitAreas, unitVacant);
   const perUnit = splitMethod === 'perUnit';
+  // واحد خالی نه واحد حساب می‌شود نه نفراتش
+  const activeCount = personCounts.filter((_, i) => unitVacant?.[i] !== true).length;
   const shares = useMemo(() => liveShares(amountDigits, personCounts, splitMethod, unitVacant, unitAreas), [amountDigits, personCounts, splitMethod, unitVacant, unitAreas]);
   return (
     <section className="units">
       <div className="section-head">
-        <h2 className="section-title">واحدها <span className="section-title__count num">({personCounts.length})</span></h2>
+        <h2 className="section-title">واحدها <span className="section-title__count num">({activeCount})</span>{activeCount !== personCounts.length && <span className="section-title__vacant"> + <span className="num">{personCounts.length - activeCount}</span> خالی</span>}</h2>
         <div className="section-head__actions">
           <button
             type="button"
@@ -162,6 +164,7 @@ export function UnitsEditor({ personCounts, unitAliases, unitVacant, onAdd, onRe
                     value={pc}
                     disabled={perUnit || perArea || vacant}
                     showWeight={perUnit && !vacant}
+                    vacant={vacant}
                     onChange={(v) => onChangeCount(i, v)}
                   />
                 )}

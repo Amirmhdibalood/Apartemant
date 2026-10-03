@@ -10,7 +10,7 @@ vi.mock('../src/context/NotifContext', () => ({ useNotif: () => ({ mode: 'sheet'
 vi.mock('../src/context/AreaModeContext', () => ({ useAreaMode: () => ({ areaMode: 'column', setAreaMode: () => undefined }) }));
 vi.mock('../src/context/IconPrefsContext', () => ({ useIconPrefs: () => ({ unitIcon: 'door', areaIcon: 'm2', setUnitIcon: () => undefined, setAreaIcon: () => undefined }) }));
 vi.mock('../src/context/EntryPrefsContext', () => ({ useEntryPrefs: () => ({ prefs: DEFAULT_ENTRY_PREFS, setTypeOn: () => undefined, setMethodOn: () => undefined }) }));
-vi.mock('../src/context/ThemeContext', () => ({ useTheme: () => ({ theme: 'light', toggle: () => undefined }) }));
+vi.mock('../src/context/ThemeContext', () => ({ useTheme: () => ({ theme: 'light', palette: 'navy', toggle: () => undefined, setTheme: () => undefined, setPalette: () => undefined }) }));
 vi.mock('../src/components/AppHeader', () => ({ AppHeader: () => null }));
 vi.mock('../src/components/BuildingSection', () => ({ BuildingSection: () => createElement('div', { className: 'building-card' }, 'محتوای ساختمان') }));
 vi.mock('../src/components/BackupSection', () => ({ BackupSection: () => createElement('div', { className: 'backup-card' }, 'محتوای پشتیبان') }));
@@ -25,13 +25,13 @@ describe('ترتیب و یکدستی صفحهٔ تنظیمات', () => {
   it('ترتیب بخش‌ها: سال‌ها ← ساختمان ← انواع قبض ← تنظیمات ظاهری ← هشدارها ← پشتیبان', () => {
     expect(h2s).toEqual(['سال‌ها', 'ساختمان', 'انواع قبض و روش‌های محاسبه', 'تنظیمات ظاهری', 'هشدارها', 'پشتیبان‌گیری و بازیابی']);
   });
-  it('«تنظیمات ظاهری» چهار زیرگروه دارد: نحوه نمایش متراژ، نماد واحد، نماد متراژ، نحوه نمایش اعلان‌ها', () => {
+  it('«تنظیمات ظاهری» پنج زیرگروه دارد: تم (اول)، نحوه نمایش متراژ، نماد واحد، نماد متراژ، نحوه نمایش اعلان‌ها', () => {
     const a = html.indexOf('data-acc="appearance"');
     const end = html.indexOf('data-acc="warnings"');
     const block = html.slice(a, end);
     const subs = [...block.matchAll(/<h3[^>]*>(.*?)<\/h3>/g)].map((m) => m[1]);
-    expect(subs).toEqual(['نحوه نمایش متراژ', 'نماد واحد', 'نماد متراژ', 'نحوه نمایش اعلان‌ها']);
-    expect(html.match(/class="settings-group"/g)).toHaveLength(4);
+    expect(subs).toEqual(['تم', 'نحوه نمایش متراژ', 'نماد واحد', 'نماد متراژ', 'نحوه نمایش اعلان‌ها']);
+    expect(html.match(/class="settings-group( tp-group)?"/g)).toHaveLength(5);
   });
   it('هیچ‌کدام از انتخاب‌های ظاهری دیگر کارت جداگانه (h2) نیستند', () => {
     for (const t of ['نحوه نمایش متراژ', 'نماد واحد', 'نماد متراژ', 'نحوه نمایش اعلان‌ها']) expect(h2s).not.toContain(t);

@@ -234,7 +234,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
           <div className="prefill-note building-note" role="status">
             <p className="prefill-note__text">
               {matches
-                ? <>واحدها از «تنظیمات ← ساختمان» وارد شد (<span className="num">{building.units.length}</span> واحد).</>
+                ? <>واحدها از «تنظیمات ← ساختمان» وارد شد (<span className="num">{building.units.filter((u) => !u.vacant).length}</span> واحد{building.units.some((u) => u.vacant) && <> + <span className="num">{building.units.filter((u) => u.vacant).length}</span> خالی</>}).</>
                 : <>واحدهای این قبض با پیش‌فرض ساختمان فرق دارد؛ تغییرات فقط روی همین قبض اثر دارد.</>}
             </p>
             {!matches && (

@@ -1,3 +1,4 @@
+import { occupiedCount } from '../logic/vacant';
 import { useEffect, useMemo, useState } from 'react';
 import type { BillWithUnits, ExpenseType } from '../models/types';
 import { CURRENCY, EXPENSE_TYPES, monthName } from '../models/constants';
@@ -155,7 +156,7 @@ export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp
                   </div>
                   {!bill.isFullySettled && settled > 0 && (
                     <div className="record-card__progress">
-                      <span className="num">{settled}</span> از <span className="num">{units.length}</span> واحد تسویه شده
+                      <span className="num">{settled}</span> از <span className="num">{occupiedCount(units)}</span> واحد تسویه شده
                     </div>
                   )}
                 </div>

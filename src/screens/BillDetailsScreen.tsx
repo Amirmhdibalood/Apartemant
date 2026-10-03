@@ -1,3 +1,4 @@
+import { VACANT_LABEL } from '../logic/vacant';
 import { useEffect, useState } from 'react';
 import { unitLabel } from '../logic/building';
 import type { Bill, BillDraft, BillWithUnits, Unit } from '../models/types';
@@ -293,11 +294,11 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
                       <span className="unit-td__alias num">{formatArea(u.area)} م² × {faMoney(Math.round(ppmExact))} · {toPersianDigits(Math.round((u.area / (totalArea || 1)) * 100))}٪</span>
                     )}
                   </td>
-                  {!areaLine && <td className="num">{u.vacant ? '—' : areaCol ? (u.area != null ? formatArea(u.area) : '—') : u.personCount}</td>}
+                  {!areaLine && <td className="num">{u.vacant ? <span className="no-share">{VACANT_LABEL}</span> : areaCol ? (u.area != null ? formatArea(u.area) : '—') : u.personCount}</td>}
                   <td className="num">{formatAmount(u.shareAmount)}</td>
                   <td>
                     {u.shareAmount === 0 ? (
-                      <span className="no-share">{u.vacant ? 'خالی' : 'بدون سهم'}</span>
+                      <span className="no-share">{u.vacant ? VACANT_LABEL : 'بدون سهم'}</span>
                     ) : (<>
                     <button
                       type="button"

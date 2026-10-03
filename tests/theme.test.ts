@@ -117,9 +117,9 @@ describe('استایل تاریک تولیدشده', () => {
 
 describe('تصویر شبانه صفحه ورود', () => {
   it('نسخه تاریک intro-art با نسخه روشن همگام است و رنگ روشن آسمان ندارد', () => {
-    for (const { src, out } of ART_FILES) {
+    for (const { id, src, out } of ART_FILES) {
       const dark = readFileSync(out, 'utf8');
-      expect(dark).toBe(generateDarkArt(readFileSync(src, 'utf8')));
+      expect(dark).toBe(generateDarkArt(readFileSync(src, 'utf8'), id));
       expect(dark).not.toMatch(/#(BFD6FF|E4EEFF|F7FAFF|DCE8FF)/i);
     }
   });

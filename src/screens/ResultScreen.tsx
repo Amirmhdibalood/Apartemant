@@ -1,3 +1,4 @@
+import { VACANT_LABEL } from '../logic/vacant';
 import { UnitIcon } from '../components/PrefIcons';
 import { useIconPrefs } from '../context/IconPrefsContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -190,8 +191,8 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
                       </span>
                     </span>
                   </td>
-                  {!perUnit && !areaLine && <td className="col-count num">{vacants[i] ? '—' : areaCol ? (s.area != null ? formatArea(s.area) : '—') : s.personCount}</td>}
-                  <td className="num strong">{vacants[i] ? <span className="no-share">خالی</span> : formatAmount(s.shareAmount)}</td>
+                  {!perUnit && !areaLine && <td className="col-count num">{vacants[i] ? <span className="no-share">{VACANT_LABEL}</span> : areaCol ? (s.area != null ? formatArea(s.area) : '—') : s.personCount}</td>}
+                  <td className="num strong">{vacants[i] ? <span className="no-share">{VACANT_LABEL}</span> : formatAmount(s.shareAmount)}</td>
                   <td className="col-action">
                     <button type="button" className="icon-btn icon-btn--danger" aria-label={`حذف ${unitLabel(s.unitNumber, aliases[i])}`} onClick={() => removeUnit(i)}>
                       <IconTrash size={17} />
