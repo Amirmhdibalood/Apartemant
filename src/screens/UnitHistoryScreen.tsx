@@ -4,6 +4,7 @@ import type { BillWithUnits } from '../models/types';
 import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
 import { ExpenseIcon } from '../components/ExpenseIcon';
+import { useVisibleBills } from '../context/EntryPrefsContext';
 import { billRepository } from '../storage/billRepository';
 import { formatAmount } from '../logic/formatting';
 import { formatJalaliDate } from '../logic/date';
@@ -36,7 +37,8 @@ function StatusBadge({ e }: { e: PaymentEntry }) {
 
 /** سابقه پرداخت یک واحد: تاریخ ثبت قبض در برابر تاریخ پرداخت و روزهای تأخیر */
 export function UnitHistoryScreen({ unitNumber, onBack, onOpenBill }: Props) {
-  const [all, setAll] = useState<BillWithUnits[] | null>(null);
+  const [allRaw, setAll] = useState<BillWithUnits[] | null>(null);
+  const all = useVisibleBills(allRaw);
   useEffect(() => {
     let alive = true;
     billRepository.getAll().then((r) => { if (alive) setAll(r); });

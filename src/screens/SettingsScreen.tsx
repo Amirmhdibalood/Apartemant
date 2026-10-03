@@ -14,6 +14,10 @@ import { useNotif } from '../context/NotifContext';
 import { NOTIF_MODES } from '../logic/notifMode';
 import { useAreaMode } from '../context/AreaModeContext';
 import { AREA_MODES } from '../logic/areaMode';
+import { useEntryPrefs } from '../context/EntryPrefsContext';
+import { ALL_SPLIT_METHODS } from '../logic/entryPrefs';
+import { EXPENSE_TYPES, EXPENSE_TYPE_ORDER, SPLIT_METHOD_LABELS } from '../models/constants';
+import { ExpenseIcon } from '../components/ExpenseIcon';
 import { useIconPrefs } from '../context/IconPrefsContext';
 import { AREA_ICONS, UNIT_ICONS } from '../logic/iconPrefs';
 import { AreaIcon, UnitIcon } from '../components/PrefIcons';
@@ -25,6 +29,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
   const { mode, setMode } = useNotif();
   const { areaMode, setAreaMode } = useAreaMode();
   const { unitIcon, areaIcon, setUnitIcon, setAreaIcon } = useIconPrefs();
+  const { prefs, setTypeOn, setMethodOn } = useEntryPrefs();
   const years = selectableYears();
   const [restoreKey, setRestoreKey] = useState(0);
 
@@ -42,6 +47,40 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
       <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} onHelp={onHelp} />
       <main className="screen screen--settings">
         <BuildingSection reloadKey={restoreKey} />
+
+        <section className="card settings-card entry-prefs" aria-labelledby="entry-prefs-title">
+          <h2 className="card__title" id="entry-prefs-title">انواع قبض و روش‌های محاسبه</h2>
+          <p className="card__hint">
+            نوع خاموش از فرم ثبت، سوابق، فیلترها، گزارش‌ها و جمع‌ها کنار می‌رود و با روشن شدن دوباره برمی‌گردد (داده پاک نمی‌شود).
+            روش خاموش در انتخاب نحوه تقسیم نمی‌آید. از هر گروه دست‌کم یکی باید روشن بماند.
+          </p>
+          <h3 className="entry-prefs__group">انواع قبض در برنامه</h3>
+          {EXPENSE_TYPE_ORDER.map((t) => {
+            const on = prefs.types.includes(t);
+            return (
+              <div className="setting-row entry-prefs__row" key={t}>
+                <label htmlFor={`sw-type-${t}`} className="setting-row__text entry-prefs__label">
+                  <ExpenseIcon type={t} size={26} />
+                  <span className="setting-row__label">{EXPENSE_TYPES[t].label}</span>
+                </label>
+                <Switch id={`sw-type-${t}`} label={`نوع قبض ${EXPENSE_TYPES[t].label}`} checked={on} disabled={on && prefs.types.length === 1} onChange={(v) => setTypeOn(t, v)} />
+              </div>
+            );
+          })}
+          <h3 className="entry-prefs__group">روش‌های محاسبه در ثبت قبض</h3>
+          {ALL_SPLIT_METHODS.map((m) => {
+            const on = prefs.methods.includes(m);
+            return (
+              <div className="setting-row entry-prefs__row" key={m}>
+                <label htmlFor={`sw-method-${m}`} className="setting-row__text entry-prefs__label">
+                  <span className="setting-row__label">{SPLIT_METHOD_LABELS[m]}</span>
+                </label>
+                <Switch id={`sw-method-${m}`} label={`روش ${SPLIT_METHOD_LABELS[m]}`} checked={on} disabled={on && prefs.methods.length === 1} onChange={(v) => setMethodOn(m, v)} />
+              </div>
+            );
+          })}
+          {prefs.methods.length === 1 && <p className="card__hint entry-prefs__note">فقط یک روش روشن است؛ انتخابگر نحوه تقسیم در فرم ثبت قبض پنهان و همین روش استفاده می‌شود.</p>}
+        </section>
 
         <section className="card settings-card">
           <h2 className="card__title">هشدارها</h2>

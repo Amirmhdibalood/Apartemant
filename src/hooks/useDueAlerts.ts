@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { App as CapApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { useEntryPrefs } from '../context/EntryPrefsContext';
+import { visibleBillList } from '../logic/entryPrefs';
 import { billRepository } from '../storage/billRepository';
 import { selectDueAlerts, withoutDismissed, type DueAlert } from '../logic/dueAlerts';
 import { todayJalali } from '../logic/jalali';
@@ -14,10 +16,12 @@ export function useDueAlerts() {
   const [all, setAll] = useState<DueAlert[]>([]);
   const [dismissed, setDismissed] = useState<ReadonlySet<string>>(() => new Set());
 
+  const { prefs } = useEntryPrefs();
   const refresh = useCallback(async () => {
-    const bills = (await billRepository.getAll().catch(() => [])).map((x) => x.bill);
+    // هشدار قبض‌های نوعِ خاموش نمایش داده نمی‌شود
+    const bills = visibleBillList((await billRepository.getAll().catch(() => [])).map((x) => x.bill), prefs);
     setAll(selectDueAlerts(bills, todayJalali()));
-  }, []);
+  }, [prefs]);
 
   useEffect(() => {
     void refresh();

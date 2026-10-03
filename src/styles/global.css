@@ -173,6 +173,7 @@ h1, h2, h3, p { margin: 0; }
 .tiles__row { display: grid; gap: 10px; }
 .tiles__row--3 { grid-template-columns: repeat(3, 1fr); }
 .tiles__row--2 { grid-template-columns: repeat(2, 1fr); }
+.tiles__row--1 { grid-template-columns: repeat(3, 1fr); }
 .tile {
   height: 86px; border-radius: 12px; border: 1.5px solid transparent;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
@@ -305,6 +306,7 @@ h1, h2, h3, p { margin: 0; }
 .switch__thumb { position: absolute; top: 3px; right: 3px; width: 24px; height: 24px; border-radius: 50%; background: #fff; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2); transition: right 0.2s; }
 .switch.is-on { background: var(--primary); }
 .switch.is-on .switch__thumb { right: 23px; }
+.switch.is-disabled { opacity: 0.55; cursor: not-allowed; }
 .app-version { text-align: center; color: var(--muted); font-size: 12.5px; margin-top: 18px; }
 
 /* Backup & restore (پشتیبان‌گیری و بازیابی) */
@@ -935,3 +937,9 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
 .icon-opt__none { font-size: 18px; color: var(--muted); }
 .icon-opt__label { line-height: 1.4; text-align: center; }
 .unit-num { font-weight: 900; line-height: 1; }
+
+/* ---------- انواع قبض و روش‌های محاسبه (تنظیمات) ---------- */
+.entry-prefs__group { font-size: 13.5px; font-weight: 800; color: var(--text-2); margin: 12px 0 8px; }
+.entry-prefs__row { margin-bottom: 6px; }
+.entry-prefs__label { flex-direction: row; align-items: center; gap: 10px; flex: 1; }
+.entry-prefs__note { margin: 6px 0 0; }

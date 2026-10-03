@@ -15,6 +15,7 @@ import { SettingsProvider } from './context/SettingsContext';
 import { FeedbackProvider } from './context/FeedbackContext';
 import { NotifProvider } from './context/NotifContext';
 import { AreaModeProvider } from './context/AreaModeContext';
+import { EntryPrefsProvider } from './context/EntryPrefsContext';
 import { IconPrefsProvider } from './context/IconPrefsContext';
 
 createRoot(document.getElementById('root')!).render(
@@ -22,6 +23,7 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider>
       <SettingsProvider>
         <FeedbackProvider>
+          <EntryPrefsProvider>
           <NotifProvider>
             <AreaModeProvider>
               <IconPrefsProvider>
@@ -29,6 +31,7 @@ createRoot(document.getElementById('root')!).render(
               </IconPrefsProvider>
             </AreaModeProvider>
           </NotifProvider>
+          </EntryPrefsProvider>
         </FeedbackProvider>
       </SettingsProvider>
     </ThemeProvider>

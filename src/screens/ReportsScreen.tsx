@@ -3,6 +3,8 @@ import type { BillWithUnits, ExpenseType } from '../models/types';
 import type { ReportTab } from '../navigation';
 import { AppHeader } from '../components/AppHeader';
 import { IconChart } from '../components/Icons';
+import { useEntryPrefs, useVisibleBills } from '../context/EntryPrefsContext';
+import { activeTypeFilter } from '../logic/entryPrefs';
 import { billRepository } from '../storage/billRepository';
 import { YearlyReportView } from './reports/YearlyReportView';
 import { DebtorsView } from './reports/DebtorsView';
@@ -28,8 +30,12 @@ const TABS: { id: ReportTab; label: string }[] = [
 ];
 
 /** مرکز گزارش‌ها: زبانه‌های «هزینه‌های سال»، «بدهکاران» و «پرداخت قبض‌ها» */
-export function ReportsScreen({ tab = 'yearly', year, type, onChange, onOpenMonth, onOpenBill, onOpenUnit, onHelp }: Props) {
-  const [all, setAll] = useState<BillWithUnits[] | null>(null);
+export function ReportsScreen({ tab = 'yearly', year, type: typeProp, onChange, onOpenMonth, onOpenBill, onOpenUnit, onHelp }: Props) {
+  const { prefs } = useEntryPrefs();
+  const type = typeProp ? activeTypeFilter(prefs, typeProp) : typeProp;
+  const [allRaw, setAll] = useState<BillWithUnits[] | null>(null);
+  // قبض‌های نوعِ خاموش از همهٔ گزارش‌ها و جمع‌ها کنار می‌روند (داده پاک نمی‌شود)
+  const all = useVisibleBills(allRaw);
   useEffect(() => {
     let alive = true;
     billRepository.getAll().then((r) => { if (alive) setAll(r); });

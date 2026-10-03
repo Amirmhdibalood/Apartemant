@@ -1,4 +1,4 @@
-export function Switch({ checked, onChange, id, label }: { checked: boolean; onChange: (v: boolean) => void; id: string; label: string }) {
+export function Switch({ checked, onChange, id, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; id: string; label: string; disabled?: boolean }) {
   return (
     <button
       id={id}
@@ -6,7 +6,8 @@ export function Switch({ checked, onChange, id, label }: { checked: boolean; onC
       role="switch"
       aria-checked={checked}
       aria-label={label}
-      className={'switch' + (checked ? ' is-on' : '')}
+      className={'switch' + (checked ? ' is-on' : '') + (disabled ? ' is-disabled' : '')}
+      disabled={disabled}
       onClick={() => onChange(!checked)}
     >
       <span className="switch__thumb" />

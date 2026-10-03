@@ -6,6 +6,8 @@ import { SelectField } from '../components/SelectField';
 import { ExpenseIcon } from '../components/ExpenseIcon';
 import { IconCalendar, IconCheck, IconChevronLeft } from '../components/Icons';
 import { useSettings } from '../context/SettingsContext';
+import { useEntryPrefs, useVisibleBills } from '../context/EntryPrefsContext';
+import { activeTypeFilter, typeFilterOptions } from '../logic/entryPrefs';
 import { billRepository } from '../storage/billRepository';
 import { currentJalali, pickDefaultYear } from '../logic/date';
 import { formatAmount } from '../logic/formatting';
@@ -13,7 +15,7 @@ import { settledCount } from '../logic/settlement';
 import { recordYearOptions } from '../logic/years';
 import { isBillDeleted } from '../logic/billPaid';
 import {
-  MONTH_FILTER_OPTIONS, STATUS_FILTER_OPTIONS, TYPE_FILTER_OPTIONS, emptyMessage, filterBills, hasActiveFilters,
+  MONTH_FILTER_OPTIONS, STATUS_FILTER_OPTIONS, emptyMessage, filterBills, hasActiveFilters,
   normalizeMonth, normalizeStatus, normalizeType, summarizeBills, type RecordsFilter, type StatusFilter,
 } from '../logic/billFilter';
 import { TONE_LEGEND, billTone, dueText, toneLabel } from '../logic/billStatus';
@@ -38,7 +40,11 @@ interface Props {
 export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp, status: statusProp, onFilterChange, onOpenBill, onBack, onHelp }: Props) {
   const { settings } = useSettings();
   const now = currentJalali();
-  const [all, setAll] = useState<BillWithUnits[] | null>(null);
+  const { prefs } = useEntryPrefs();
+  const typeOptions = typeFilterOptions(prefs);
+  const [allRaw, setAll] = useState<BillWithUnits[] | null>(null);
+  // قبض‌های نوعِ خاموش در سوابق دیده نمی‌شوند (داده پاک نمی‌شود)
+  const all = useVisibleBills(allRaw);
   useEffect(() => {
     let alive = true;
     billRepository.getAllWithDeleted().then((r) => { if (alive) setAll(r); });
@@ -48,12 +54,12 @@ export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp
   // سال‌های فعال + سال‌هایی که قبض ذخیره‌شده دارند (قبض‌های سال‌های قدیمی‌تر همچنان دیده می‌شوند)
   const years = recordYearOptions(settings.activeYears, (all ?? []).filter((x) => !isBillDeleted(x.bill) || statusProp === 'deleted').map((x) => x.bill.year));
   const year = yearProp && years.includes(yearProp) ? yearProp : pickDefaultYear(settings.activeYears, now.year);
-  const filter: RecordsFilter = { year, month: normalizeMonth(monthProp), type: normalizeType(typeProp), status: normalizeStatus(statusProp) };
+  const filter: RecordsFilter = { year, month: normalizeMonth(monthProp), type: activeTypeFilter(prefs, normalizeType(typeProp)), status: normalizeStatus(statusProp) };
   const items = useMemo(() => (all ? filterBills(all, filter) : null), [all, filter.year, filter.month, filter.type, filter.status]); // eslint-disable-line react-hooks/exhaustive-deps
   const today = todayJalali();
   const statusIndex = Math.max(0, STATUS_FILTER_OPTIONS.findIndex((o) => o.value === filter.status));
   const summary = items ? summarizeBills(items) : null;
-  const typeIndex = Math.max(0, TYPE_FILTER_OPTIONS.findIndex((o) => o.value === filter.type));
+  const typeIndex = Math.max(0, typeOptions.findIndex((o) => o.value === filter.type));
 
   return (
     <>
@@ -80,8 +86,8 @@ export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp
             id="rec-type"
             label="نوع هزینه"
             value={typeIndex}
-            options={TYPE_FILTER_OPTIONS.map((o, i) => ({ value: i, label: o.label }))}
-            onChange={(i) => onFilterChange({ ...filter, type: TYPE_FILTER_OPTIONS[i]?.value ?? null })}
+            options={typeOptions.map((o, i) => ({ value: i, label: o.label }))}
+            onChange={(i) => onFilterChange({ ...filter, type: typeOptions[i]?.value ?? null })}
           />
           <SelectField
             id="rec-status"

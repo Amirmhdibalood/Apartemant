@@ -8,7 +8,8 @@ import { useSettings } from '../../context/SettingsContext';
 import { formatAmount, toPersianDigits } from '../../logic/formatting';
 import { recordYearOptions } from '../../logic/years';
 import { pickReportYear } from '../../logic/report';
-import { TYPE_FILTER_OPTIONS } from '../../logic/billFilter';
+import { typeFilterOptions } from '../../logic/entryPrefs';
+import { useEntryPrefs } from '../../context/EntryPrefsContext';
 import { billPaymentReport, filterPaymentRows, PAYMENT_STATUS_LABEL, toggleStatusFilter, type PaymentStatusFilter } from '../../logic/billPaymentReport';
 import { formatJalaliSlash, todayJalali } from '../../logic/jalali';
 
@@ -23,6 +24,8 @@ interface Props {
 /** گزارش «پرداخت قبض‌ها»: مهلت پرداخت، تاریخ پرداخت و به‌موقع/با تأخیر بودن پرداخت خودِ قبض‌ها */
 export function BillPaymentsView({ all, year: yearProp, type = null, onChange, onOpenBill }: Props) {
   const { settings } = useSettings();
+  const { prefs } = useEntryPrefs();
+  const typeOptions = typeFilterOptions(prefs);
   const [status, setStatus] = useState<PaymentStatusFilter>('all');
   const today = todayJalali();
   const billYears = useMemo(() => Array.from(new Set((all ?? []).map((b) => b.bill.year))), [all]);
@@ -32,7 +35,7 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
   const s = report.summary;
   const shown = useMemo(() => filterPaymentRows(report.rows, status), [report.rows, status]);
   const tap = (x: PaymentStatusFilter) => setStatus((cur) => toggleStatusFilter(cur, x));
-  const typeIndex = Math.max(0, TYPE_FILTER_OPTIONS.findIndex((o) => o.value === type));
+  const typeIndex = Math.max(0, typeOptions.findIndex((o) => o.value === type));
 
   return (
     <>
@@ -42,8 +45,8 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
           id="bp-type"
           label="نوع هزینه"
           value={typeIndex}
-          options={TYPE_FILTER_OPTIONS.map((o, i) => ({ value: i, label: o.label }))}
-          onChange={(i) => onChange(year, TYPE_FILTER_OPTIONS[i]?.value ?? null)}
+          options={typeOptions.map((o, i) => ({ value: i, label: o.label }))}
+          onChange={(i) => onChange(year, typeOptions[i]?.value ?? null)}
         />
       </div>
 

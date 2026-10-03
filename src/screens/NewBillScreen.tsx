@@ -6,6 +6,8 @@ import { SelectField } from '../components/SelectField';
 import { JalaliDateField } from '../components/JalaliDateField';
 import { addJalaliDays, dateYearOptions, todayJalali } from '../logic/jalali';
 import { DEFAULT_DUE_OFFSET_DAYS } from '../logic/billStatus';
+import { useEntryPrefs } from '../context/EntryPrefsContext';
+import { resolveMethod } from '../logic/entryPrefs';
 import { ExpenseTypePicker } from '../components/ExpenseTypePicker';
 import { AmountInput } from '../components/AmountInput';
 import { UnitsEditor } from '../components/UnitsEditor';
@@ -36,12 +38,24 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
   const { settings } = useSettings();
   const { showErrors, confirmDanger, toast } = useFeedback();
   const set = (patch: Partial<BillDraft>) => setDraft({ ...draft, ...patch });
+  const { prefs } = useEntryPrefs();
+  // روش‌های قابل انتخاب: روش‌های فعال (+ روش خودِ قبض در حال ویرایش، تا ویرایش بی‌صدا آن را عوض نکند)
+  const methodOptions = (['perPerson', 'perUnit', 'perArea'] as const).filter(
+    (m) => prefs.methods.includes(m) || (!!draft.editingBillId && draft.splitMethod === m),
+  );
   const [splitDefaults, setSplitDefaults] = useState<SplitDefaults>({});
   useEffect(() => {
     let alive = true;
     splitDefaultsRepository.get().then((d) => { if (alive) setSplitDefaults(d); }).catch(() => undefined);
     return () => { alive = false; };
   }, []);
+
+  // روش خاموش‌شده (یادآوری‌شده یا پیش‌فرض) ← اولین روش فعال؛ با یک روش فعال، همان استفاده می‌شود
+  useEffect(() => {
+    if (draft.editingBillId) return;
+    const next = resolveMethod(prefs, draft.splitMethod);
+    if (next !== draft.splitMethod) setDraft({ ...draft, splitMethod: next });
+  }, [prefs, draft.splitMethod, draft.editingBillId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // پیش‌فرض واحدها از تنظیمات «ساختمان» (فقط قبض جدید)
   const [building, setBuilding] = useState<BuildingSettings | null>(null);
@@ -124,7 +138,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
               set({
                 expenseType,
                 // تا وقتی کاربر خودش انتخاب نکرده، نحوه تقسیم از آخرین روش همین نوع هزینه پیروی می‌کند
-                ...(draft.editingBillId || draft.splitChosen ? {} : { splitMethod: defaultSplitFor(expenseType, splitDefaults) }),
+                ...(draft.editingBillId || draft.splitChosen ? {} : { splitMethod: resolveMethod(prefs, defaultSplitFor(expenseType, splitDefaults)) }),
               })
             }
           />
@@ -183,9 +197,10 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
         </div>
 
         <div className="field split-field">
-          <span className="field__label" id="split-label">نحوه تقسیم</span>
-          <div className="seg seg--3" role="radiogroup" aria-labelledby="split-label">
-            {(['perPerson', 'perUnit', 'perArea'] as const).map((m) => (
+          {methodOptions.length > 1 && <span className="field__label" id="split-label">نحوه تقسیم</span>}
+          {methodOptions.length > 1 && (
+          <div className={'seg seg--' + methodOptions.length} role="radiogroup" aria-labelledby="split-label">
+            {methodOptions.map((m) => (
               <button
                 key={m}
                 type="button"
@@ -198,6 +213,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
               </button>
             ))}
           </div>
+          )}
           {perArea && (
             <p className="split-hint">قیمت هر مترمربع = مبلغ قبض ÷ مجموع متراژ واحدهای غیرخالی؛ سهم هر واحد = متراژ × قیمت هر مترمربع. متراژ از «تنظیمات ← ساختمان» پر می‌شود و برای همین قبض قابل ویرایش است (نفرات اثری ندارد).</p>
           )}
