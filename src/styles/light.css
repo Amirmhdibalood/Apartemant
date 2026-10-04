@@ -57,3 +57,12 @@
 :root[data-theme="light"][data-light]:not([data-light="sky"]) .timing-chip.is-paidUnknown { background: var(--success-soft); color: #14683c; }
 :root[data-theme="light"][data-light]:not([data-light="sky"]) .timing-chip.is-pending,
 :root[data-theme="light"][data-light]:not([data-light="sky"]) .timing-chip.is-unpaidNoDue { background: var(--primary-soft); color: var(--primary); }
+
+/* ---------- تیک و نشانگر «فعال» در تم روشن (۱.۷.۶) ----------
+   ریشه: قاعدهٔ خودکارِ `.year-row__box` (ویژگی ۰،۴،۰) زمینهٔ پر و تیک را از `.year-row.is-active .year-row__box` (۰،۳،۰) می‌گرفت.
+   اکنون مولّد (scripts/dark-css.mjs) قاعده‌های حالتِ var(...)دار را هم با پیشوند تم می‌نویسد؛ اینجا فقط رنگ متن/تیک «تسویه/پرداخت‌شده»
+   در هر ۵ پالت (از جمله پیش‌فرض آسمانی) برای کنتراست ≥ ۴٫۵ تیره می‌شود. */
+:root[data-theme="light"][data-light="sky"] .pay-btn.is-settled,
+:root[data-theme="light"][data-light="sky"] .rt-chip.is-paid,
+:root[data-theme="light"][data-light="sky"] .payer-card.is-good .payer-card__rating { color: #14683c; }
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .rt-chip.is-paid { background: var(--success-soft); color: #14683c; }

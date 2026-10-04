@@ -40,3 +40,11 @@
 :root[data-theme="dark"][data-palette] .timing-chip.is-paidUnknown { background: var(--success-soft); color: var(--success-press); }
 :root[data-theme="dark"][data-palette] .timing-chip.is-pending,
 :root[data-theme="dark"][data-palette] .timing-chip.is-unpaidNoDue { background: var(--primary-soft); color: var(--primary-press); }
+
+/* ---------- تیک‌ها و نشانگرهای «فعال» در تم تاریک (۱.۷.۶) ----------
+   رنگ برند (--primary/--success) در تاریک روشن است و تیکِ روشن روی آن ناپیدا می‌شد؛ زمینهٔ پر از رنگ‌های «fill» پالت می‌آید (متن سفید ≥ ۴٫۵). */
+:root[data-theme="dark"][data-palette] .year-row.is-active .year-row__box { background: var(--primary-fill); border-color: var(--primary-fill); color: #fff; }
+:root[data-theme="dark"][data-palette] .bp-summary__item.is-selected .bp-tick,
+:root[data-theme="dark"][data-palette] .is-unpaid .bp-tick { background: var(--primary-fill); color: #fff; }
+:root[data-theme="dark"][data-palette] .is-ontime .bp-tick { background: var(--success-fill); color: #fff; }
+:root[data-theme="dark"][data-palette] .is-late .bp-tick { background: var(--danger-fill); color: #fff; }

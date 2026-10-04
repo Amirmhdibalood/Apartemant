@@ -42,8 +42,18 @@ export const darkSelector = (prefix) => (s) => (s === ':root' ? prefix : s.start
 
 export const isWhite = (v) => /^(#fff(fff)?|white|rgba?\(\s*255\s*,\s*255\s*,\s*255\s*(,\s*1)?\))$/i.test(v.trim());
 
+/**
+ * قاعدهٔ «حالت» (.is-active/.is-on/… یا aria-pressed/…) — ریشهٔ باگ ۱.۷.۵/۱.۷.۶: خروجی خودکار فقط اعلان‌های دارای رنگِ مستقیم (#hex)
+ * را می‌نویسد، پس قاعدهٔ حالتی که با var(--primary) رنگ می‌دهد (مثل `.year-row.is-active .year-row__box`) در خروجی نبود و
+ * قاعدهٔ پایهٔ خودکار (با پیشوند تم، ویژگی بالاتر) آن را پنهان می‌کرد (زمینهٔ پر برنمی‌گشت و تیک سفید روی زمینهٔ سفید می‌ماند).
+ * اکنون اعلان‌های رنگیِ var(...)دارِ قاعده‌های حالت هم عیناً با پیشوند تم بازنویسی می‌شوند.
+ */
+export const STATE_SEL = /\.(is-[\w-]+|active|selected|checked|on)\b|\[aria-(pressed|selected|checked|current)/;
+export const isStateSelector = (sel) => STATE_SEL.test(sel);
+export const VAR_COLOR_PROPS = new Set(['background', 'background-color', 'color', 'border', 'border-color', 'fill', 'stroke', 'box-shadow']);
+
 /** قاعده‌ی تاریک (فهرست [ویژگی، مقدار]) برای یک پالت؛ بدون رنگ ← فهرست خالی */
-function darkDecls(body, palette) {
+function darkDecls(body, palette, keepVars = false) {
   const decls = [];
   const all = splitDecls(body).map((d) => [d.slice(0, d.indexOf(':')).trim().toLowerCase(), d.slice(d.indexOf(':') + 1).trim().replace(/\s*!important\s*$/i, '')]);
   // قاعده‌ای که متن سفید دارد: زمینه رنگی آن به‌اندازه‌ای تیره می‌شود که متن سفید خوانا بماند
@@ -53,7 +63,10 @@ function darkDecls(body, palette) {
     if (i < 0) continue;
     const prop = d.slice(0, i).trim().toLowerCase();
     const val = d.slice(i + 1).trim();
-    if (!hasCssColor(val)) continue;
+    if (!hasCssColor(val)) {
+      if (keepVars && VAR_COLOR_PROPS.has(prop) && /var\(/.test(val)) decls.push(`${prop}: ${val}`);
+      continue;
+    }
     const important = /!important\s*$/i.test(val);
     const clean = val.replace(/\s*!important\s*$/i, '');
     decls.push(`${prop}: ${darkenCssValue(clean, KEEP_WHITE.has(prop), whiteText && prop.startsWith('background'), palette)}${important ? ' !important' : ''}`);
@@ -73,8 +86,9 @@ function collect(css, palette, media = null, out = []) {
     const body = css.slice(open + 1, j - 1);
     if (head.startsWith('@media') || head.startsWith('@supports')) collect(body, palette, head, out);
     else if (!head.startsWith('@')) {
-      const decls = darkDecls(body, palette);
-      if (decls.length) out.push({ media: media, selector: head, decls });
+      const state = isStateSelector(head);
+      const decls = darkDecls(body, palette, state);
+      if (decls.length) out.push({ media: media, selector: head, decls, state });
     }
     i = j;
   }
@@ -110,7 +124,8 @@ export function generateDarkCss(cssText) {
     const prefix = `${DARK}[data-palette="${id}"]`;
     const items = collect(noComments, P).map((it, k) => {
       const same = new Set(base[k].decls);
-      return { ...it, decls: it.decls.filter((d) => !same.has(d)) };
+      // قاعده‌های حالت همیشه کامل برای پالت هم نوشته می‌شوند: قاعدهٔ پایهٔ پالت (ویژگی بالاتر) قاعدهٔ حالتِ سرمه‌ای را می‌پوشاند
+      return it.state ? it : { ...it, decls: it.decls.filter((d) => !same.has(d)) };
     }).filter((it) => it.decls.length);
     out += `\n/* ---- پالت ${id}: ${P.name} (فقط تفاوت‌ها با سرمه‌ای) ---- */\n${emit(items, prefix)}${extrasBlock(prefix, P.extras)}`;
   }

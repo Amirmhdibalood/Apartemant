@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { hasCssColor } from '../src/logic/darkColor.ts';
 import { lightenCssValue } from '../src/logic/lightColor.ts';
 import { LIGHT_PALETTES, LIGHT_PALETTE_ORDER } from '../src/logic/lightPalettes.ts';
-import { splitDecls, emit, isWhite, KEEP_WHITE } from './dark-css.mjs';
+import { splitDecls, emit, isWhite, KEEP_WHITE, isStateSelector, VAR_COLOR_PROPS } from './dark-css.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const SRC_CSS = path.join(ROOT, 'src/styles/global.css');
@@ -20,7 +20,7 @@ const LIGHT = ':root[data-theme="light"]';
 /** متغیرهای رنگ پُرِ دکمه‌ها/نشان‌ها (متن سفید روی آن‌ها) در :root */
 const FILL_VARS = new Set(['--primary', '--primary-press', '--success', '--success-press', '--danger']);
 
-function lightDecls(body, palette) {
+function lightDecls(body, palette, keepVars = false) {
   const decls = [];
   const all = splitDecls(body).map((d) => [d.slice(0, d.indexOf(':')).trim().toLowerCase(), d.slice(d.indexOf(':') + 1).trim().replace(/\s*!important\s*$/i, '')]);
   const whiteText = all.some(([p, v]) => p === 'color' && isWhite(v));
@@ -29,7 +29,10 @@ function lightDecls(body, palette) {
     if (i < 0) continue;
     const prop = d.slice(0, i).trim().toLowerCase();
     const val = d.slice(i + 1).trim();
-    if (!hasCssColor(val)) continue;
+    if (!hasCssColor(val)) {
+      if (keepVars && VAR_COLOR_PROPS.has(prop) && /var\(/.test(val)) decls.push(`${prop}: ${val}`);
+      continue;
+    }
     const important = /!important\s*$/i.test(val);
     const clean = val.replace(/\s*!important\s*$/i, '');
     decls.push(`${prop}: ${lightenCssValue(clean, KEEP_WHITE.has(prop), (whiteText && prop.startsWith('background')) || FILL_VARS.has(prop), palette)}${important ? ' !important' : ''}`);
@@ -48,7 +51,7 @@ function collect(css, palette, media = null, out = []) {
     const body = css.slice(open + 1, j - 1);
     if (head.startsWith('@media') || head.startsWith('@supports')) collect(body, palette, head, out);
     else if (!head.startsWith('@')) {
-      const decls = lightDecls(body, palette);
+      const decls = lightDecls(body, palette, isStateSelector(head));
       if (decls.length) out.push({ media, selector: head, decls });
     }
     i = j;
