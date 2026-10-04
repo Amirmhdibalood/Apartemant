@@ -15,6 +15,7 @@ import { ResultScreen } from './screens/ResultScreen';
 import { RecordsScreen } from './screens/RecordsScreen';
 import { ReportsScreen } from './screens/ReportsScreen';
 import { UnitHistoryScreen } from './screens/UnitHistoryScreen';
+import { UnitPaymentScreen } from './screens/UnitPaymentScreen';
 import { BillDetailsScreen } from './screens/BillDetailsScreen';
 import { TutorialScreen } from './screens/TutorialScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
@@ -165,6 +166,7 @@ export default function App() {
           onOpenMonth={(year, month) => push({ name: 'records', year, month })}
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onOpenUnit={(unitNumber) => push({ name: 'unitHistory', unitNumber })}
+          onPayUnit={(unitNumber) => push({ name: 'unitPay', unitNumber })}
           onHelp={openHelp}
         />
       );
@@ -175,6 +177,17 @@ export default function App() {
           unitNumber={route.unitNumber}
           onBack={back}
           onOpenBill={(billId) => push({ name: 'details', billId })}
+        />
+      );
+      break;
+    case 'unitPay':
+      screen = (
+        <UnitPaymentScreen
+          key={route.unitNumber}
+          unitNumber={route.unitNumber}
+          onBack={back}
+          onOpenHistory={(unitNumber) => replaceTop({ name: 'unitHistory', unitNumber })}
+          onHelp={openHelp}
         />
       );
       break;

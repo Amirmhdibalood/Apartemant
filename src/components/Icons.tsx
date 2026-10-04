@@ -188,6 +188,13 @@ export const IconCheck = (p: P) => (
     <path d="M20 6 9 17l-5-5" />
   </S>
 );
+export const IconWallet = (p: P) => (
+  <S {...p}>
+    <rect x="2.5" y="6" width="19" height="13" rx="3" />
+    <path d="M2.5 10.5h19" />
+    <path d="M7 15h3" />
+  </S>
+);
 export const IconShare = (p: P) => (
   <S {...p}>
     <path d="M12 3v12" />

@@ -93,6 +93,17 @@ export const billRepository = {
     await persist({ bills, units: others.concat(units.map((u) => ({ ...u, billId: bill.id }))) });
   },
 
+  /** درج/جایگزینی چند قبض با **یک** نوشتن (برای پرداخت بدهی واحد؛ یا همه ذخیره می‌شوند یا هیچ‌کدام) */
+  async upsertMany(items: { bill: Bill; units: Unit[] }[]): Promise<void> {
+    if (items.length === 0) return;
+    const t = await load();
+    const ids = new Set(items.map((i) => i.bill.id));
+    const bills = t.bills.filter((b) => !ids.has(b.id)).concat(items.map((i) => migrateBill(i.bill)));
+    const units = t.units.filter((u) => !ids.has(u.billId))
+      .concat(items.flatMap((i) => i.units.map((u) => ({ ...u, billId: i.bill.id }))));
+    await persist({ bills, units });
+  },
+
   /**
    * حذف (نرم): قبض به «حذف‌شده» منتقل می‌شود و داده‌هایش باقی می‌ماند.
    * قبض «پرداخت شد» قابل حذف نیست (BillDeleteBlockedError).

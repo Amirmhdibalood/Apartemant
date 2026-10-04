@@ -11,6 +11,8 @@ export type Route =
   | { name: 'records'; year?: number; month?: number | null; type?: ExpenseType | null; status?: StatusFilter }
   | { name: 'report'; tab?: ReportTab; year?: number; type?: ExpenseType | null }
   | { name: 'unitHistory'; unitNumber: number }
+  /** پرداخت بدهی یک واحد (از ۱.۷.۳؛ از «بدهکاران») */
+  | { name: 'unitPay'; unitNumber: number }
   | { name: 'newBill' }
   | { name: 'result' }
   | { name: 'details'; billId: string };

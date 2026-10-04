@@ -29,6 +29,8 @@ interface Props {
   onOpenMonth: (year: number, month: number) => void;
   onOpenBill: (billId: string) => void;
   onOpenUnit: (unitNumber: number) => void;
+  /** پرداخت بدهی یک واحد (دکمهٔ «پرداخت» در بدهکاران) */
+  onPayUnit: (unitNumber: number) => void;
   onHelp?: () => void;
 }
 
@@ -36,7 +38,7 @@ interface Props {
  * مرکز گزارش‌ها (از ۱.۷.۰): فهرست گزارش‌ها مثل تنظیمات + صفحهٔ جداگانهٔ هر گزارش.
  * گزارش‌های خاموش‌شده در «تنظیمات ← نمایش گزارش‌ها» در فهرست نمی‌آیند (داده دست‌نخورده می‌ماند).
  */
-export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenReport, onBack, onOpenMonth, onOpenBill, onOpenUnit, onHelp }: Props) {
+export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenReport, onBack, onOpenMonth, onOpenBill, onOpenUnit, onPayUnit, onHelp }: Props) {
   const { prefs } = useEntryPrefs();
   const { prefs: reportPrefs } = useReportPrefs();
   const type = typeProp ? activeTypeFilter(prefs, typeProp) : typeProp;
@@ -68,7 +70,7 @@ export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenRepor
         {page === 'monthly' && <MonthlyTotalView all={all} />}
         {page === 'monthlyDetail' && <MonthlyTotalView all={all} detailed />}
         {page === 'charts' && <ChartsView all={all} />}
-        {page === 'debtors' && <DebtorsView all={all} onOpenBill={onOpenBill} onOpenUnit={onOpenUnit} />}
+        {page === 'debtors' && <DebtorsView all={all} onOpenBill={onOpenBill} onOpenUnit={onOpenUnit} onPayUnit={onPayUnit} />}
         {page === 'billPayments' && (
           <BillPaymentsView all={all} year={year} type={type} onChange={(y, t) => onChange('billPayments', y, t)} onOpenBill={onOpenBill} />
         )}

@@ -203,6 +203,7 @@
 :root[data-theme="light"][data-light="paper"] .tp-pal.is-active .tp-check { color: #fff; }
 :root[data-theme="light"][data-light="paper"] .acc__head:focus-visible { outline: 3px solid rgba(29,97,175,0.35); }
 :root[data-theme="light"][data-light="paper"] .print-sheet { box-shadow: 0 -8px 30px rgba(60,50,32,0.28); }
+:root[data-theme="light"][data-light="paper"] .up-tag.is-partial { background: #fdf0e6; color: #c2570c; }
 
 /* ---- پالت روشن mint: نعناعی سرد ---- */
 :root[data-theme="light"][data-light="mint"] { --bg: #edf7f4; --card: #fbfefd; --text: #20363c; --text-2: #3d5960; --muted: #5a746c; --border: #e6f0ed; --border-2: #dae9e4; --primary: #0d7686; --primary-press: #0b616e; --primary-soft: #ebfbfd; --success: #1e8751; --success-press: #1c864e; --success-soft: #e8f7ef; --danger: #eb1515; --danger-soft: #fdecec; --warning: #f7c23c; --purple: #8b5cf6; --soft-panel: #eff7f4; --summary: #effafb; --shadow: 0 4px 18px rgba(32,60,51,0.07); --shadow-sm: 0 2px 8px rgba(32,60,51,0.06); }
@@ -407,6 +408,7 @@
 :root[data-theme="light"][data-light="mint"] .tp-pal.is-active .tp-check { color: #fff; }
 :root[data-theme="light"][data-light="mint"] .acc__head:focus-visible { outline: 3px solid rgba(14,120,137,0.35); }
 :root[data-theme="light"][data-light="mint"] .print-sheet { box-shadow: 0 -8px 30px rgba(32,60,51,0.28); }
+:root[data-theme="light"][data-light="mint"] .up-tag.is-partial { background: #fdf0e6; color: #c2570c; }
 
 /* ---- پالت روشن lavender: اسلیت یاسی ---- */
 :root[data-theme="light"][data-light="lavender"] { --bg: #f1effa; --card: #fdfcff; --text: #231f3d; --text-2: #423d60; --muted: #6e6886; --border: #e8e5f1; --border-2: #dddae9; --primary: #5d4fd6; --primary-press: #493ad1; --primary-soft: #edebfd; --success: #1e8751; --success-press: #1c864e; --success-soft: #e8f7ef; --danger: #eb1515; --danger-soft: #fdecec; --warning: #f7c23c; --purple: #8b5cf6; --soft-panel: #f1eff7; --summary: #f0effb; --shadow: 0 4px 18px rgba(38,32,60,0.07); --shadow-sm: 0 2px 8px rgba(38,32,60,0.06); }
@@ -611,6 +613,7 @@
 :root[data-theme="light"][data-light="lavender"] .tp-pal.is-active .tp-check { color: #fff; }
 :root[data-theme="light"][data-light="lavender"] .acc__head:focus-visible { outline: 3px solid rgba(95,81,214,0.35); }
 :root[data-theme="light"][data-light="lavender"] .print-sheet { box-shadow: 0 -8px 30px rgba(38,32,60,0.28); }
+:root[data-theme="light"][data-light="lavender"] .up-tag.is-partial { background: #fdf0e6; color: #c2570c; }
 
 /* ---- پالت روشن graycool: خاکستری سرد (کنتراست بالا) ---- */
 :root[data-theme="light"][data-light="graycool"] { --bg: #eceff3; --card: #ffffff; --text: #171c22; --text-2: #283039; --muted: #47505b; --border: #d6d9dc; --border-2: #cccfd3; --primary: #1244b7; --primary-press: #103b9f; --primary-soft: #ebf0fd; --success: #1e8751; --success-press: #1c864e; --success-soft: #e8f7ef; --danger: #eb1515; --danger-soft: #fdecec; --warning: #f7c23c; --purple: #8b5cf6; --soft-panel: #f2f3f4; --summary: #eff2fb; --shadow: 0 4px 18px rgba(32,44,60,0.07); --shadow-sm: 0 2px 8px rgba(32,44,60,0.06); }
@@ -815,3 +818,4 @@
 :root[data-theme="light"][data-light="graycool"] .tp-pal.is-active .tp-check { color: #fff; }
 :root[data-theme="light"][data-light="graycool"] .acc__head:focus-visible { outline: 3px solid rgba(18,69,186,0.35); }
 :root[data-theme="light"][data-light="graycool"] .print-sheet { box-shadow: 0 -8px 30px rgba(32,44,60,0.28); }
+:root[data-theme="light"][data-light="graycool"] .up-tag.is-partial { background: #fdf0e6; color: #c2570c; }

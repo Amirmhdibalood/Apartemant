@@ -8,6 +8,9 @@ import { useVisibleBills } from '../context/EntryPrefsContext';
 import { billRepository } from '../storage/billRepository';
 import { formatAmount } from '../logic/formatting';
 import { formatJalaliDate } from '../logic/date';
+import { useFeedback } from '../context/FeedbackContext';
+import { Errors } from '../logic/errors';
+import { listUnitBatches, undoBatch } from '../logic/unitPayment';
 import { paymentHistory, PAYMENT_GRACE_DAYS, RATING_LABELS, type PaymentEntry } from '../logic/debts';
 
 interface Props {
@@ -45,6 +48,23 @@ export function UnitHistoryScreen({ unitNumber, onBack, onOpenBill }: Props) {
     return () => { alive = false; };
   }, []);
   const h = useMemo(() => paymentHistory(all ?? [], unitNumber), [all, unitNumber]);
+  const { confirmDanger, toast, showErrors } = useFeedback();
+  // پرداخت‌های ثبت‌شده با «پرداخت بدهی» (قابل لغو) — از همهٔ قبض‌ها، حتی نوع خاموش
+  const batches = useMemo(() => listUnitBatches(allRaw ?? [], unitNumber), [allRaw, unitNumber]);
+  const cancelBatch = async (batchId: string, total: number) => {
+    const ok = await confirmDanger({
+      title: 'لغو این پرداخت', text: `پرداخت ${formatAmount(total)} ${CURRENCY} برگردانده می‌شود و بدهی قبض‌ها به حالت قبل برمی‌گردد.`, confirmLabel: 'لغو پرداخت',
+    });
+    if (!ok) return;
+    try {
+      const raw = await billRepository.getAllWithDeleted();
+      await billRepository.upsertMany(undoBatch(raw, batchId));
+      setAll(await billRepository.getAll());
+      toast('پرداخت لغو شد.');
+    } catch {
+      showErrors(Errors.storageFailed());
+    }
+  };
 
   return (
     <>
@@ -110,6 +130,21 @@ export function UnitHistoryScreen({ unitNumber, onBack, onOpenBill }: Props) {
                 </button>
               ))}
             </div>
+
+            {batches.length > 0 && (
+              <section className="up-card up-batches" aria-label="پرداخت‌های بدهی واحد">
+                <div className="up-h" style={{ margin: '10px 0 2px' }}><span>پرداخت‌های ثبت‌شده با «پرداخت»</span></div>
+                {batches.map((b) => (
+                  <div key={b.batchId} className="up-batch">
+                    <span className="up-batch__main">
+                      <b><span className="num">{formatAmount(b.total)}</span> {CURRENCY}</b>
+                      <small>{b.paidAt ? <span className="num">{date(b.paidAt)}</span> : 'نامشخص'} · <span className="num">{b.billCount}</span> قبض</small>
+                    </span>
+                    <button type="button" className="up-undo" onClick={() => void cancelBatch(b.batchId, b.total)}>لغو این پرداخت</button>
+                  </div>
+                ))}
+              </section>
+            )}
           </>
         )}
       </main>
