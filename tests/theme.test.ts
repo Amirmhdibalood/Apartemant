@@ -117,9 +117,9 @@ describe('استایل تاریک تولیدشده', () => {
 
 describe('تصویر شبانه صفحه ورود', () => {
   it('نسخه تاریک intro-art با نسخه روشن همگام است و رنگ روشن آسمان ندارد', () => {
-    for (const { src, out } of ART_FILES) {
+    for (const { id, src, out } of ART_FILES) {
       const dark = readFileSync(out, 'utf8');
-      expect(dark).toBe(generateDarkArt(readFileSync(src, 'utf8')));
+      expect(dark).toBe(generateDarkArt(readFileSync(src, 'utf8'), id));
       expect(dark).not.toMatch(/#(BFD6FF|E4EEFF|F7FAFF|DCE8FF)/i);
     }
   });
@@ -139,7 +139,10 @@ describe('محل دکمه‌ها و تصویر قبض', () => {
     expect([...pos].sort((a, b) => a - b)).toEqual(pos);
     expect(html).toContain('app-header--two');
     const noHelp = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'آموزش' }))));
-    expect(noHelp).not.toContain('حالت تاریک');
+    // ۱.۷.۷: صفحه‌های داخلی فقط بازگشت + تم دارند (بدون «؟»، پشتیبانی و زنگوله)
+    expect(noHelp).toContain('حالت تاریک');
+    expect(noHelp).not.toContain('راهنما (آموزش)');
+    expect(noHelp).not.toContain('bell-btn');
   });
   it('تصویر قبض (canvas) از تم مستقل است: رنگ ثابت و بدون وابستگی به تم/CSS', () => {
     for (const f of ['../src/services/billImage.tsx', '../src/logic/billImage.ts']) {

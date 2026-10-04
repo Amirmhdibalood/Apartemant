@@ -65,13 +65,16 @@ export function filterBills(items: BillWithUnits[], f: RecordsFilter): BillWithU
     .sort((a, b) => b.bill.month - a.bill.month || b.bill.createdAt.localeCompare(a.bill.createdAt));
 }
 
-export interface RecordsSummary { count: number; total: number; paid: number }
+/** paid + unpaid = count (قبض حذف‌شده پرداخت‌نشده حساب می‌شود؛ مهلت پرداخت در این تقسیم نقشی ندارد) */
+export interface RecordsSummary { count: number; total: number; paid: number; unpaid: number }
 
 export function summarizeBills(items: BillWithUnits[]): RecordsSummary {
+  const paid = items.filter((x) => isBillPaid(x.bill)).length;
   return {
     count: items.length,
     total: items.reduce((s, x) => s + x.bill.totalAmount, 0),
-    paid: items.filter((x) => isBillPaid(x.bill)).length,
+    paid,
+    unpaid: items.length - paid,
   };
 }
 

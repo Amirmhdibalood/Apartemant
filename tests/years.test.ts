@@ -68,7 +68,8 @@ describe('نسخه برنامه', () => {
     expect(APP_VERSION).toBe(pkg.version);
     expect(APP_VERSION_FA).toBe('نسخه ' + pkg.version.replace(/\d/g, (d: string) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]));
     if (pkg.version === '1.0.0') expect(APP_VERSION_FA).toBe('نسخه ۱.۰.۰');
-    expect(DEVELOPER_NAME).toBe('AmirMahdi Balood');
-    expect(DEVELOPER_EMAIL).toBe('amirmahdibalood16@gmail.com');
+    // نام و ایمیل سازنده فعلاً در رابط پنهان است (TODO: نام مستعار و ایمیل کاری بعداً جایگزین شود)
+    expect(DEVELOPER_NAME).toBeNull();
+    expect(DEVELOPER_EMAIL).toBeNull();
   });
 });

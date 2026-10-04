@@ -1,7 +1,7 @@
 import { BuildingIllustration, CitySkyline } from '../components/Illustrations';
 import { IconAlertTriangle, IconBook, IconChart, IconChevronLeft, IconGear, IconHistory, IconPlus, IconX } from '../components/Icons';
 import type { TabId } from '../components/BottomNav';
-import { HelpButton } from '../components/AppHeader';
+import { HelpButton, SupportButton } from '../components/AppHeader';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { NotifBell } from '../components/NotifBell';
 import { bannerFor, type DueAlert } from '../logic/dueAlerts';
@@ -17,6 +17,8 @@ interface Props {
   onDismiss?: (key: string) => void;
   /** باز کردن آموزش (دکمه «؟» بالا-چپ) */
   onHelp?: () => void;
+  /** باز کردن «پشتیبانی» (آیکن هدست کنار زنگوله) */
+  onSupport?: () => void;
   /** حالت نمایش اعلان‌ها (در «پنجره پایین» بنر فشرده می‌شود) */
   mode?: NotifMode;
   /** باز کردن مرکز اعلان‌ها (زنگوله) */
@@ -24,11 +26,11 @@ interface Props {
 }
 
 /** ۱. صفحه اصلی */
-export function HomeScreen({ onNewBill, onOpen, alerts: visible = [], onOpenBill, onDismiss, onHelp, mode = 'sheet', onShowAll }: Props) {
+export function HomeScreen({ onNewBill, onOpen, alerts: visible = [], onOpenBill, onDismiss, onHelp, onSupport, mode = 'sheet', onShowAll }: Props) {
   const { shown: alerts, more } = bannerFor(visible, mode);
   return (
     <main className="screen screen--home">
-      {onHelp && <div className="home-topbar"><NotifBell /><HelpButton onHelp={onHelp} /><ThemeToggle /></div>}
+      {onHelp && <div className="home-topbar"><NotifBell />{onSupport && <SupportButton onSupport={onSupport} />}<HelpButton onHelp={onHelp} /><ThemeToggle /></div>}
       {alerts.length > 0 && (
         <section className="due-alerts" aria-label="هشدار مهلت پرداخت">
           {alerts.map((a) => (

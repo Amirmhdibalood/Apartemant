@@ -12,7 +12,8 @@ interface Props {
 export function Dialog({ open, onClose, children, labelledBy, variant = 'default' }: Props) {
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose?.(); };
+    // اگر «پیش‌نمایش خروجی» روی دیالوگ باز است، Esc/Back اول همان را می‌بندد
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !document.querySelector('.pv')) onClose?.(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);

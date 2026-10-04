@@ -35,24 +35,25 @@ describe('فیلتر وضعیت گزارش پرداخت قبض‌ها', () => {
     expect(filterPaymentRows(rows, 'onTime')).toHaveLength(s.onTime);
     expect(filterPaymentRows(rows, 'late')).toHaveLength(s.late);
     expect(filterPaymentRows(rows, 'unpaid')).toHaveLength(s.unpaid);
-    expect([s.onTime, s.late, s.unpaid, s.total]).toEqual([4, 3, 2, 10]);
+    expect([s.onTime, s.late, s.unpaid, s.total]).toEqual([5, 3, 2, 10]);
   });
-  it('به‌موقع = زودتر + سر موعد؛ پرداخت‌نشده = در انتظار + گذشته از مهلت', () => {
-    expect(filterPaymentRows(rows, 'onTime').map((r) => r.timing).sort()).toEqual(['early', 'early', 'onTime', 'onTime']);
+  it('به‌موقع = زودتر + سر موعد + پرداخت‌شدهٔ بدون مهلت؛ پرداخت‌نشده = در انتظار + گذشته از مهلت', () => {
+    expect(filterPaymentRows(rows, 'onTime').map((r) => r.timing).sort()).toEqual(['early', 'early', 'onTime', 'onTime', 'paidNoDue']);
     expect(filterPaymentRows(rows, 'unpaid').map((r) => r.timing).sort()).toEqual(['overdue', 'pending']);
     expect(filterPaymentRows(rows, 'late').every((r) => r.timing === 'late')).toBe(true);
   });
   it('«همه» همه را برمی‌گرداند، از جمله پرداخت‌شده بدون مهلت', () => {
     expect(filterPaymentRows(rows, 'all')).toBe(rows);
     expect(rows.some((r) => r.timing === 'paidNoDue')).toBe(true);
-    for (const st of ['onTime', 'late', 'unpaid'] as PaymentStatusFilter[]) {
+    expect(filterPaymentRows(rows, 'onTime').some((r) => r.timing === 'paidNoDue')).toBe(true);
+    for (const st of ['late', 'unpaid'] as PaymentStatusFilter[]) {
       expect(filterPaymentRows(rows, st).some((r) => r.timing === 'paidNoDue')).toBe(false);
     }
   });
   it('وضعیت‌ها هم‌پوشانی ندارند و با هم همه سطرهای دارای وضعیت را می‌پوشانند', () => {
     const all = [...filterPaymentRows(rows, 'onTime'), ...filterPaymentRows(rows, 'late'), ...filterPaymentRows(rows, 'unpaid')];
     expect(new Set(all.map((r) => r.bill.id)).size).toBe(all.length);
-    expect(ids(all)).toEqual(ids(rows.filter((r) => r.timing !== 'paidNoDue')));
+    expect(ids(all)).toEqual(ids(rows));
   });
   it('ترکیب با فیلتر نوع هزینه (AND)', () => {
     const water = billPaymentReport(DATA, 1405, 'water', TODAY).rows;
@@ -67,10 +68,12 @@ describe('فیلتر وضعیت گزارش پرداخت قبض‌ها', () => {
     expect(toggleStatusFilter('unpaid', 'all')).toBe('all');
   });
   it('برچسب‌ها و matchesPaymentStatus', () => {
-    expect(PAYMENT_STATUS_LABEL).toEqual({ all: 'همه', onTime: 'به‌موقع', late: 'با تأخیر', unpaid: 'پرداخت‌نشده' });
+    expect(PAYMENT_STATUS_LABEL).toEqual({ all: 'همه', paid: 'پرداخت‌شده', onTime: 'به‌موقع', late: 'با تأخیر', unpaid: 'پرداخت‌نشده' });
     expect(matchesPaymentStatus({ timing: 'pending' }, 'unpaid')).toBe(true);
     expect(matchesPaymentStatus({ timing: 'late' }, 'onTime')).toBe(false);
     expect(matchesPaymentStatus({ timing: 'paidUnknown' }, 'all')).toBe(true);
+    expect(matchesPaymentStatus({ timing: 'unpaidNoDue' }, 'unpaid')).toBe(true);
+    expect(matchesPaymentStatus({ timing: 'paidNoDue' }, 'paid')).toBe(true);
   });
   it('رابط: pill «همه (N)»، کارت‌ها دکمه‌اند، نوار «فیلتر … نمایش همه» و دو انتخابگر سال/نوع', () => {
     const src = readFileSync('src/screens/reports/BillPaymentsView.tsx', 'utf8');

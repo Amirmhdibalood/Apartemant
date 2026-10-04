@@ -6,7 +6,9 @@
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import type { BillWithUnits } from '../models/types';
-import { buildBillImageModel, type BillImageModel, type UnitStatusKind } from '../logic/billImage';
+import { billImageColors } from '../logic/billImageColors';
+import { sanitizeLightPalette, DEFAULT_LIGHT_PALETTE } from '../logic/lightPalettes';
+import { buildBillImageModel, type BillImageModel } from '../logic/billImage';
 import { GlyphSvg } from '../components/ExpenseIcon';
 import appIconUrl from '../assets/app-icon.png';
 
@@ -14,32 +16,13 @@ import appIconUrl from '../assets/app-icon.png';
 const W = 540;
 const SCALE = 2;
 const FONT = 'Vazirmatn, Tahoma, sans-serif';
-const C = {
-  bg: '#EEF3FC',
-  card: '#FFFFFF',
-  text: '#1C2440',
-  text2: '#3D4660',
-  muted: '#7A8398',
-  border: '#E4E9F2',
-  headRow: '#F2F5FA',
-  zebra: '#FAFBFE',
-  primary: '#2F74F0',
-  primarySoft: '#EAF1FE',
-  purple: '#7C3AED',
-  purpleSoft: '#F3E8FF',
-  tealSoft: '#E0F7F1',
-  teal: '#0F766E',
-};
-const STATUS_STYLE: Record<UnitStatusKind, { fg: string; bg: string }> = {
-  settled: { fg: '#1F9557', bg: '#E8F7EF' },
-  partial: { fg: '#B7791F', bg: '#FFF6E0' },
-  unpaid: { fg: '#D64533', bg: '#FDECEC' },
-};
+/** رنگ‌های فعلی تصویر (با پالت روشن انتخابی در renderBillImage تنظیم می‌شود؛ پیش‌فرض «آسمانی») */
+let { C, STATUS: STATUS_STYLE } = billImageColors('sky');
 
-const font = (weight: number, size: number) => `${weight} ${size}px ${FONT}`;
+export const font = (weight: number, size: number) => `${weight} ${size}px ${FONT}`;
 
 /** اطمینان از بارگذاری فونت‌های محلی قبل از رسم (بدون اینترنت) */
-async function ensureFonts(): Promise<void> {
+export async function ensureFonts(): Promise<void> {
   if (typeof document === 'undefined' || !document.fonts) return;
   const sample = 'آپارتمانت قبض ۰۱۲۳۴۵۶۷۸۹ 0123';
   await Promise.all(
@@ -48,7 +31,7 @@ async function ensureFonts(): Promise<void> {
   await document.fonts.ready.catch(() => undefined);
 }
 
-function loadImage(src: string): Promise<HTMLImageElement | null> {
+export function loadImage(src: string): Promise<HTMLImageElement | null> {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => resolve(img);
@@ -59,6 +42,12 @@ function loadImage(src: string): Promise<HTMLImageElement | null> {
 
 /** آیکون نوع هزینه (همان SVG داخل برنامه) به‌صورت تصویر */
 async function glyphImage(model: BillImageModel, type: BillWithUnits['bill']['expenseType']): Promise<HTMLImageElement | null> {
+  return glyphImageFor(type, model.typeColor);
+}
+
+/** آیکون نوع هزینه با رنگ دلخواه به‌صورت تصویر (برای تصویر قبض و تصویر/PDF گزارش‌ها) */
+export async function glyphImageFor(type: BillWithUnits['bill']['expenseType'], typeColor: string): Promise<HTMLImageElement | null> {
+  const model = { typeColor };
   try {
     const host = document.createElement('div');
     const root = createRoot(host);
@@ -76,7 +65,7 @@ async function glyphImage(model: BillImageModel, type: BillWithUnits['bill']['ex
   }
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+export function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   const rr = Math.min(r, h / 2, w / 2);
   ctx.beginPath();
   ctx.moveTo(x + rr, y);
@@ -87,7 +76,7 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.closePath();
 }
 
-function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines = 3): string[] {
+export function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxLines = 3): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let line = '';
@@ -328,6 +317,9 @@ export async function renderBillImage(data: BillWithUnits, now: Date = new Date(
   const canvas = document.createElement('canvas');
   const measureCtx = canvas.getContext('2d');
   if (!measureCtx) throw new Error('canvas-unavailable');
+  // پالت روشن انتخابی کاربر (data-light روی <html>)؛ هر دو رسم پشت‌سرهم و همگام‌اند، پس رنگ‌ها وسط کار عوض نمی‌شوند
+  const lp = sanitizeLightPalette(typeof document !== 'undefined' ? document.documentElement.dataset.light : null) ?? DEFAULT_LIGHT_PALETTE;
+  ({ C, STATUS: STATUS_STYLE } = billImageColors(lp));
   const h = paint(measureCtx, model, assets, false);
   canvas.width = W * SCALE;
   canvas.height = h * SCALE;

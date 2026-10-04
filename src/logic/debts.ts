@@ -71,6 +71,7 @@ export function debtorsReport(bills: BillWithUnits[], now: Date = new Date()): D
   for (const { bill, units } of bills) {
     let open = false;
     for (const u of units) {
+      if (u.vacant) continue; // واحد خالی: نه واحد حساب می‌شود نه بدهی دارد
       all.add(u.unitNumber);
       const remaining = remainingAmount(u);
       if (remaining <= 0) continue;
@@ -154,7 +155,7 @@ export function paymentHistory(bills: BillWithUnits[], unitNumber: number, now: 
   for (const { bill, units } of bills) {
     const u = units.find((x) => x.unitNumber === unitNumber);
     // واحد بدون سهم (واحد خالی در آن قبض) در سابقه پرداخت حساب نمی‌شود
-    if (!u || u.shareAmount === 0) continue;
+    if (!u || u.vacant || u.shareAmount === 0) continue;
     let status: PaymentStatus;
     let days: number | null;
     const remaining = remainingAmount(u);

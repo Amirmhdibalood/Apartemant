@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { IconChevronLeft, IconHelp } from './Icons';
+import { IconChevronLeft, IconHeadset, IconHelp } from './Icons';
 import { NotifBell } from './NotifBell';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -8,11 +8,12 @@ interface Props {
   onBack?: () => void;
   /** دکمه/آیکون سمت راست عنوان (مثل تقویم در صفحه سوابق) */
   start?: ReactNode;
-  /** دکمه «؟» (راهنما/آموزش) در سمت چپ نوار بالا (از نسخه ۱.۶.۳) */
+  /** فقط چهار صفحهٔ اصلی نوار پایین (خانه، سوابق، گزارش‌ها، تنظیمات): «؟» (آموزش همان صفحه)، پشتیبانی و زنگوله */
   onHelp?: () => void;
+  onSupport?: () => void;
 }
 
-/** دکمه «؟» راهنما: باز کردن آموزش (جایگزین زبانه آموزش در نوار پایین) */
+/** دکمه «؟» راهنما: باز کردن آموزشِ همان صفحه */
 export function HelpButton({ onHelp }: { onHelp: () => void }) {
   return (
     <button type="button" className="icon-btn help-btn" onClick={onHelp} aria-label="راهنما (آموزش)">
@@ -21,18 +22,32 @@ export function HelpButton({ onHelp }: { onHelp: () => void }) {
   );
 }
 
-/** هدر صفحات. ترتیب فیزیکی دکمه‌ها از چپ به راست روی صفحه: بازگشت ← تم روز/شب ← راهنما «؟» ← زنگولهٔ اعلان‌ها
- *  (صفحه راست‌به‌چپ است، پس در DOM برعکس نوشته می‌شود: زنگوله، «؟»، تم، بازگشت) */
-export function AppHeader({ title, onBack, start, onHelp }: Props) {
-  const two = !!onBack && !!onHelp;
+/** دکمه پشتیبانی (هدست): سؤال‌های رایج و راه‌های تماس */
+export function SupportButton({ onSupport }: { onSupport: () => void }) {
   return (
-    <header className={'app-header' + (onHelp ? ' app-header--help' : '') + (two ? ' app-header--two' : '')}>
+    <button type="button" className="icon-btn support-btn" onClick={onSupport} aria-label="پشتیبانی">
+      <IconHeadset size={24} />
+    </button>
+  );
+}
+
+/**
+ * هدر صفحات (از ۱.۷.۷).
+ *  - صفحه‌های داخلی: فقط بازگشت + دکمهٔ تم.
+ *  - چهار صفحهٔ اصلی (onHelp داده شود): زنگوله، پشتیبانی، «؟» و تم (و بازگشت اگر لازم باشد).
+ * ترتیب فیزیکی از چپ به راست: بازگشت ← تم ← «؟» ← پشتیبانی ← زنگوله (صفحه راست‌به‌چپ است، پس در DOM برعکس نوشته می‌شود).
+ */
+export function AppHeader({ title, onBack, start, onHelp, onSupport }: Props) {
+  const main = !!onHelp;
+  return (
+    <header className={'app-header app-header--two' + (main ? ' app-header--main' : '')}>
       <div className="app-header__side app-header__start">{start}</div>
       <h1 className="app-header__title">{title}</h1>
       <div className="app-header__side app-header__end">
-        {onHelp && <NotifBell />}
-        {onHelp && <HelpButton onHelp={onHelp} />}
-        {onHelp && <ThemeToggle />}
+        {main && <NotifBell />}
+        {main && onSupport && <SupportButton onSupport={onSupport} />}
+        {main && <HelpButton onHelp={onHelp!} />}
+        <ThemeToggle />
         {onBack && (
           <button type="button" className="icon-btn" onClick={onBack} aria-label="بازگشت">
             <IconChevronLeft size={24} />

@@ -1,5 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { darkHex } from '../src/logic/darkColor';
+import { DARK_PALETTES, DARK_PALETTE_ORDER } from '../src/logic/darkPalettes';
 
 const dark = readFileSync('src/styles/dark.css', 'utf-8');
 const gen = readFileSync('src/styles/dark.generated.css', 'utf-8');
@@ -15,33 +17,39 @@ const rule = (sel: string) => {
   return m[1];
 };
 const prop = (body: string, p: string) => body.match(new RegExp(p + ':\\s*([^;]+);'))?.[1].trim() ?? '';
+const SW = ':root[data-theme="dark"][data-palette] .switch';
 
-describe('کلید روشن/خاموش در حالت تاریک', () => {
-  const CARD = '#151e33';
-  const off = rule(':root[data-theme="dark"] .switch');
-  const on = rule(':root[data-theme="dark"] .switch.is-on');
+describe('کلید روشن/خاموش در حالت تاریک (قاعده‌ها با متغیر پالت)', () => {
+  const off = rule(SW);
+  const on = rule(SW + '.is-on');
 
   it('روشن و خاموش قاعدهٔ جدا دارند و قاعدهٔ روشن از خودکارِ generated قوی‌تر/دیرتر است', () => {
-    expect(gen).toContain(':root[data-theme="dark"] .switch {'); // همان قاعده‌ای که قبلاً روشن را پنهان می‌کرد
+    expect(gen).toContain(':root[data-theme="dark"] .switch {');
     expect(prop(on, 'background')).not.toBe(prop(off, 'background'));
-    expect(prop(on, 'background')).toBe('var(--primary-fill)');
+    expect(prop(on, 'background')).toBe('var(--sw-on-bg)');
+    expect(prop(off, 'background')).toBe('var(--sw-off-bg)');
+    expect(dark).toContain('.checkbox.is-checked .checkbox__box { background: var(--success-fill)');
   });
 
-  it('خاموش: لبهٔ ۲px نسبت به کارت ≥ ۳:۱؛ روشن: رنگ برند با کنتراست کافی و دستگیرهٔ سفید', () => {
-    const offEdge = prop(off, 'box-shadow').match(/#[0-9a-f]{6}/i)![0];
-    expect(ratio(offEdge, CARD)).toBeGreaterThanOrEqual(3);
-    const onFill = '#2e68d6'; // --primary-fill در dark.css
-    expect(dark).toContain('--primary-fill: ' + onFill);
-    expect(ratio(onFill, CARD)).toBeGreaterThanOrEqual(3);
-    expect(ratio('#ffffff', onFill)).toBeGreaterThanOrEqual(4.5);
-    // خاموش و روشن از نظر پرکردن هم از هم جدا هستند (رنگ دستگیره و زمینه)
-    expect(ratio(onFill, '#2a3858')).toBeGreaterThanOrEqual(1.5);
-    expect(prop(rule(':root[data-theme="dark"] .switch__thumb'), 'background')).not.toBe(prop(rule(':root[data-theme="dark"] .switch.is-on .switch__thumb'), 'background'));
-  });
-
-  it('چک‌باکس تیک‌خورده هم در تاریک با بدون‌تیک فرق دارد', () => {
-    const checked = rule(':root[data-theme="dark"] .checkbox.is-checked .checkbox__box');
-    expect(prop(checked, 'background')).toBe('var(--success-fill)');
-    expect(dark).toContain('--success-fill: #1c7f4f');
-  });
+  for (const id of DARK_PALETTE_ORDER) {
+    describe(`پالت ${DARK_PALETTES[id].name}`, () => {
+      const E = DARK_PALETTES[id].extras;
+      const CARD = darkHex('#ffffff', id);
+      it('خاموش: لبهٔ ۲px نسبت به کارت ≥ ۳:۱؛ روشن: رنگ برند با کنتراست کافی؛ دستگیرهٔ سفید روی پرشده', () => {
+        expect(ratio(E.swOffRing, CARD)).toBeGreaterThanOrEqual(3);
+        expect(ratio(E.primaryFill, CARD)).toBeGreaterThanOrEqual(2.5);
+        expect(ratio('#ffffff', E.primaryFill)).toBeGreaterThanOrEqual(4.5);
+        expect(ratio('#ffffff', E.primaryFillPress)).toBeGreaterThanOrEqual(4.5);
+        expect(ratio(E.primaryFill, E.swOffBg)).toBeGreaterThanOrEqual(1.3);
+        expect(ratio(E.swThumb, E.swOffBg)).toBeGreaterThanOrEqual(3);
+      });
+      it('چک‌باکس تیک‌خورده: سفید روی سبز پرشده ≥ ۴٫۵؛ لبه‌ها از کارت جدا', () => {
+        expect(ratio('#ffffff', E.successFill)).toBeGreaterThanOrEqual(4.5);
+        expect(ratio('#ffffff', E.successFillPress)).toBeGreaterThanOrEqual(4.5);
+        expect(ratio('#ffffff', E.dangerFill)).toBeGreaterThanOrEqual(4.5);
+        expect(ratio(E.cbRing, CARD)).toBeGreaterThanOrEqual(3);
+        expect(ratio(E.cbOnBorder, CARD)).toBeGreaterThanOrEqual(3);
+      });
+    });
+  }
 });

@@ -1,3 +1,4 @@
+import { VACANT_LABEL } from '../logic/vacant';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { BuildingSettings, BuildingUnit } from '../models/types';
 import { IconMinus, IconPlus, IconUser } from './Icons';
@@ -156,10 +157,10 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
               inputMode="numeric"
               pattern="[0-9]*"
               autoComplete="off"
-              dir="ltr"
               maxLength={4}
               aria-label={`نفرات پیش‌فرض واحد ${toPersianDigits(i + 1)}`}
-              value={r.persons}
+              dir={r.vacant ? 'rtl' : 'ltr'}
+              value={r.vacant ? VACANT_LABEL : r.persons}
               onChange={(e) => update(rows.map((x, j) => (j === i ? { ...x, persons: sanitizePersonCount(e.target.value) } : x)))}
               onBlur={() => {
                 if (r.persons.trim() === '' || Number(r.persons) < 1) {
@@ -197,7 +198,7 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
         ))}
       </div>
       <p className="building-note-small">متراژ (اعشار مجاز مثل ۷۵٫۵؛ پیش‌فرض هر واحد ۱) فقط برای تقسیم «بر اساس متراژ» به‌کار می‌رود و در فرم قبض پیش‌فرض می‌شود؛ ظاهر آن را در «نحوه نمایش متراژ» پایین‌تر انتخاب کنید.</p>
-      <p className="building-note-small">واحد «خالی» در قبض‌های جدید از محاسبه کنار گذاشته می‌شود (در هیچ‌کدام از دو روش تقسیم سهمی ندارد و در بدهکاران نمی‌آید)؛ در فرم قبض می‌توانید برای همان قبض تغییرش دهید. نام واحد بدون اسم مستعار: «واحد ۱»، «واحد ۲»، ...</p>
+      <p className="building-note-small">واحد «خالی» در قبض‌های جدید از محاسبه کنار گذاشته می‌شود (در هیچ‌کدام از سه روش تقسیم سهمی ندارد و در بدهکاران نمی‌آید)؛ در فرم قبض می‌توانید برای همان قبض تغییرش دهید. نام واحد بدون اسم مستعار: «واحد ۱»، «واحد ۲»، ...</p>
     </div>
   );
 }

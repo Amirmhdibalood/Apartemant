@@ -12,6 +12,8 @@ import { typeFilterOptions } from '../../logic/entryPrefs';
 import { useEntryPrefs } from '../../context/EntryPrefsContext';
 import { billPaymentReport, filterPaymentRows, PAYMENT_STATUS_LABEL, toggleStatusFilter, type PaymentStatusFilter } from '../../logic/billPaymentReport';
 import { formatJalaliSlash, todayJalali } from '../../logic/jalali';
+import { billPaymentsDoc } from '../../logic/reportDoc';
+import { ReportActions } from '../../components/ReportActions';
 
 interface Props {
   all: BillWithUnits[] | null;
@@ -34,6 +36,7 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
   const report = useMemo(() => billPaymentReport(all ?? [], year, type, today), [all, year, type, today.year, today.month, today.day]);
   const s = report.summary;
   const shown = useMemo(() => filterPaymentRows(report.rows, status), [report.rows, status]);
+  const doc = useMemo(() => (all && report.rows.length > 0 ? billPaymentsDoc(shown, s, year, type) : null), [all, report.rows.length, shown, s, year, type]);
   const tap = (x: PaymentStatusFilter) => setStatus((cur) => toggleStatusFilter(cur, x));
   const typeIndex = Math.max(0, typeOptions.findIndex((o) => o.value === type));
 
@@ -54,8 +57,8 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
         <div className="empty-state">
           <IconCalendar size={40} />
           <p>
-            برای سال {year}{type ? ` و قبض «${EXPENSE_TYPES[type].label}»` : ''} قبضی با مهلت پرداخت یا پرداخت‌شده پیدا نشد.
-            برای استفاده از این گزارش، هنگام ثبت قبض «مهلت پرداخت» را تعیین کنید و پس از پرداخت، تیک «پرداخت شد» را بزنید.
+            برای سال {year}{type ? ` و قبض «${EXPENSE_TYPES[type].label}»` : ''} هنوز قبضی ثبت نشده است.
+            برای بهره‌گیری کامل از این گزارش، هنگام ثبت قبض «مهلت پرداخت» را تعیین کنید و پس از پرداخت، تیک «پرداخت شد» را بزنید.
           </p>
         </div>
       )}
@@ -67,13 +70,16 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
             <button type="button" className={'bp-all' + (status === 'all' ? ' is-active' : '')} aria-pressed={status === 'all'} onClick={() => setStatus('all')}>
               {status === 'all' && <IconCheck size={14} />} همه <span className="num">({toPersianDigits(s.total)})</span>
             </button>
+            <button type="button" className={'bp-all' + (status === 'paid' ? ' is-active' : '')} aria-pressed={status === 'paid'} onClick={() => tap('paid')}>
+              {status === 'paid' && <IconCheck size={14} />} پرداخت‌شده <span className="num">({toPersianDigits(s.paid)})</span>
+            </button>
             <span className="bp-statusbar__hint">برای فیلتر، روی یک کارت بزنید</span>
           </div>
           <section className={'bp-summary' + (status !== 'all' ? ' has-filter' : '')} aria-label="خلاصه پرداخت قبض‌ها">
             <button type="button" className={'bp-summary__item is-ontime' + (status === 'onTime' ? ' is-selected' : '')} aria-pressed={status === 'onTime'} onClick={() => tap('onTime')}>
               <b className="num">{s.onTime}</b>
               <span>به‌موقع</span>
-              <small>زودتر <span className="num">{s.early}</span> · سر موعد <span className="num">{s.exact}</span></small>
+              <small>زودتر <span className="num">{s.early}</span> · سر موعد <span className="num">{s.exact}</span>{s.paidNoDue > 0 && <> · بدون مهلت <span className="num">{s.paidNoDue}</span></>}</small>
               {status === 'onTime' && <i className="bp-tick"><IconCheck size={12} /></i>}
             </button>
             <button type="button" className={'bp-summary__item is-late' + (status === 'late' ? ' is-selected' : '')} aria-pressed={status === 'late'} onClick={() => tap('late')}>
@@ -85,7 +91,7 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
             <button type="button" className={'bp-summary__item is-unpaid' + (status === 'unpaid' ? ' is-selected' : '')} aria-pressed={status === 'unpaid'} onClick={() => tap('unpaid')}>
               <b className="num">{s.unpaid}</b>
               <span>پرداخت‌نشده</span>
-              <small>گذشته از مهلت <span className="num">{s.overdue}</span></small>
+              <small>گذشته از مهلت <span className="num">{s.overdue}</span> · بدون مهلت <span className="num">{s.unpaidNoDue}</span></small>
               {status === 'unpaid' && <i className="bp-tick"><IconCheck size={12} /></i>}
             </button>
           </section>
@@ -122,6 +128,7 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
           </div>
         </>
       )}
+      <ReportActions doc={doc} />
     </>
   );
 }

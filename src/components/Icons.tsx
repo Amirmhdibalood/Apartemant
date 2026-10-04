@@ -188,6 +188,13 @@ export const IconCheck = (p: P) => (
     <path d="M20 6 9 17l-5-5" />
   </S>
 );
+export const IconWallet = (p: P) => (
+  <S {...p}>
+    <rect x="2.5" y="6" width="19" height="13" rx="3" />
+    <path d="M2.5 10.5h19" />
+    <path d="M7 15h3" />
+  </S>
+);
 export const IconShare = (p: P) => (
   <S {...p}>
     <path d="M12 3v12" />
@@ -246,5 +253,108 @@ export const IconBell = (p: P) => (
   <S {...p}>
     <path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.6 1.8H4.4L6 16.5Z" />
     <path d="M10 20.6a2.2 2.2 0 0 0 4 0" />
+  </S>
+);
+
+export const IconPrinter = (p: P) => (
+  <S {...p}>
+    <path d="M7 9V3.5h10V9" />
+    <rect x="3.5" y="9" width="17" height="8" rx="2" />
+    <path d="M7 14h10v6.5H7z" />
+    <path d="M17 12h.01" strokeWidth={2.6} />
+  </S>
+);
+export const IconFile = (p: P) => (
+  <S {...p}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+    <path d="M14 3v5h5" />
+  </S>
+);
+export const IconImage = (p: P) => (
+  <S {...p}>
+    <rect x="3" y="4" width="18" height="16" rx="3" />
+    <circle cx="9" cy="10" r="1.6" />
+    <path d="m4 18 5-5 3.5 3.5L16 13l4 4.5" />
+  </S>
+);
+export const IconPie = (p: P) => (
+  <S {...p}>
+    <path d="M12 3a9 9 0 1 0 9 9h-9z" />
+    <path d="M15 3.4A9 9 0 0 1 20.6 9H15z" />
+  </S>
+);
+export const IconLine = (p: P) => (
+  <S {...p}>
+    <path d="M3.5 20.5h17" />
+    <path d="m4.5 15 4.5-5 4 3.5L19.5 6" />
+  </S>
+);
+export const IconBars = (p: P) => (
+  <S {...p}>
+    <path d="M3.5 20.5h17" />
+    <rect x="5.5" y="10" width="3" height="8" rx="1" />
+    <rect x="10.5" y="5" width="3" height="13" rx="1" />
+    <rect x="15.5" y="12" width="3" height="6" rx="1" />
+  </S>
+);
+export const IconList = (p: P) => (
+  <S {...p}>
+    <path d="M9 6h11M9 12h11M9 18h11" />
+    <path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" strokeWidth={2.8} />
+  </S>
+);
+export const IconUsers = (p: P) => (
+  <S {...p}>
+    <circle cx="9" cy="8" r="3.6" />
+    <path d="M2.5 20a6.5 6.5 0 0 1 13 0" />
+    <path d="M16 4.6a3.6 3.6 0 0 1 0 6.8M18.5 14.2A6.5 6.5 0 0 1 21.5 20" />
+  </S>
+);
+export const IconReceipt = (p: P) => (
+  <S {...p}>
+    <path d="M6 3h12v18l-2.4-1.6L13.2 21 12 20l-1.2 1-2.4-1.6L6 21z" />
+    <path d="M9.5 8h5M9.5 12h5" />
+  </S>
+);
+
+export const IconHeadset = (p: P) => (
+  <S {...p}>
+    <path d="M4 14v-2a8 8 0 0 1 16 0v2" />
+    <rect x="3" y="14" width="4" height="6" rx="1.8" />
+    <rect x="17" y="14" width="4" height="6" rx="1.8" />
+    <path d="M19 20c0 1.4-2 2-5 2" />
+  </S>
+);
+export const IconSearch = (p: P) => (
+  <S {...p}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M20 20l-3.5-3.5" />
+  </S>
+);
+export const IconMail = (p: P) => (
+  <S {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+    <path d="M3.5 7l8.5 6 8.5-6" />
+  </S>
+);
+export const IconPhone = (p: P) => (
+  <S {...p}>
+    <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />
+  </S>
+);
+export const IconChat = (p: P) => (
+  <S {...p}>
+    <path d="M4 5h16v11H9l-5 4z" />
+  </S>
+);
+export const IconSend = (p: P) => (
+  <S {...p}>
+    <path d="M21 4L3 11l6 2.5L11.5 20l3-5.5z" />
+  </S>
+);
+export const IconCopy = (p: P) => (
+  <S {...p}>
+    <rect x="8" y="8" width="12" height="12" rx="2.5" />
+    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
   </S>
 );

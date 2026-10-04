@@ -1,3 +1,4 @@
+import { occupiedCount } from '../logic/vacant';
 import { useEffect, useMemo, useState } from 'react';
 import type { BillWithUnits, ExpenseType } from '../models/types';
 import { CURRENCY, EXPENSE_TYPES, monthName } from '../models/constants';
@@ -32,12 +33,13 @@ interface Props {
   onFilterChange: (filter: RecordsFilter) => void;
   onOpenBill: (billId: string) => void;
   onHelp?: () => void;
+  onSupport?: () => void;
   /** وقتی از صفحه گزارش باز شده باشد: بازگشت به گزارش */
   onBack?: () => void;
 }
 
 /** ۸. سوابق: فیلتر سال + ماه + نوع هزینه + وضعیت (پیش‌فرض «همه») + کارت‌های رنگی قبض‌ها (از دیتابیس محلی) */
-export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp, status: statusProp, onFilterChange, onOpenBill, onBack, onHelp }: Props) {
+export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp, status: statusProp, onFilterChange, onOpenBill, onBack, onHelp, onSupport }: Props) {
   const { settings } = useSettings();
   const now = currentJalali();
   const { prefs } = useEntryPrefs();
@@ -63,7 +65,7 @@ export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp
 
   return (
     <>
-      <AppHeader title="سوابق" onBack={onBack} onHelp={onHelp} start={<span className="header-icon"><IconCalendar size={24} /></span>} />
+      <AppHeader title="سوابق" onBack={onBack} onHelp={onHelp} onSupport={onSupport} start={<span className="header-icon"><IconCalendar size={24} /></span>} />
       <main className="screen screen--records">
         <div className="filters">
           <SelectField
@@ -115,6 +117,8 @@ export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp
             <span>جمع: <b className="num">{formatAmount(summary.total)}</b> {CURRENCY}</span>
             <span className="records-summary__sep">•</span>
             <span><b className="num">{summary.paid}</b> پرداخت‌شده</span>
+            <span className="records-summary__sep">•</span>
+            <span><b className="num">{summary.unpaid}</b> پرداخت‌نشده</span>
           </div>
         )}
 
@@ -155,7 +159,7 @@ export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp
                   </div>
                   {!bill.isFullySettled && settled > 0 && (
                     <div className="record-card__progress">
-                      <span className="num">{settled}</span> از <span className="num">{units.length}</span> واحد تسویه شده
+                      <span className="num">{settled}</span> از <span className="num">{occupiedCount(units)}</span> واحد تسویه شده
                     </div>
                   )}
                 </div>

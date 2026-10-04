@@ -1,0 +1,68 @@
+/* ---------- تم روشن (هر ۵ پالت): کلید روشن/خاموش و چک‌باکس ----------
+   قاعدهٔ خودکارِ `.switch` / `.checkbox__box` در light.generated.css (:root[data-theme][data-light] .switch) از `.is-on` /
+   `.is-checked` قوی‌تر بود و روشن/خاموش یک‌رنگ می‌شدند. اینجا (بعد از generated) هر دو حالت صریح و با کنتراست تعریف می‌شود:
+   خاموش = مسیر خنثی روشن + لبهٔ ۲px تیره + دستگیرهٔ تیره؛ روشن = رنگ تأکید پالت (--primary) + دستگیرهٔ سفید. */
+:root[data-theme="light"][data-light="sky"] { --sw-off-bg: #dde3ee; --sw-off-ring: #7f8a9d; --sw-off-thumb: #5f6a7d; }
+:root[data-theme="light"][data-light="paper"] { --sw-off-bg: #e6dfd1; --sw-off-ring: #8a7d6a; --sw-off-thumb: #6f624f; }
+:root[data-theme="light"][data-light="mint"] { --sw-off-bg: #dbe7e3; --sw-off-ring: #76908a; --sw-off-thumb: #5d7770; }
+:root[data-theme="light"][data-light="lavender"] { --sw-off-bg: #e0ddee; --sw-off-ring: #837fa0; --sw-off-thumb: #686486; }
+:root[data-theme="light"][data-light="graycool"] { --sw-off-bg: #d6d8dc; --sw-off-ring: #7b8087; --sw-off-thumb: #5f656c; }
+
+:root[data-theme="light"][data-light="sky"] .switch,
+:root[data-theme="light"][data-light="paper"] .switch,
+:root[data-theme="light"][data-light="mint"] .switch,
+:root[data-theme="light"][data-light="lavender"] .switch,
+:root[data-theme="light"][data-light="graycool"] .switch { background: var(--sw-off-bg); box-shadow: inset 0 0 0 2px var(--sw-off-ring); }
+
+:root[data-theme="light"][data-light="sky"] .switch__thumb,
+:root[data-theme="light"][data-light="paper"] .switch__thumb,
+:root[data-theme="light"][data-light="mint"] .switch__thumb,
+:root[data-theme="light"][data-light="lavender"] .switch__thumb,
+:root[data-theme="light"][data-light="graycool"] .switch__thumb { background: var(--sw-off-thumb); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+
+:root[data-theme="light"][data-light="sky"] .switch.is-on,
+:root[data-theme="light"][data-light="paper"] .switch.is-on,
+:root[data-theme="light"][data-light="mint"] .switch.is-on,
+:root[data-theme="light"][data-light="lavender"] .switch.is-on,
+:root[data-theme="light"][data-light="graycool"] .switch.is-on { background: var(--primary); box-shadow: inset 0 0 0 2px var(--primary-press); }
+
+:root[data-theme="light"][data-light="sky"] .switch.is-on .switch__thumb,
+:root[data-theme="light"][data-light="paper"] .switch.is-on .switch__thumb,
+:root[data-theme="light"][data-light="mint"] .switch.is-on .switch__thumb,
+:root[data-theme="light"][data-light="lavender"] .switch.is-on .switch__thumb,
+:root[data-theme="light"][data-light="graycool"] .switch.is-on .switch__thumb { background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35); }
+
+:root[data-theme="light"][data-light="sky"] .checkbox:not(.is-checked) .checkbox__box,
+:root[data-theme="light"][data-light="paper"] .checkbox:not(.is-checked) .checkbox__box,
+:root[data-theme="light"][data-light="mint"] .checkbox:not(.is-checked) .checkbox__box,
+:root[data-theme="light"][data-light="lavender"] .checkbox:not(.is-checked) .checkbox__box,
+:root[data-theme="light"][data-light="graycool"] .checkbox:not(.is-checked) .checkbox__box { border-color: var(--sw-off-ring); }
+
+:root[data-theme="light"][data-light="sky"] .checkbox.is-checked .checkbox__box,
+:root[data-theme="light"][data-light="paper"] .checkbox.is-checked .checkbox__box,
+:root[data-theme="light"][data-light="mint"] .checkbox.is-checked .checkbox__box,
+:root[data-theme="light"][data-light="lavender"] .checkbox.is-checked .checkbox__box,
+:root[data-theme="light"][data-light="graycool"] .checkbox.is-checked .checkbox__box { background: var(--success); border-color: var(--success); color: #fff; }
+
+/* ---------- حالت‌های «انتخاب‌شده/فعال» که قاعدهٔ خودکارِ پایه (ویژگی بالاتر) پنهان می‌کرد (۱.۷.۲) ----------
+   همان علت کلیدها: `:root[..][data-light=..] .bp-all { background: <کارت> }` از `.bp-all.is-active` قوی‌تر بود و فقط
+   `color: #fff` اعمال می‌شد ⇒ متن سفید روی زمینهٔ روشن (نامرئی). اینجا برای ۴ پالت غیرپیش‌فرض (sky خودش درست است) بازتعریف می‌شود. */
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .bp-all.is-active { background: var(--primary); border-color: var(--primary); color: #fff; }
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .bottom-nav__item.is-active { color: var(--primary); }
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .history-pay.is-due { background: var(--danger-soft); }
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .pay-btn.is-settled { background: var(--success-soft); color: #14683c; box-shadow: none; }
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .timing-chip.is-early,
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .timing-chip.is-onTime,
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .timing-chip.is-paidNoDue,
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .timing-chip.is-paidUnknown { background: var(--success-soft); color: #14683c; }
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .timing-chip.is-pending,
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .timing-chip.is-unpaidNoDue { background: var(--primary-soft); color: var(--primary); }
+
+/* ---------- تیک و نشانگر «فعال» در تم روشن (۱.۷.۶) ----------
+   ریشه: قاعدهٔ خودکارِ `.year-row__box` (ویژگی ۰،۴،۰) زمینهٔ پر و تیک را از `.year-row.is-active .year-row__box` (۰،۳،۰) می‌گرفت.
+   اکنون مولّد (scripts/dark-css.mjs) قاعده‌های حالتِ var(...)دار را هم با پیشوند تم می‌نویسد؛ اینجا فقط رنگ متن/تیک «تسویه/پرداخت‌شده»
+   در هر ۵ پالت (از جمله پیش‌فرض آسمانی) برای کنتراست ≥ ۴٫۵ تیره می‌شود. */
+:root[data-theme="light"][data-light="sky"] .pay-btn.is-settled,
+:root[data-theme="light"][data-light="sky"] .rt-chip.is-paid,
+:root[data-theme="light"][data-light="sky"] .payer-card.is-good .payer-card__rating { color: #14683c; }
+:root[data-theme="light"][data-light]:not([data-light="sky"]) .rt-chip.is-paid { background: var(--success-soft); color: #14683c; }

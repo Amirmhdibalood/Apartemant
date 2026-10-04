@@ -101,7 +101,7 @@ describe('زنگوله در نوار بالا و بدون مجوز', () => {
     expect(html).toContain('bell-btn');
     expect(html.indexOf('bell-btn')).toBeLessThan(html.indexOf('help-btn')); // DOM برعکس: روی صفحه از چپ «؟» ← زنگوله
     expect(html).toContain('aria-label="اعلان‌ها"');
-    expect(readFileSync('src/screens/HomeScreen.tsx', 'utf8')).toMatch(/home-topbar"><NotifBell \/><HelpButton onHelp=\{onHelp\} \/><ThemeToggle \/>/);
+    expect(readFileSync('src/screens/HomeScreen.tsx', 'utf8')).toMatch(/home-topbar"><NotifBell \/>\{onSupport && <SupportButton onSupport=\{onSupport\} \/>\}<HelpButton onHelp=\{onHelp\} \/><ThemeToggle \/>/);
   });
   it('هیچ مجوز یا افزونه اعلان سیستمی اضافه نشده', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf8'));

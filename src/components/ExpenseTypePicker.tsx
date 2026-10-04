@@ -8,7 +8,7 @@ import { typeColors } from '../logic/typeColor';
 
 /** انتخاب نوع هزینه به‌صورت کاشی (فقط یک گزینه) */
 export function ExpenseTypePicker({ value, onChange }: { value: ExpenseType | null; onChange: (t: ExpenseType) => void }) {
-  const { theme } = useTheme();
+  const { theme, palette, lightPalette } = useTheme();
   const { prefs } = useEntryPrefs();
   // فقط انواع فعال (تنظیمات ← انواع قبض و روش‌های محاسبه)؛ نوعِ انتخاب‌شدهٔ فعلی (مثلاً در ویرایش) همیشه دیده می‌شود
   const rows = tileRows(value && !prefs.types.includes(value) ? { ...prefs, types: [...prefs.types, value] } : prefs);
@@ -19,7 +19,7 @@ export function ExpenseTypePicker({ value, onChange }: { value: ExpenseType | nu
           {row.map((t) => {
             const info = EXPENSE_TYPES[t];
             const selected = value === t;
-            const colors = typeColors(t, theme);
+            const colors = typeColors(t, theme, palette, lightPalette);
             return (
               <button
                 key={t}

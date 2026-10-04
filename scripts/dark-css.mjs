@@ -8,16 +8,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { darkenCssValue, hasCssColor } from '../src/logic/darkColor.ts';
+import { DARK_PALETTES, DARK_PALETTE_ORDER } from '../src/logic/darkPalettes.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export const SRC_CSS = path.join(ROOT, 'src/styles/global.css');
 export const OUT_CSS = path.join(ROOT, 'src/styles/dark.generated.css');
 const DARK = ':root[data-theme="dark"]';
 /** ویژگی‌هایی که سفید در آن‌ها «متن/آیکون روی زمینه رنگی» است و نباید به رنگ کارت تبدیل شود */
-const KEEP_WHITE = new Set(['color', 'fill', 'stroke', '-webkit-text-fill-color', 'caret-color']);
+export const KEEP_WHITE = new Set(['color', 'fill', 'stroke', '-webkit-text-fill-color', 'caret-color']);
 
 /** جدا کردن اعلان‌ها در سطح بالا (; داخل پرانتز مثل url(data:...) نادیده گرفته می‌شود) */
-function splitDecls(body) {
+export function splitDecls(body) {
   const out = []; let depth = 0, cur = '';
   for (const ch of body) {
     if (ch === '(') depth++;
@@ -27,7 +28,7 @@ function splitDecls(body) {
   if (cur.trim()) out.push(cur);
   return out.map((d) => d.trim()).filter(Boolean);
 }
-function splitSelectors(sel) {
+export function splitSelectors(sel) {
   const out = []; let depth = 0, cur = '';
   for (const ch of sel) {
     if (ch === '(' || ch === '[') depth++;
@@ -37,11 +38,22 @@ function splitSelectors(sel) {
   if (cur.trim()) out.push(cur.trim());
   return out;
 }
-const darkSelector = (s) => (s === ':root' ? DARK : s.startsWith(':root') ? DARK + s.slice(5) : `${DARK} ${s}`);
+export const darkSelector = (prefix) => (s) => (s === ':root' ? prefix : s.startsWith(':root') ? prefix + s.slice(5) : `${prefix} ${s}`);
 
-const isWhite = (v) => /^(#fff(fff)?|white|rgba?\(\s*255\s*,\s*255\s*,\s*255\s*(,\s*1)?\))$/i.test(v.trim());
+export const isWhite = (v) => /^(#fff(fff)?|white|rgba?\(\s*255\s*,\s*255\s*,\s*255\s*(,\s*1)?\))$/i.test(v.trim());
 
-function darkRule(selectorText, body) {
+/**
+ * قاعدهٔ «حالت» (.is-active/.is-on/… یا aria-pressed/…) — ریشهٔ باگ ۱.۷.۵/۱.۷.۶: خروجی خودکار فقط اعلان‌های دارای رنگِ مستقیم (#hex)
+ * را می‌نویسد، پس قاعدهٔ حالتی که با var(--primary) رنگ می‌دهد (مثل `.year-row.is-active .year-row__box`) در خروجی نبود و
+ * قاعدهٔ پایهٔ خودکار (با پیشوند تم، ویژگی بالاتر) آن را پنهان می‌کرد (زمینهٔ پر برنمی‌گشت و تیک سفید روی زمینهٔ سفید می‌ماند).
+ * اکنون اعلان‌های رنگیِ var(...)دارِ قاعده‌های حالت هم عیناً با پیشوند تم بازنویسی می‌شوند.
+ */
+export const STATE_SEL = /\.(is-[\w-]+|active|selected|checked|on)\b|\[aria-(pressed|selected|checked|current)/;
+export const isStateSelector = (sel) => STATE_SEL.test(sel);
+export const VAR_COLOR_PROPS = new Set(['background', 'background-color', 'color', 'border', 'border-color', 'fill', 'stroke', 'box-shadow']);
+
+/** قاعده‌ی تاریک (فهرست [ویژگی، مقدار]) برای یک پالت؛ بدون رنگ ← فهرست خالی */
+function darkDecls(body, palette, keepVars = false) {
   const decls = [];
   const all = splitDecls(body).map((d) => [d.slice(0, d.indexOf(':')).trim().toLowerCase(), d.slice(d.indexOf(':') + 1).trim().replace(/\s*!important\s*$/i, '')]);
   // قاعده‌ای که متن سفید دارد: زمینه رنگی آن به‌اندازه‌ای تیره می‌شود که متن سفید خوانا بماند
@@ -51,18 +63,20 @@ function darkRule(selectorText, body) {
     if (i < 0) continue;
     const prop = d.slice(0, i).trim().toLowerCase();
     const val = d.slice(i + 1).trim();
-    if (!hasCssColor(val)) continue;
+    if (!hasCssColor(val)) {
+      if (keepVars && VAR_COLOR_PROPS.has(prop) && /var\(/.test(val)) decls.push(`${prop}: ${val}`);
+      continue;
+    }
     const important = /!important\s*$/i.test(val);
     const clean = val.replace(/\s*!important\s*$/i, '');
-    decls.push(`${prop}: ${darkenCssValue(clean, KEEP_WHITE.has(prop), whiteText && prop.startsWith('background'))}${important ? ' !important' : ''};`);
+    decls.push(`${prop}: ${darkenCssValue(clean, KEEP_WHITE.has(prop), whiteText && prop.startsWith('background'), palette)}${important ? ' !important' : ''}`);
   }
-  if (decls.length === 0) return '';
-  return `${splitSelectors(selectorText).map(darkSelector).join(',\n')} { ${decls.join(' ')} }\n`;
+  return decls;
 }
 
-/** پردازش متن CSS (قاعده‌های ساده + @media تو در تو؛ @keyframes/@font-face نادیده گرفته می‌شود) */
-function walk(css) {
-  let out = ''; let i = 0;
+/** فهرست مسطح قاعده‌ها: { media, selector, decls } (قاعده‌های ساده + @media تو در تو؛ @keyframes/@font-face نادیده گرفته می‌شود) */
+function collect(css, palette, media = null, out = []) {
+  let i = 0;
   while (i < css.length) {
     const open = css.indexOf('{', i);
     if (open < 0) break;
@@ -70,20 +84,52 @@ function walk(css) {
     let depth = 1, j = open + 1;
     while (j < css.length && depth > 0) { if (css[j] === '{') depth++; else if (css[j] === '}') depth--; j++; }
     const body = css.slice(open + 1, j - 1);
-    if (head.startsWith('@media') || head.startsWith('@supports')) {
-      const inner = walk(body);
-      if (inner) out += `${head} {\n${inner}}\n`;
-    } else if (!head.startsWith('@')) {
-      out += darkRule(head, body);
+    if (head.startsWith('@media') || head.startsWith('@supports')) collect(body, palette, head, out);
+    else if (!head.startsWith('@')) {
+      const state = isStateSelector(head);
+      const decls = darkDecls(body, palette, state);
+      if (decls.length) out.push({ media: media, selector: head, decls, state });
     }
     i = j;
   }
   return out;
 }
 
+export function emit(items, prefix) {
+  let out = ''; let curMedia = null;
+  const close = () => { if (curMedia) { out += '}\n'; curMedia = null; } };
+  for (const it of items) {
+    if (it.media !== curMedia) { close(); if (it.media) { out += `${it.media} {\n`; curMedia = it.media; } }
+    out += `${splitSelectors(it.selector).map(darkSelector(prefix)).join(',\n')} { ${it.decls.map((d) => d + ';').join(' ')} }\n`;
+  }
+  close();
+  return out;
+}
+
+const kebab = (k) => k.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase());
+const extrasBlock = (prefix, extras) => `${prefix} { ${Object.entries(extras).map(([k, v]) => `--${kebab(k)}: ${v};`).join(' ')} }\n`;
+
+/**
+ * خروجی کامل: پالت پیش‌فرض (سرمه‌ای) زیر `:root[data-theme="dark"]` و پالت‌های دیگر فقط با «تفاوت‌ها» زیر
+ * `:root[data-theme="dark"][data-palette="…"]` (ویژگی‌ای که با سرمه‌ای یکسان باشد تکرار نمی‌شود).
+ */
 export function generateDarkCss(cssText) {
   const noComments = cssText.replace(/\/\*[\s\S]*?\*\//g, '');
-  return `/* AUTO-GENERATED by scripts/dark-css.mjs from global.css — do not edit (npm run theme:generate) */\n${walk(noComments)}`;
+  const base = collect(noComments, DARK_PALETTES.navy);
+  let out = `/* AUTO-GENERATED by scripts/dark-css.mjs from global.css — do not edit (npm run theme:generate) */\n${emit(base, DARK)}`;
+  out += extrasBlock(DARK, DARK_PALETTES.navy.extras);
+  for (const id of DARK_PALETTE_ORDER) {
+    if (id === 'navy') continue;
+    const P = DARK_PALETTES[id];
+    const prefix = `${DARK}[data-palette="${id}"]`;
+    const items = collect(noComments, P).map((it, k) => {
+      const same = new Set(base[k].decls);
+      // قاعده‌های حالت همیشه کامل برای پالت هم نوشته می‌شوند: قاعدهٔ پایهٔ پالت (ویژگی بالاتر) قاعدهٔ حالتِ سرمه‌ای را می‌پوشاند
+      return it.state ? it : { ...it, decls: it.decls.filter((d) => !same.has(d)) };
+    }).filter((it) => it.decls.length);
+    out += `\n/* ---- پالت ${id}: ${P.name} (فقط تفاوت‌ها با سرمه‌ای) ---- */\n${emit(items, prefix)}${extrasBlock(prefix, P.extras)}`;
+  }
+  return out;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -5,21 +5,25 @@ import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../../models/constants';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
 import { UnitIcon } from '../../components/PrefIcons';
 import { useIconPrefs } from '../../context/IconPrefsContext';
-import { IconCheck, IconChevronLeft } from '../../components/Icons';
+import { IconCheck, IconChevronLeft, IconWallet } from '../../components/Icons';
 import { formatAmount } from '../../logic/formatting';
 import { debtorsReport, PAYMENT_GRACE_DAYS } from '../../logic/debts';
+import { debtorsDoc } from '../../logic/reportDoc';
+import { ReportActions } from '../../components/ReportActions';
 
 interface Props {
   all: BillWithUnits[] | null;
   onOpenBill: (billId: string) => void;
   onOpenUnit: (unitNumber: number) => void;
+  onPayUnit: (unitNumber: number) => void;
 }
 
 /** گزارش بدهکاران: واحدهای دارای بدهی، جمع بدهی هر واحد و ریز آن به تفکیک قبض/سال/ماه */
-export function DebtorsView({ all, onOpenBill, onOpenUnit }: Props) {
+export function DebtorsView({ all, onOpenBill, onOpenUnit, onPayUnit }: Props) {
   const { unitIcon } = useIconPrefs();
   const report = useMemo(() => debtorsReport(all ?? []), [all]);
   const [open, setOpen] = useState<number | null>(null);
+  const doc = useMemo(() => (all && all.length > 0 ? debtorsDoc(report) : null), [all, report]);
   if (!all) return null;
   const expanded = open ?? report.units[0]?.unitNumber ?? null;
 
@@ -88,9 +92,14 @@ export function DebtorsView({ all, onOpenBill, onOpenUnit }: Props) {
                           <span className="debt-item__amount num">{formatAmount(it.amount)}</span>
                         </button>
                       ))}
-                      <button type="button" className="btn btn--soft btn--block debtor__history" onClick={() => onOpenUnit(d.unitNumber)}>
-                        <span>سابقه پرداخت <UnitName n={d.unitNumber} alias={d.alias} /></span>
-                      </button>
+                      <div className="debtor__actions">
+                        <button type="button" className="btn btn--primary debtor__pay" onClick={() => onPayUnit(d.unitNumber)}>
+                          <IconWallet size={18} /> پرداخت
+                        </button>
+                        <button type="button" className="btn btn--soft debtor__history" onClick={() => onOpenUnit(d.unitNumber)}>
+                          سابقه پرداخت
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -115,6 +124,7 @@ export function DebtorsView({ all, onOpenBill, onOpenUnit }: Props) {
           </div>
         </>
       )}
+      <ReportActions doc={doc} />
     </>
   );
 }

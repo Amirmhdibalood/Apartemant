@@ -196,10 +196,15 @@ function parsePayments(raw: unknown, share: number, i: number): { payments?: Pay
   if (raw == null) return {};
   if (!Array.isArray(raw) || raw.length > 1000) return bad(`پرداخت‌های واحد ${nth(i)} نامعتبر است.`);
   const payments = raw.map((p) => {
-    if (!isObj(p) || !isId(p.id) || !isInt(p.amount, 1) || !(p.paidAt === null || validDate(p.paidAt))) {
+    if (!isObj(p) || !isId(p.id) || !isInt(p.amount, 1) || !(p.paidAt === null || validDate(p.paidAt))
+      || !(p.batchId === undefined || p.batchId === null || isId(p.batchId))) {
       return bad(`پرداخت‌های واحد ${nth(i)} نامعتبر است.`);
     }
-    return { id: p.id as string, amount: p.amount as number, paidAt: (p.paidAt as string | null) ?? null };
+    // batchId (از ۱.۷.۳، اختیاری) حفظ می‌شود تا «لغو پرداخت» بعد از بازیابی هم کار کند؛ پشتیبان‌های قدیمی بدون آن‌اند
+    return {
+      id: p.id as string, amount: p.amount as number, paidAt: (p.paidAt as string | null) ?? null,
+      ...(typeof p.batchId === 'string' ? { batchId: p.batchId } : {}),
+    };
   });
   const sum = payments.reduce((s, p) => s + p.amount, 0);
   if (sum > share) bad(`جمع پرداخت‌های واحد ${nth(i)} بیشتر از سهم آن است.`);

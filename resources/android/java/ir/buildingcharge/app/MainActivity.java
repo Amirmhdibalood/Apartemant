@@ -23,6 +23,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(GallerySaverPlugin.class);
+        registerPlugin(ReportPrintPlugin.class);
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(
             this,

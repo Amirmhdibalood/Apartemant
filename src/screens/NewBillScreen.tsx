@@ -176,7 +176,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
         <JalaliDateField
           id="dueDate"
           label="مهلت پرداخت"
-          hint="آخرین مهلت پرداخت قبض؛ از یک روز قبل، هشدار آن در صفحه اصلی برنامه نمایش داده می‌شود."
+          hint="آخرین مهلت پرداخت قبض؛ از ۲ روز قبل، هشدار آن در صفحه اصلی برنامه نمایش داده می‌شود."
           optional
           value={draft.dueDate ?? null}
           onChange={(dueDate) => set({ dueDate })}
@@ -234,7 +234,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
           <div className="prefill-note building-note" role="status">
             <p className="prefill-note__text">
               {matches
-                ? <>واحدها از «تنظیمات ← ساختمان» وارد شد (<span className="num">{building.units.length}</span> واحد).</>
+                ? <>واحدها از «تنظیمات ← ساختمان» وارد شد (<span className="num">{building.units.filter((u) => !u.vacant).length}</span> واحد{building.units.some((u) => u.vacant) && <> + <span className="num">{building.units.filter((u) => u.vacant).length}</span> خالی</>}).</>
                 : <>واحدهای این قبض با پیش‌فرض ساختمان فرق دارد؛ تغییرات فقط روی همین قبض اثر دارد.</>}
             </p>
             {!matches && (
