@@ -380,7 +380,7 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
           <JalaliDateField
             id="dueEdit"
             label="مهلت پرداخت"
-            hint="آخرین مهلت پرداخت قبض؛ از یک روز قبل، هشدار آن در صفحه اصلی برنامه نمایش داده می‌شود."
+            hint="آخرین مهلت پرداخت قبض؛ از ۲ روز قبل، هشدار آن در صفحه اصلی برنامه نمایش داده می‌شود."
             value={dueEdit ?? null}
             onChange={(v) => setDueEdit(v)}
             defaultDate={addJalaliDays(today, DEFAULT_DUE_OFFSET_DAYS)}
