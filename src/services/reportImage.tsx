@@ -11,6 +11,7 @@ import type { DocBlock, DocRow, DocTone, ReportDoc } from '../logic/reportDoc';
 import { APP_NAME_FA } from '../logic/billImage';
 import { formatJalaliDateTimeFa } from '../logic/date';
 import { pickReportScale } from '../logic/reportPreview';
+import { MIN_LABEL_W, MIN_ROW_H_WITH_SUB, rowTrailingLayout, SUB_DY, TAG_H, VALUE_DY } from '../logic/rowLayout';
 import { CURRENCY } from '../models/constants';
 import appIconUrl from '../assets/app-icon.png';
 import { ensureFonts, font, glyphImageFor, loadImage, roundRect, wrapLines } from './billImage';
@@ -38,7 +39,7 @@ export interface RenderedReportImage {
 }
 
 type Pal = ReturnType<typeof billImageColors>;
-interface Env { ctx: CanvasRenderingContext2D; draw: boolean; pal: Pal; lp: LightPaletteId; icons: Map<ExpenseType, HTMLImageElement | null>; app: HTMLImageElement | null; breaks: number[] }
+export interface Env { ctx: CanvasRenderingContext2D; draw: boolean; pal: Pal; lp: LightPaletteId; icons: Map<ExpenseType, HTMLImageElement | null>; app: HTMLImageElement | null; breaks: number[] }
 
 const M = 16, P = 22;
 const L = M + P, R = REPORT_W - M - P, CW = R - L;
@@ -108,7 +109,7 @@ function drawSummary(e: Env, b: Extract<DocBlock, { k: 'summary' }>, y: number):
   return y + h + 14;
 }
 
-function drawRow(e: Env, r: DocRow, y: number, last: boolean): number {
+export function drawRow(e: Env, r: DocRow, y: number, last: boolean): number {
   const { pal } = e;
   const hasIcon = !!r.type;
   const left = L, right = R;
@@ -117,11 +118,21 @@ function drawRow(e: Env, r: DocRow, y: number, last: boolean): number {
   const tagF = font(700, 11.5);
   const tagW = r.tag ? width(e, r.tag.text, tagF) + 18 : 0;
   const textRight = right - (hasIcon ? 44 : 0);
-  const textMax = Math.max(80, textRight - (left + vw + (tagW ? tagW + 12 : 0) + 14));
+  const subVF = font(500, 10.5);
+  const subW = r.valueSub ? width(e, r.valueSub, subVF) : 0;
+  // چیپ کنار ستون مبلغ؛ اگر جای برچسب ردیف کم شود (مبلغ/چیپ خیلی بلند) چیپ زیر برچسب می‌رود و ارتفاع ردیف بیشتر می‌شود
+  let lay = rowTrailingLayout({ left, valueW: vw, subW, tagW, hasSub: !!r.valueSub });
+  const tagBelow = !!r.tag && textRight - (left + lay.trailW + 12 + 14) < MIN_LABEL_W;
+  if (tagBelow) lay = rowTrailingLayout({ left, valueW: vw, subW, tagW: 0, hasSub: !!r.valueSub });
+  const textMax = Math.max(80, textRight - (left + lay.trailW + (r.tag && !tagBelow ? 12 : 0) + 14));
   const labelF = font(700, 14.5), subF = font(500, 11.5);
   let subLines: string[] = [];
-  if (r.sub) { e.ctx.font = subF; subLines = wrapLines(e.ctx, r.sub, Math.max(textMax, 150), 3); }
-  const rowH = Math.max(r.valueSub ? 50 : 0, hasIcon ? 44 : 36, 18 + 17 + Math.max(0, subLines.length - 1) * 15 + (subLines.length ? 0 : -14) + 6);
+  if (r.sub) { e.ctx.font = subF; subLines = wrapLines(e.ctx, r.sub, textMax, 3); }
+  const stacked = subLines.length > 0 || tagBelow;
+  // پایین آخرین خط متن سمت برچسب (برای قرار دادن چیپِ زیر برچسب)
+  const textBottom = subLines.length ? 10 + 8 + 18 + (subLines.length - 1) * 15 + 8 : 10 + 8 + 10;
+  const tagBelowH = tagBelow ? 6 + TAG_H + 8 : 0;
+  const rowH = Math.max(r.valueSub ? MIN_ROW_H_WITH_SUB : 0, hasIcon ? 44 : 36, 18 + 17 + Math.max(0, subLines.length - 1) * 15 + (subLines.length ? 0 : -14) + 6, stacked && subLines.length ? textBottom - 1 + tagBelowH : tagBelow ? textBottom + tagBelowH : 0);
   const mid = y + rowH / 2;
   if (hasIcon && r.type) {
     const col = typeColors(r.type, 'light', undefined, e.lp);
@@ -130,15 +141,17 @@ function drawRow(e: Env, r: DocRow, y: number, last: boolean): number {
       const ic = e.icons.get(r.type); if (ic) e.ctx.drawImage(ic, right - 17 - 9, mid - 9, 18, 18);
     }
   }
-  const top = subLines.length ? y + 10 + 8 : mid;
+  const top = stacked ? y + 10 + 8 : mid;
   text(e, fit(e, r.label, labelF, textMax), textRight, top, labelF, r.muted ? pal.C.muted : pal.C.text);
   subLines.forEach((ln, i) => text(e, ln, textRight, y + 10 + 8 + 18 + i * 15, subF, pal.C.muted));
-  text(e, r.value, left, r.valueSub ? mid - 7 : mid, vf, r.muted ? pal.C.muted : r.valueOk ? pal.STATUS.settled.fg : pal.C.text, 'left');
-  if (r.valueSub) text(e, r.valueSub, left, mid + 11, font(500, 10.5), pal.C.muted, 'left');
+  text(e, r.value, left, r.valueSub ? mid + VALUE_DY : mid, vf, r.muted ? pal.C.muted : r.valueOk ? pal.STATUS.settled.fg : pal.C.text, 'left');
+  if (r.valueSub) text(e, r.valueSub, left, mid + SUB_DY, subVF, pal.C.muted, 'left');
   if (r.tag) {
-    const t = tone(pal, r.tag.tone), cx = left + vw + 10;
-    if (e.draw) { roundRect(e.ctx, cx, mid - 11, tagW, 22, 11); e.ctx.fillStyle = t.bg; e.ctx.fill(); }
-    text(e, r.tag.text, cx + tagW / 2, mid + 0.5, tagF, t.fg, 'center');
+    const t = tone(pal, r.tag.tone);
+    const x0 = tagBelow ? textRight - tagW : lay.tag!.x0;
+    const cy = tagBelow ? y + textBottom + 6 + TAG_H / 2 : mid;
+    if (e.draw) { roundRect(e.ctx, x0, cy - TAG_H / 2, tagW, TAG_H, TAG_H / 2); e.ctx.fillStyle = t.bg; e.ctx.fill(); }
+    text(e, r.tag.text, x0 + tagW / 2, cy + 0.5, tagF, t.fg, 'center');
   }
   if (!last && e.draw) { e.ctx.fillStyle = pal.C.border; e.ctx.fillRect(L, y + rowH, CW, 1); }
   e.breaks.push(y + rowH);
@@ -240,7 +253,7 @@ function paint(e: Env, doc: ReportDoc, now: Date, height: number): number {
           y += 4;
           text(e, b.footer.label, R, y + 20, font(800, 14.5), pal.C.text);
           text(e, b.footer.value, L, y + 20, font(800, 15.5), b.footer.ok ? pal.STATUS.settled.fg : pal.C.primary, 'left');
-          if (b.footer.note) { text(e, b.footer.note, R, y + 40, font(500, 11.5), pal.C.muted); y += 18; }
+          if (b.footer.note) { text(e, fit(e, b.footer.note, font(500, 11.5), CW), R, y + 40, font(500, 11.5), pal.C.muted); y += 18; }
           y += 40; e.breaks.push(y);
         }
         y += 6;
