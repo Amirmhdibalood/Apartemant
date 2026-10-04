@@ -27,6 +27,9 @@
 - **`apartemant-release.apk`** ← نسخه **Release امضاشده** (پیشنهادی برای نصب روی همه گوشی‌ها و انتشار در مایکت)
 - `app-debug.apk` ← نسخه دیباگ (فقط برای تست)
 
+> **GitHub:** فایل‌های APK داخل مخزن نگهداری نمی‌شوند؛ APK امضاشدهٔ هر نسخه را از بخش **Releases** همین مخزن بگیرید (آخرین نسخه: **v1.7.7**، `apartemant-1.7.7.apk`، SHA-256: `168e8291e5c2130f2858f0cd325868893a70db6ea6d59511db80701c22b69202`).
+> *On GitHub, APKs are not tracked in the repository — download the signed APK from the repository's **Releases** page (latest: **v1.7.7**).*
+
 اگر فقط می‌خواهید برنامه را نصب کنید، به هیچ‌کدام از مراحل زیر نیاز ندارید:
 
 1. فایل `apartemant-release.apk` را به گوشی اندروید منتقل کنید (کابل USB، تلگرام، بلوتوث و ...).
