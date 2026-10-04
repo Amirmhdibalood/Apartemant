@@ -202,6 +202,11 @@
 :root[data-theme="dark"] .acc__head:focus-visible { outline: 3px solid rgba(71,132,242,0.35); }
 :root[data-theme="dark"] .print-sheet { box-shadow: 0 -8px 30px rgba(0,0,0,0.5); }
 :root[data-theme="dark"] .up-tag.is-partial { background: #3d2919; color: #f6a267; }
+:root[data-theme="dark"] .rt-chip.is-partial { background: var(--warn-soft, #3d2919); color: var(--warn, #f6a267); }
+:root[data-theme="dark"] .pv-seg button.is-on { box-shadow: 0 1px 5px rgba(0,0,0,0.42); }
+:root[data-theme="dark"] .pv-paper { box-shadow: 0 4px 18px rgba(0,0,0,0.5); }
+:root[data-theme="dark"] .pv-page { box-shadow: 0 4px 18px rgba(0,0,0,0.5); }
+:root[data-theme="dark"] .pv-th i { color: #f4f6fa; }
 :root[data-theme="dark"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #2a3858; --sw-off-ring: #7a89ad; --sw-thumb: #aab4cf; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #7a89ad; --cb-on-border: #64df9e; --warn-border: #6b2f33; --warn-color: #ffb4ad; --warn-bg: #3a1f26; --ppm-border: #2c4a86; --badge-area-bg: #17423f; --badge-area-color: #7de3d3; }
 
 /* ---- پالت charcoal: زغالی خنثی (فقط تفاوت‌ها با سرمه‌ای) ---- */

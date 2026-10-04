@@ -224,8 +224,8 @@ describe('QA 1.7.0 — سازگاری همهٔ گزارش‌ها با بازمح
             const rows = (monthlyDoc(t).blocks.find((b) => b.k === 'rows' && b.rows.length) as Extract<DocBlock, { k: 'rows' }> | undefined);
             if (rows) {
               expect(rows.rows.length).toBe(t.units.length);
-              rows.rows.forEach((r, i) => { if (!t.units[i].vacant) expect(docNum(r.value)).toBe(t.units[i].total); });
-              expect(docNum(rows.footer!.value)).toBe(t.grandTotal);
+              rows.rows.forEach((r, i) => { if (!t.units[i].vacant) expect(docNum(r.value)).toBe(t.units[i].remaining); }); // ۱.۷.۴: عدد اصلی «قابل پرداخت» = مانده
+              expect(docNum(rows.footer!.value)).toBe(t.remainingTotal);
             }
           }
           // نمودار

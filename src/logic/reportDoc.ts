@@ -26,6 +26,10 @@ export interface DocRow {
   label: string;
   sub?: string;
   value: string;
+  /** خط ریز زیر مبلغ (مثلاً «از مجموع …») */
+  valueSub?: string;
+  /** مبلغ سبز (مثلاً «۰» برای واحد تسویه‌شده) */
+  valueOk?: boolean;
   /** نوع هزینه → آیکون رنگی کنار ردیف */
   type?: ExpenseType;
   tag?: { text: string; tone: DocTone };
@@ -35,7 +39,7 @@ export interface DocRow {
 export type DocBlock =
   | { k: 'summary'; label: string; value: string; unit: string; meta: string[]; lines?: { label: string; value: string }[] }
   | { k: 'heading'; text: string }
-  | { k: 'rows'; rows: DocRow[]; footer?: { label: string; value: string } }
+  | { k: 'rows'; rows: DocRow[]; footer?: { label: string; value: string; note?: string; ok?: boolean } }
   | { k: 'chart'; kind: ChartKind; title: string; series?: ChartSeries; typeColor?: ExpenseType | null; shares?: TypeShare[]; total?: number }
   | { k: 'note'; text: string };
 
@@ -106,14 +110,14 @@ export function billPaymentsDoc(rows: BillPaymentRow[], s: BillPaymentSummary, y
 const unitTag = (u: MonthlyUnit): DocRow['tag'] =>
   u.status === 'vacant' ? { text: VACANT_LABEL, tone: 'muted' }
   : u.status === 'paid' ? { text: 'پرداخت‌شده', tone: 'ok' }
-  : u.status === 'partial' ? { text: `مانده ${faAmount(u.remaining)}`, tone: 'info' }
+  : u.status === 'partial' ? { text: `پرداخت‌شده ${faAmount(u.paid)}`, tone: 'info' }
   : { text: 'پرداخت‌نشده', tone: 'info' };
 
 function monthlySummary(t: MonthlyTotals): DocBlock {
   return {
     k: 'summary', label: `جمع قبض‌های ${period(t.year, t.month)}`, value: faAmount(t.grandTotal), unit: CURRENCY,
     meta: [`${fa(t.bills.length)} قبض`, `${fa(t.occupiedCount)} واحد`, ...(t.vacantCount ? [`${fa(t.vacantCount)} خالی`] : [])],
-    lines: [{ label: 'پرداخت‌شده', value: faAmount(t.paidTotal) }, { label: 'مانده', value: faAmount(t.remainingTotal) }],
+    lines: [{ label: 'پرداخت‌شده', value: faAmount(t.paidTotal) }, { label: 'قابل پرداخت', value: faAmount(t.remainingTotal) }],
   };
 }
 
@@ -126,9 +130,9 @@ export function monthlyDoc(t: MonthlyTotals): ReportDoc {
       k: 'rows',
       rows: t.units.map((u) => ({
         label: unitLabel(u.unitNumber, u.alias), sub: u.vacant ? 'بدون سهم' : `${fa(u.personCount)} نفر • قابل پرداخت`,
-        value: u.vacant ? VACANT_LABEL : money(u.total), tag: unitTag(u), muted: u.vacant,
+        value: u.vacant ? VACANT_LABEL : money(u.remaining), valueOk: !u.vacant && u.remaining === 0, valueSub: !u.vacant && u.paid > 0 ? `از مجموع ${faAmount(u.total)}` : undefined, tag: unitTag(u), muted: u.vacant,
       })),
-      footer: { label: 'جمع کل قابل پرداخت', value: money(t.grandTotal) },
+      footer: { label: 'جمع کل قابل پرداخت', value: money(t.remainingTotal), note: t.paidTotal > 0 ? `از مجموع ${faAmount(t.grandTotal)} • پرداخت‌شده ${faAmount(t.paidTotal)}` : undefined },
     });
   }
   return { id: 'monthly', title: 'جمع قبض‌های ماه', subtitle: period(t.year, t.month), fileBase: `monthly-${t.year}-${String(t.month).padStart(2, '0')}`, blocks };
@@ -143,10 +147,10 @@ export function monthlyDetailDoc(t: MonthlyTotals): ReportDoc {
     else blocks.push({
       k: 'rows',
       rows: u.items.map((i) => ({ label: EXPENSE_TYPES[i.expenseType].label, type: i.expenseType, value: faAmount(i.amount) })),
-      footer: { label: `جمع واحد (${unitTag(u)!.text})`, value: money(u.total) },
+      footer: { label: 'قابل پرداخت', value: money(u.remaining), note: u.paid > 0 ? `از مجموع ${faAmount(u.total)} • پرداخت‌شده ${faAmount(u.paid)}` : undefined, ok: u.remaining === 0 },
     });
   }
-  if (t.units.length) blocks.push({ k: 'rows', rows: [], footer: { label: 'جمع کل قابل پرداخت', value: money(t.grandTotal) } });
+  if (t.units.length) blocks.push({ k: 'rows', rows: [], footer: { label: 'جمع کل قابل پرداخت', value: money(t.remainingTotal), note: t.paidTotal > 0 ? `از مجموع ${faAmount(t.grandTotal)} • پرداخت‌شده ${faAmount(t.paidTotal)}` : undefined } });
   return { id: 'monthlyDetail', title: 'جمع قبض‌های ماه با جزئیات', subtitle: period(t.year, t.month), fileBase: `monthly-detail-${t.year}-${String(t.month).padStart(2, '0')}`, blocks };
 }
 

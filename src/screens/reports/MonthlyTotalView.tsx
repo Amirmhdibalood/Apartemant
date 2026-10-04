@@ -30,7 +30,7 @@ interface Props {
 function StatusChip({ u }: { u: MonthlyUnit }) {
   if (u.status === 'vacant') return <span className="rt-chip is-vacant">{VACANT_LABEL}</span>;
   if (u.status === 'paid') return <span className="rt-chip is-paid"><IconCheck size={12} /> پرداخت‌شده</span>;
-  if (u.status === 'partial') return <span className="rt-chip is-unpaid">مانده {faAmount(u.remaining)}</span>;
+  if (u.status === 'partial') return <span className="rt-chip is-partial">پرداخت‌شده {faAmount(u.paid)}</span>;
   return <span className="rt-chip is-unpaid">پرداخت‌نشده</span>;
 }
 
@@ -80,7 +80,7 @@ export function MonthlyTotalView({ all, detailed = false }: Props) {
             </div>
             <div className="report-total__settle">
               <span>پرداخت‌شده: <b className="num is-ok">{faAmount(t.paidTotal)}</b></span>
-              <span>مانده: <b className={'num' + (t.remainingTotal > 0 ? ' is-due' : '')}>{faAmount(t.remainingTotal)}</b></span>
+              <span>قابل پرداخت: <b className={'num' + (t.remainingTotal > 0 ? ' is-due' : '')}>{faAmount(t.remainingTotal)}</b></span>
             </div>
           </section>
           <div className="rt-types">
@@ -103,11 +103,11 @@ export function MonthlyTotalView({ all, detailed = false }: Props) {
                       <div className="rt-usub">{u.vacant ? 'بدون سهم' : `${fa(u.personCount)} نفر`} <StatusChip u={u} /></div>
                     </div>
                     <div className="rt-amt">
-                      {u.vacant ? <><small>&nbsp;</small><b className="is-muted">{VACANT_LABEL}</b></> : <><small>قابل پرداخت</small><b className="num">{faAmount(u.total)}<i>{CURRENCY}</i></b></>}
+                      {u.vacant ? <><small>&nbsp;</small><b className="is-muted">{VACANT_LABEL}</b></> : <><small>قابل پرداخت</small><b className={'num' + (u.remaining === 0 ? ' is-ok' : '')}>{faAmount(u.remaining)}<i>{CURRENCY}</i></b>{u.paid > 0 && <em>از مجموع {faAmount(u.total)}</em>}</>}
                     </div>
                   </div>
                 ))}
-                <div className="rt-total"><span>جمع کل قابل پرداخت</span><b className="num">{faAmount(t.grandTotal)} <i>{CURRENCY}</i></b></div>
+                <div className="rt-total"><span>جمع کل قابل پرداخت{t.paidTotal > 0 && <em>از مجموع {faAmount(t.grandTotal)} • پرداخت‌شده {faAmount(t.paidTotal)}</em>}</span><b className="num">{faAmount(t.remainingTotal)} <i>{CURRENCY}</i></b></div>
               </div>
               <p className="report-note rt-note">جمع سهم هر واحد از همهٔ قبض‌های {MONTHS[month - 1]} {fa(year)}. واحد خالی سهمی ندارد. وضعیت پرداخت هر واحد از ثبت پرداخت‌ها می‌آید.</p>
             </>
@@ -133,11 +133,11 @@ export function MonthlyTotalView({ all, detailed = false }: Props) {
                     </div>
                   ))}
                   {!u.vacant && (
-                    <div className="rt-sub"><span>جمع واحد (قابل پرداخت)</span><b className="num">{faAmount(u.total)} <i>{CURRENCY}</i></b></div>
+                    <div className="rt-sub"><span>قابل پرداخت{u.paid > 0 && <em>از مجموع {faAmount(u.total)}</em>}</span><b className={'num' + (u.remaining === 0 ? ' is-ok' : '')}>{faAmount(u.remaining)} <i>{CURRENCY}</i></b></div>
                   )}
                 </div>
               ))}
-              <div className="card rt-grand"><span>جمع کل قابل پرداخت</span><b className="num">{faAmount(t.grandTotal)} <i>{CURRENCY}</i></b></div>
+              <div className="card rt-grand"><span>جمع کل قابل پرداخت{t.paidTotal > 0 && <em>از مجموع {faAmount(t.grandTotal)} • پرداخت‌شده {faAmount(t.paidTotal)}</em>}</span><b className="num">{faAmount(t.remainingTotal)} <i>{CURRENCY}</i></b></div>
             </>
           )}
         </>

@@ -10,6 +10,7 @@ import { barLayout, pieLayout, type ChartColors, type BarLayout, type PieLayout 
 import type { DocBlock, DocRow, DocTone, ReportDoc } from '../logic/reportDoc';
 import { APP_NAME_FA } from '../logic/billImage';
 import { formatJalaliDateTimeFa } from '../logic/date';
+import { pickReportScale } from '../logic/reportPreview';
 import { CURRENCY } from '../models/constants';
 import appIconUrl from '../assets/app-icon.png';
 import { ensureFonts, font, glyphImageFor, loadImage, roundRect, wrapLines } from './billImage';
@@ -28,6 +29,8 @@ export interface RenderedReportImage {
   /** ابعاد پیکسلی */
   width: number;
   height: number;
+  /** ضریب واقعی رسم (۲، یا کمتر برای گزارش بسیار بلند) */
+  scale: number;
   /** نقطه‌های مجاز شکست صفحه (پیکسل، از بالا) برای PDF چندصفحه‌ای */
   breaks: number[];
   /** canvas کامل (برای برش صفحه‌های PDF) */
@@ -118,7 +121,7 @@ function drawRow(e: Env, r: DocRow, y: number, last: boolean): number {
   const labelF = font(700, 14.5), subF = font(500, 11.5);
   let subLines: string[] = [];
   if (r.sub) { e.ctx.font = subF; subLines = wrapLines(e.ctx, r.sub, Math.max(textMax, 150), 3); }
-  const rowH = Math.max(hasIcon ? 44 : 36, 18 + 17 + Math.max(0, subLines.length - 1) * 15 + (subLines.length ? 0 : -14) + 6);
+  const rowH = Math.max(r.valueSub ? 50 : 0, hasIcon ? 44 : 36, 18 + 17 + Math.max(0, subLines.length - 1) * 15 + (subLines.length ? 0 : -14) + 6);
   const mid = y + rowH / 2;
   if (hasIcon && r.type) {
     const col = typeColors(r.type, 'light', undefined, e.lp);
@@ -130,7 +133,8 @@ function drawRow(e: Env, r: DocRow, y: number, last: boolean): number {
   const top = subLines.length ? y + 10 + 8 : mid;
   text(e, fit(e, r.label, labelF, textMax), textRight, top, labelF, r.muted ? pal.C.muted : pal.C.text);
   subLines.forEach((ln, i) => text(e, ln, textRight, y + 10 + 8 + 18 + i * 15, subF, pal.C.muted));
-  text(e, r.value, left, mid, vf, r.muted ? pal.C.muted : pal.C.text, 'left');
+  text(e, r.value, left, r.valueSub ? mid - 7 : mid, vf, r.muted ? pal.C.muted : r.valueOk ? pal.STATUS.settled.fg : pal.C.text, 'left');
+  if (r.valueSub) text(e, r.valueSub, left, mid + 11, font(500, 10.5), pal.C.muted, 'left');
   if (r.tag) {
     const t = tone(pal, r.tag.tone), cx = left + vw + 10;
     if (e.draw) { roundRect(e.ctx, cx, mid - 11, tagW, 22, 11); e.ctx.fillStyle = t.bg; e.ctx.fill(); }
@@ -235,7 +239,8 @@ function paint(e: Env, doc: ReportDoc, now: Date, height: number): number {
           if (e.draw) { ctx.fillStyle = pal.C.border; ctx.fillRect(L, y + 2, CW, 1.5); }
           y += 4;
           text(e, b.footer.label, R, y + 20, font(800, 14.5), pal.C.text);
-          text(e, b.footer.value, L, y + 20, font(800, 15.5), pal.C.primary, 'left');
+          text(e, b.footer.value, L, y + 20, font(800, 15.5), b.footer.ok ? pal.STATUS.settled.fg : pal.C.primary, 'left');
+          if (b.footer.note) { text(e, b.footer.note, R, y + 40, font(500, 11.5), pal.C.muted); y += 18; }
           y += 40; e.breaks.push(y);
         }
         y += 6;
@@ -259,8 +264,21 @@ function paint(e: Env, doc: ReportDoc, now: Date, height: number): number {
   return Math.ceil(y);
 }
 
-/** ساخت تصویر گزارش. PNG برای ذخیره/اشتراک؛ JPEG برای پرینت (JPEG/PDF) */
-export async function renderReportImage(doc: ReportDoc, format: ReportImageFormat = 'png', now: Date = new Date()): Promise<RenderedReportImage> {
+/** نتیجهٔ رسم گزارش روی canvas (یک‌بار ساخته می‌شود؛ PNG/JPEG/PDF همه از همین canvas درمی‌آیند) */
+export interface ReportCanvas {
+  canvas: HTMLCanvasElement;
+  /** ضریب واقعی رسم (۲ یا کمتر برای گزارش‌های خیلی بلند) */
+  scale: number;
+  /** نقطه‌های مجاز شکست صفحه (پیکسل، از بالا) */
+  breaks: number[];
+  stamp: string;
+  fileBase: string;
+  /** نام کامل فایل بدون پسوند (اگر نباشد: apartemant-{fileBase}-{stamp}) — مثلاً برای تصویر قبض */
+  fileStem?: string;
+}
+
+/** رسم گزارش روی canvas (یک‌بار). برای گزارش خیلی بلند ضریب رسم خودکار کم می‌شود تا canvas از حد WebView نگذرد */
+export async function renderReportCanvas(doc: ReportDoc, now: Date = new Date()): Promise<ReportCanvas> {
   await ensureFonts();
   const lp = sanitizeLightPalette(typeof document !== 'undefined' ? document.documentElement.dataset.light : null) ?? DEFAULT_LIGHT_PALETTE;
   const pal = billImageColors(lp);
@@ -275,17 +293,37 @@ export async function renderReportImage(doc: ReportDoc, format: ReportImageForma
   if (!mctx) throw new Error('canvas-unavailable');
   const env = (ctx: CanvasRenderingContext2D, draw: boolean): Env => ({ ctx, draw, pal, lp, icons: new Map(iconEntries), app, breaks: [] });
   const h = paint(env(mctx, false), doc, now, 0);
-  canvas.width = REPORT_W * REPORT_SCALE;
-  canvas.height = h * REPORT_SCALE;
+  const scale = pickReportScale(h, REPORT_W, REPORT_SCALE);
+  if (scale === null) throw new Error('report-too-tall');
+  canvas.width = Math.round(REPORT_W * scale);
+  canvas.height = Math.round(h * scale);
   const ctx = canvas.getContext('2d')!;
-  ctx.setTransform(REPORT_SCALE, 0, 0, REPORT_SCALE, 0, 0);
+  ctx.setTransform(canvas.width / REPORT_W, 0, 0, canvas.height / h, 0, 0);
   ctx.imageSmoothingQuality = 'high';
   const e = env(ctx, true);
   paint(e, doc, now, h);
-  const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
-  const dataUrl = canvas.toDataURL(mime, format === 'jpeg' ? 0.92 : undefined);
-  const ext = format === 'jpeg' ? 'jpg' : 'png';
   const stamp = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`; // تاریخ محلی
-  const breaks = [...new Set(e.breaks.map((b) => Math.round(b * REPORT_SCALE)))].filter((b) => b > 0 && b < canvas.height).sort((a, b) => a - b);
-  return { dataUrl, base64: dataUrl.slice(dataUrl.indexOf(',') + 1), fileName: `apartemant-${doc.fileBase}-${stamp}.${ext}`, mime, width: canvas.width, height: canvas.height, breaks, canvas };
+  const k = canvas.height / h;
+  const breaks = [...new Set(e.breaks.map((b) => Math.round(b * k)))].filter((b) => b > 0 && b < canvas.height).sort((a, b) => a - b);
+  return { canvas, scale: canvas.width / REPORT_W, breaks, stamp, fileBase: doc.fileBase };
+}
+
+const stemOf = (r: ReportCanvas) => r.fileStem ?? `apartemant-${r.fileBase}-${r.stamp}`;
+
+/** کدگذاری canvas به PNG (ذخیره/اشتراک/پیش‌نمایش) یا JPEG (پرینت JPEG و صفحه‌های PDF) */
+export function encodeReportImage(r: ReportCanvas, format: ReportImageFormat = 'png'): RenderedReportImage {
+  const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+  const dataUrl = r.canvas.toDataURL(mime, format === 'jpeg' ? 0.92 : undefined);
+  const ext = format === 'jpeg' ? 'jpg' : 'png';
+  return { dataUrl, base64: dataUrl.slice(dataUrl.indexOf(',') + 1), fileName: `${stemOf(r)}.${ext}`, mime, width: r.canvas.width, height: r.canvas.height, scale: r.scale, breaks: r.breaks, canvas: r.canvas };
+}
+
+/** همان RenderedReportImage بدون کدگذاری (فقط ابعاد/نقطه‌های شکست/canvas) — برای ساخت PDF که خودش صفحه‌ها را JPEG می‌کند */
+export function reportImageShell(r: ReportCanvas): RenderedReportImage {
+  return { dataUrl: '', base64: '', fileName: `${stemOf(r)}.jpg`, mime: 'image/jpeg', width: r.canvas.width, height: r.canvas.height, scale: r.scale, breaks: r.breaks, canvas: r.canvas };
+}
+
+/** ساخت تصویر گزارش. PNG برای ذخیره/اشتراک؛ JPEG برای پرینت (JPEG/PDF) */
+export async function renderReportImage(doc: ReportDoc, format: ReportImageFormat = 'png', now: Date = new Date()): Promise<RenderedReportImage> {
+  return encodeReportImage(await renderReportCanvas(doc, now), format);
 }

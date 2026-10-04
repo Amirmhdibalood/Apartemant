@@ -46,6 +46,7 @@ export default function App() {
     if (!Capacitor.isNativePlatform()) return;
     const sub = CapApp.addListener('backButton', () => {
       if (document.querySelector('.intro')) return;
+      if (document.querySelector('.pv')) { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return; }
       if (notifRef.current.open) { notifRef.current.setOpen(false); return; }
       if (document.querySelector('.dialog-backdrop')) {
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));

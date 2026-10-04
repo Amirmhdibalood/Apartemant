@@ -1,5 +1,5 @@
 /**
- * ۱.۷.۰ — ساختار رابط گزارش‌ها: سه دکمهٔ هر گزارش، برگهٔ پرینت (JPEG/PDF و A4/A5/عادی)، هر گزارش صفحهٔ جداگانه،
+ * ۱.۷.۰ — ساختار رابط گزارش‌ها: سه دکمهٔ هر گزارش، پیش‌نمایش خروجی (PNG/PDF و A4/A5/عادی)، هر گزارش صفحهٔ جداگانه،
  * افزونهٔ بومی چاپ (بدون مجوز جدید)، بدون کتابخانهٔ بیرونی، تنظیمات «نمایش گزارش‌ها».
  */
 import { createElement } from 'react';
@@ -9,7 +9,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 const read = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 vi.mock('../src/context/FeedbackContext', () => ({ useFeedback: () => ({ toast: () => undefined }) }));
-const { PrintSheet } = await import('../src/components/PrintSheet');
+const { ReportPreview } = await import('../src/components/ReportPreview');
 const { ReportActions } = await import('../src/components/ReportActions');
 const doc = { id: 'monthly' as const, title: 'جمع قبض‌های ماه', subtitle: 'آبان ۱۴۰۵', fileBase: 'x', blocks: [] };
 
@@ -22,16 +22,12 @@ describe('سه دکمه و برگهٔ پرینت', () => {
     expect(h.match(/disabled=""/g)).toBeNull();
     expect(renderToStaticMarkup(createElement(ReportActions, { doc: null })).match(/disabled=""/g)).toHaveLength(3);
   });
-  it('برگه: بسته = هیچ؛ باز = دو قالب JPEG/PDF، سه اندازه با پیش‌فرض «اندازه عادی» و دکمه‌ها', () => {
-    const closed = renderToStaticMarkup(createElement(PrintSheet, { open: false, title: 't', onClose: () => undefined, onConfirm: () => undefined }));
-    expect(closed).toBe('');
-    const h = renderToStaticMarkup(createElement(PrintSheet, { open: true, title: 'جمع قبض‌های ماه — آبان ۱۴۰۵', onClose: () => undefined, onConfirm: () => undefined }));
-    expect(h).toContain('پرینت گزارش');
-    expect(h).toContain('JPEG');
-    expect(h).toContain('PDF');
-    for (const t of ['A4', 'A5', 'اندازه عادی']) expect(h).toContain(t);
-    expect(h).toMatch(/print-size is-on[^>]*>.*?اندازه عادی/s);
-    expect(h).toContain('role="radiogroup"');
+  it('پیش‌نمایش: بدون منبع = هیچ؛ هر سه دکمه به‌جای خروجی مستقیم، پیش‌نمایش را باز می‌کنند (۱.۷.۴)', () => {
+    expect(renderToStaticMarkup(createElement(ReportPreview, { source: null, action: 'save', onClose: () => undefined }))).toBe('');
+    const src = read('src/components/ReportActions.tsx');
+    expect(src).not.toContain('PrintSheet');
+    for (const a of ['save', 'share', 'print']) expect(src).toContain(`setAction('${a}')`);
+    expect(src).toContain('<ReportPreview');
   });
   it('هر شش گزارش دکمه‌های خروجی دارند و نمودارها فقط SVG/سند (بدون کتابخانه)', () => {
     for (const f of ['YearlyReportView', 'MonthlyTotalView', 'ChartsView', 'DebtorsView', 'BillPaymentsView']) {
