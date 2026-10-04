@@ -5,8 +5,10 @@ import type { ReportId } from './logic/reportCatalog';
 
 export type Route =
   | { name: 'home' }
-  | { name: 'tutorial' }
-  | { name: 'settings' }
+  /** topic نبودن = فهرست موضوع‌ها؛ با topic همان موضوع باز می‌شود (۱.۷.۷) */
+  | { name: 'tutorial'; topic?: string }
+  /** focus: شناسهٔ بخش آکاردئونی که باید باز و دیده شود (۱.۷.۷) */
+  | { name: 'settings'; focus?: string }
   /** سوابق: month / type نبودن یا null = «همه»؛ status نبودن = «همه» (بدون حذف‌شده‌ها) */
   | { name: 'records'; year?: number; month?: number | null; type?: ExpenseType | null; status?: StatusFilter }
   | { name: 'report'; tab?: ReportTab; year?: number; type?: ExpenseType | null }
