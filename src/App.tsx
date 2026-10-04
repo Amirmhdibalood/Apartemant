@@ -19,7 +19,7 @@ import { UnitPaymentScreen } from './screens/UnitPaymentScreen';
 import { BillDetailsScreen } from './screens/BillDetailsScreen';
 import { TutorialScreen } from './screens/TutorialScreen';
 import { SupportScreen } from './screens/SupportScreen';
-import { QUICK_TOPIC, helpTopicForRoute, routeForTarget, type HelpTarget } from './logic/help';
+import { QUICK_TOPIC, routeForTarget, type HelpTarget } from './logic/help';
 import { setAccordionOpen } from './logic/accordionState';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { IntroScreen } from './screens/IntroScreen';
@@ -81,8 +81,6 @@ export default function App() {
     return () => { alive = false; };
   }, []);
 
-  /** «؟» در چهار صفحهٔ اصلی: آموزشِ همان صفحه (خانه = فهرست موضوع‌ها) */
-  const openHelp = () => { if (route.name !== 'tutorial') push({ name: 'tutorial', topic: helpTopicForRoute(route) }); };
   const openSupport = () => { if (route.name !== 'support') push({ name: 'support' }); };
   const openTopic = (topic: string) => push({ name: 'tutorial', topic });
 
@@ -126,7 +124,6 @@ export default function App() {
           onShowAll={() => notif.setOpen(true)}
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onDismiss={notif.dismissBanner}
-          onHelp={openHelp}
           onSupport={openSupport}
         />
       );
@@ -166,7 +163,6 @@ export default function App() {
           onFilterChange={(f) => replaceTop({ name: 'records', year: f.year, month: f.month, type: f.type, status: f.status })}
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onBack={stack.length > 1 && stack[stack.length - 2].name === 'report' ? back : undefined}
-          onHelp={openHelp}
           onSupport={openSupport}
         />
       );
@@ -184,7 +180,6 @@ export default function App() {
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onOpenUnit={(unitNumber) => push({ name: 'unitHistory', unitNumber })}
           onPayUnit={(unitNumber) => push({ name: 'unitPay', unitNumber })}
-          onHelp={openHelp}
           onSupport={openSupport}
         />
       );
@@ -236,7 +231,7 @@ export default function App() {
       screen = <SupportScreen key={route.tab ?? 'faq'} initialTab={route.tab} onBack={back} onOpenTopic={openTopic} />;
       break;
     case 'settings':
-      screen = <SettingsScreen onBack={back} canGoBack={stack.length > 1} onHelp={openHelp} onSupport={openSupport} onOpenTopic={openTopic} focus={route.focus} />;
+      screen = <SettingsScreen onBack={back} canGoBack={stack.length > 1} onSupport={openSupport} onOpenTopic={openTopic} focus={route.focus} />;
       break;
   }
 

@@ -9,14 +9,14 @@ interface Props {
   children: ReactNode;
   className?: string;
   /** لینک «راهنمای این بخش» بالای محتوا (باز کردن موضوع آموزش همین بخش) */
-  onHelp?: () => void;
+  onTopic?: () => void;
 }
 
 /**
  * کارت آکاردئونی: با لمس نوار عنوان باز/بسته می‌شود (پیش‌فرض بسته).
  * عنوان یک <h2> حاوی <button aria-expanded> است؛ محتوای بسته visibility:hidden است تا فوکوس نگیرد.
  */
-export function Accordion({ id, title, children, className = '', onHelp }: Props) {
+export function Accordion({ id, title, children, className = '', onTopic }: Props) {
   const [open, setOpen] = useState(() => isAccordionOpen(id));
   const uid = useId();
   const headId = `${uid}-head`;
@@ -35,8 +35,8 @@ export function Accordion({ id, title, children, className = '', onHelp }: Props
       </h2>
       <div id={bodyId} className="acc__body" role="region" aria-labelledby={headId}>
         <div className="acc__inner"><div className="acc__pad">
-          {onHelp && (
-            <button type="button" className="acc__help" onClick={onHelp}><IconHelp size={16} /><span>راهنمای این بخش</span></button>
+          {onTopic && (
+            <button type="button" className="acc__help" onClick={onTopic}><IconHelp size={16} /><span>راهنمای این بخش</span></button>
           )}
           {children}
         </div></div>

@@ -8,7 +8,7 @@ export const DEFAULT_NOTIF_MODE: NotifMode = 'sheet';
 
 export const NOTIF_MODES: { id: NotifMode; label: string; hint: string }[] = [
   { id: 'sheet', label: 'پنجره پایین', hint: 'برگه از پایین صفحه باز می‌شود؛ بنر خانه فشرده است.' },
-  { id: 'dropdown', label: 'پنل کشویی', hint: 'پنل کوچک زیر زنگوله باز می‌شود؛ بنر خانه کامل است.' },
+  { id: 'dropdown', label: 'پنل کشویی', hint: 'پنل کوچک زیر زنگوله (اعلان) باز می‌شود؛ بنر خانه کامل است.' },
 ];
 
 export function sanitizeNotifMode(v: unknown): NotifMode | null {

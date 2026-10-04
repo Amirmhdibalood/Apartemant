@@ -126,23 +126,25 @@ describe('تصویر شبانه صفحه ورود', () => {
 });
 
 describe('محل دکمه‌ها و تصویر قبض', () => {
-  it('دکمه ماه/خورشید کنار «؟» در هدر است', async () => {
+  it('دکمهٔ «تم» (ماه/خورشید) کنار «پشتیبانی» و زنگوله (اعلان) در هدر است', async () => {
     const { ThemeProvider } = await import('../src/context/ThemeContext');
     const { NotifProvider } = await import('../src/context/NotifContext');
     const { AppHeader } = await import('../src/components/AppHeader');
-    const html = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'سوابق', onHelp: () => {}, onBack: () => {} }))));
-    expect(html).toContain('راهنما (آموزش)');
+    const html = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'سوابق', onSupport: () => {}, onBack: () => {} }))));
+    expect(html).toContain('aria-label="پشتیبانی"');
     expect(html).toContain('حالت تاریک');
-    // صفحه راست‌به‌چپ است؛ ترتیب فیزیکی از چپ: بازگشت ← تم ← «؟» ← زنگوله، یعنی در DOM برعکس:
-    const pos = ['aria-label="اعلان‌ها"', 'راهنما (آموزش)', 'حالت تاریک', 'aria-label="بازگشت"'].map((x) => html.indexOf(x));
+    expect(html).not.toContain('help-btn');
+    expect(html).not.toContain('راهنما (آموزش)');
+    // صفحه راست‌به‌چپ است؛ ترتیب فیزیکی از چپ: بازگشت ← تم ← پشتیبانی ← زنگوله (اعلان)، یعنی در DOM برعکس:
+    const pos = ['aria-label="اعلان‌ها"', 'aria-label="پشتیبانی"', 'حالت تاریک', 'aria-label="بازگشت"'].map((x) => html.indexOf(x));
     expect(pos.every((x) => x >= 0)).toBe(true);
     expect([...pos].sort((a, b) => a - b)).toEqual(pos);
     expect(html).toContain('app-header--two');
-    const noHelp = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'آموزش' }))));
-    // ۱.۷.۷: صفحه‌های داخلی فقط بازگشت + تم دارند (بدون «؟»، پشتیبانی و زنگوله)
-    expect(noHelp).toContain('حالت تاریک');
-    expect(noHelp).not.toContain('راهنما (آموزش)');
-    expect(noHelp).not.toContain('bell-btn');
+    const noMain = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'آموزش' }))));
+    // صفحه‌های داخلی فقط بازگشت + تم دارند (بدون پشتیبانی و زنگوله)
+    expect(noMain).toContain('حالت تاریک');
+    expect(noMain).not.toContain('aria-label="پشتیبانی"');
+    expect(noMain).not.toContain('bell-btn');
   });
   it('تصویر قبض (canvas) از تم مستقل است: رنگ ثابت و بدون وابستگی به تم/CSS', () => {
     for (const f of ['../src/services/billImage.tsx', '../src/logic/billImage.ts']) {

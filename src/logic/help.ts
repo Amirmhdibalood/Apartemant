@@ -38,7 +38,7 @@ export function neighbours(id: string, cfg: SupportConfig = SUPPORT): { prev?: H
   return { prev: all[i - 1], next: all[i + 1] };
 }
 
-/** «؟»ی بالای هر صفحه: موضوع همان صفحه. undefined = فهرست */
+/** موضوع آموزشِ هر صفحه (دیگر دکمهٔ «؟» ندارد؛ برای نقشهٔ پوشش و آزمون‌ها). undefined = فهرست */
 export function helpTopicForRoute(route: Route): string | undefined {
   switch (route.name) {
     case 'home': return undefined;

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { IconChevronLeft, IconHeadset, IconHelp } from './Icons';
+import { IconChevronLeft, IconHeadset } from './Icons';
 import { NotifBell } from './NotifBell';
 import { ThemeToggle } from './ThemeToggle';
 
@@ -8,21 +8,11 @@ interface Props {
   onBack?: () => void;
   /** دکمه/آیکون سمت راست عنوان (مثل تقویم در صفحه سوابق) */
   start?: ReactNode;
-  /** فقط چهار صفحهٔ اصلی نوار پایین (خانه، سوابق، گزارش‌ها، تنظیمات): «؟» (آموزش همان صفحه)، پشتیبانی و زنگوله */
-  onHelp?: () => void;
+  /** فقط چهار صفحهٔ اصلی نوار پایین (خانه، سوابق، گزارش‌ها، تنظیمات): با این پارامتر «پشتیبانی» و زنگوله (اعلان) هم دیده می‌شوند */
   onSupport?: () => void;
 }
 
-/** دکمه «؟» راهنما: باز کردن آموزشِ همان صفحه */
-export function HelpButton({ onHelp }: { onHelp: () => void }) {
-  return (
-    <button type="button" className="icon-btn help-btn" onClick={onHelp} aria-label="راهنما (آموزش)">
-      <IconHelp size={24} />
-    </button>
-  );
-}
-
-/** دکمه پشتیبانی (هدست): سؤال‌های رایج و راه‌های تماس */
+/** دکمهٔ «پشتیبانی» (آیکن هدست): سؤال‌های رایج و راه‌های تماس */
 export function SupportButton({ onSupport }: { onSupport: () => void }) {
   return (
     <button type="button" className="icon-btn support-btn" onClick={onSupport} aria-label="پشتیبانی">
@@ -32,21 +22,20 @@ export function SupportButton({ onSupport }: { onSupport: () => void }) {
 }
 
 /**
- * هدر صفحات (از ۱.۷.۷).
+ * هدر صفحات (از ۱.۷.۸ بدون دکمهٔ «؟»؛ آموزش از دکمهٔ «آموزش» صفحهٔ اصلی باز می‌شود).
  *  - صفحه‌های داخلی: فقط بازگشت + دکمهٔ تم.
- *  - چهار صفحهٔ اصلی (onHelp داده شود): زنگوله، پشتیبانی، «؟» و تم (و بازگشت اگر لازم باشد).
- * ترتیب فیزیکی از چپ به راست: بازگشت ← تم ← «؟» ← پشتیبانی ← زنگوله (صفحه راست‌به‌چپ است، پس در DOM برعکس نوشته می‌شود).
+ *  - چهار صفحهٔ اصلی (onSupport داده شود): زنگوله (اعلان)، پشتیبانی و تم (و بازگشت اگر لازم باشد).
+ * ترتیب فیزیکی از چپ به راست: بازگشت ← تم ← پشتیبانی ← زنگوله (صفحه راست‌به‌چپ است، پس در DOM برعکس نوشته می‌شود).
  */
-export function AppHeader({ title, onBack, start, onHelp, onSupport }: Props) {
-  const main = !!onHelp;
+export function AppHeader({ title, onBack, start, onSupport }: Props) {
+  const main = !!onSupport;
   return (
     <header className={'app-header app-header--two' + (main ? ' app-header--main' : '')}>
       <div className="app-header__side app-header__start">{start}</div>
       <h1 className="app-header__title">{title}</h1>
       <div className="app-header__side app-header__end">
         {main && <NotifBell />}
-        {main && onSupport && <SupportButton onSupport={onSupport} />}
-        {main && <HelpButton onHelp={onHelp!} />}
+        {main && <SupportButton onSupport={onSupport!} />}
         <ThemeToggle />
         {onBack && (
           <button type="button" className="icon-btn" onClick={onBack} aria-label="بازگشت">

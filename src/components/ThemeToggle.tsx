@@ -1,7 +1,7 @@
 import { IconMoon, IconSun } from './Icons';
 import { useTheme } from '../context/ThemeContext';
 
-/** دکمه ماه/خورشید کنار «؟» در بالا-چپ: تغییر حالت روشن/تاریک */
+/** دکمهٔ «تم» (ماه/خورشید) در بالا-چپ: تغییر حالت روشن/تاریک */
 export function ThemeToggle() {
   const { theme, toggle } = useTheme();
   const dark = theme === 'dark';

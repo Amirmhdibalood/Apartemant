@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { HELP_GROUPS, HELP_TOPICS, type HelpTopic } from '../src/content/help';
 import {
   ACCORDION_TOPIC, faqItems, helpTopicForRoute, neighbours, normalizeFa, routeForTarget, searchFaq, searchTopics, topicById, topicsByGroup, visibleTopics,
@@ -126,7 +126,7 @@ describe('۱.۷.۷ — جست‌وجوی آفلاین', () => {
     expect(searchTopics('متراژ').map((t) => t.id)).toContain('theme');
     expect(normalizeFa('پرداخت‌شدنِ ي ك ۱۲٣')).toBe('پرداختشدن ی ک 123');
     expect(searchTopics('بدهکاران').map((t) => t.id)).toContain('debtors');
-    expect(searchTopics('هدست').map((t) => t.id)).toContain('home');
+    expect(searchTopics('پشتیبانی').map((t) => t.id)).toContain('home');
     expect(searchTopics('   ')).toEqual([]);
     expect(searchTopics('zzzzqq')).toEqual([]);
   });
@@ -186,5 +186,58 @@ describe('۱.۷.۷ — قاعدهٔ محتوا: آموزش فقط «طرز اس�
       const src = readFileSync(f, 'utf8');
       expect(src).not.toMatch(/فرمول|ضرب\s*در|تقسیم\s*بر(?!\s*اساس)/);
     }
+  });
+});
+
+describe('۱.۷.۸ — نام دکمه‌ها در همهٔ متن‌ها', () => {
+  const texts = (): string[] => {
+    const out: string[] = [];
+    for (const t of HELP_TOPICS) {
+      out.push(t.title, t.summary, t.intro, ...t.steps, ...(t.tips ?? []), ...(t.qa ?? []).flatMap((x) => [x.q, x.a]), t.open?.label ?? '');
+    }
+    for (const f of faqItems(WITH_SUPPORT)) out.push(f.q, f.a);
+    return out.filter(Boolean);
+  };
+  const uiSource = (): string[] => {
+    const out: string[] = [];
+    const walk = (d: string) => {
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        const f = `${d}/${e.name}`;
+        if (e.isDirectory()) walk(f);
+        else if (/\.(ts|tsx)$/.test(e.name)) {
+          for (const line of readFileSync(f, 'utf8').split('\n')) {
+            const t = line.trim();
+            if (t.startsWith('//') || t.startsWith('/*') || t.startsWith('*')) continue;
+            out.push(line.replace(/\s\/\/.*$/, ''));
+          }
+        }
+      }
+    };
+    walk('src');
+    return out;
+  };
+  const BTN_Q = /«\s*؟\s*»|دکمهٔ\s*؟|دکمه\s*؟|آیکن\s*؟|آیکون\s*؟|علامت\s*(سؤال|سوال)/;
+  it('هیچ متنی «؟» را به‌عنوان دکمه نام نمی‌برد (آموزش از صفحهٔ اصلی است)', () => {
+    for (const x of texts()) expect(x).not.toMatch(BTN_Q);
+    for (const x of uiSource()) expect(x).not.toMatch(BTN_Q);
+  });
+  it('«هدست» نام دکمه نیست؛ پشتیبانی همان «پشتیبانی» است', () => {
+    for (const x of [...texts(), ...uiSource()]) expect(x).not.toMatch(/هدست/);
+    for (const t of HELP_TOPICS) expect(t.keywords.join(' ')).not.toMatch(/هدست|راهنما/);
+  });
+  it('هر جا زنگوله آمده، به‌صورت «زنگوله (اعلان)» است', () => {
+    for (const x of texts()) expect(x).not.toMatch(/زنگوله(?! \(اعلان\))/);
+    for (const x of uiSource().filter((l) => !/keywords:/.test(l))) if (/'[^']*زنگوله|"[^"]*زنگوله|>[^<]*زنگوله/.test(x)) expect(x).not.toMatch(/زنگوله(?! \(اعلان\))/);
+  });
+  it('دکمهٔ تم همیشه «تم» (ماه یا خورشید) نامیده می‌شود، نه «ماه یا خورشید» تنها', () => {
+    for (const x of texts()) {
+      if (/ماه\s*(یا|\/)\s*خورشید/.test(x)) expect(x).toMatch(/«تم» \(ماه یا خورشید\)/);
+    }
+  });
+  it('آموزش از خانه: مرحلهٔ «آموزش» و «راهنمای این بخش» در موضوع خانه هست', () => {
+    const home = topicById('home')!;
+    expect(home.steps.join(' ')).toMatch(/دکمهٔ «آموزش»/);
+    expect(home.steps.join(' ')).toMatch(/راهنمای این بخش/);
+    expect(home.steps.join(' ')).toMatch(/دکمهٔ «پشتیبانی»/);
   });
 });

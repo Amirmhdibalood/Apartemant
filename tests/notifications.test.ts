@@ -91,17 +91,18 @@ describe('تنظیم «نحوه نمایش اعلان‌ها»', () => {
 });
 
 describe('زنگوله در نوار بالا و بدون مجوز', () => {
-  it('زنگوله کنار «؟» در هدر صفحات و در نوار بالای خانه است', async () => {
+  it('زنگوله (اعلان) کنار «پشتیبانی» در هدر صفحات و در نوار بالای خانه است', async () => {
     const { NotifProvider } = await import('../src/context/NotifContext');
     const { ThemeProvider } = await import('../src/context/ThemeContext');
     const { AppHeader } = await import('../src/components/AppHeader');
     const html = renderToStaticMarkup(
-      createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'گزارش‌ها', onHelp: () => undefined }))),
+      createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'گزارش‌ها', onSupport: () => undefined }))),
     );
     expect(html).toContain('bell-btn');
-    expect(html.indexOf('bell-btn')).toBeLessThan(html.indexOf('help-btn')); // DOM برعکس: روی صفحه از چپ «؟» ← زنگوله
+    expect(html.indexOf('bell-btn')).toBeLessThan(html.indexOf('support-btn')); // DOM برعکس: روی صفحه از چپ پشتیبانی ← زنگوله
+    expect(html).not.toContain('help-btn');
     expect(html).toContain('aria-label="اعلان‌ها"');
-    expect(readFileSync('src/screens/HomeScreen.tsx', 'utf8')).toMatch(/home-topbar"><NotifBell \/>\{onSupport && <SupportButton onSupport=\{onSupport\} \/>\}<HelpButton onHelp=\{onHelp\} \/><ThemeToggle \/>/);
+    expect(readFileSync('src/screens/HomeScreen.tsx', 'utf8')).toMatch(/home-topbar"><NotifBell \/><SupportButton onSupport=\{onSupport\} \/><ThemeToggle \/>/);
   });
   it('هیچ مجوز یا افزونه اعلان سیستمی اضافه نشده', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf8'));

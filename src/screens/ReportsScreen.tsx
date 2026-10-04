@@ -31,7 +31,6 @@ interface Props {
   onOpenUnit: (unitNumber: number) => void;
   /** پرداخت بدهی یک واحد (دکمهٔ «پرداخت» در بدهکاران) */
   onPayUnit: (unitNumber: number) => void;
-  onHelp?: () => void;
   onSupport?: () => void;
 }
 
@@ -39,7 +38,7 @@ interface Props {
  * مرکز گزارش‌ها (از ۱.۷.۰): فهرست گزارش‌ها مثل تنظیمات + صفحهٔ جداگانهٔ هر گزارش.
  * گزارش‌های خاموش‌شده در «تنظیمات ← نمایش گزارش‌ها» در فهرست نمی‌آیند (داده دست‌نخورده می‌ماند).
  */
-export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenReport, onBack, onOpenMonth, onOpenBill, onOpenUnit, onPayUnit, onHelp, onSupport }: Props) {
+export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenReport, onBack, onOpenMonth, onOpenBill, onOpenUnit, onPayUnit, onSupport }: Props) {
   const { prefs } = useEntryPrefs();
   const { prefs: reportPrefs } = useReportPrefs();
   const type = typeProp ? activeTypeFilter(prefs, typeProp) : typeProp;
@@ -56,7 +55,7 @@ export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenRepor
   if (!page) {
     return (
       <>
-        <AppHeader title="گزارش‌ها" onHelp={onHelp} onSupport={onSupport} start={<span className="header-icon"><IconChart size={24} /></span>} />
+        <AppHeader title="گزارش‌ها" onSupport={onSupport} start={<span className="header-icon"><IconChart size={24} /></span>} />
         <main className="screen screen--report screen--hub">
           <ReportsHub prefs={reportPrefs} onOpen={onOpenReport} />
         </main>

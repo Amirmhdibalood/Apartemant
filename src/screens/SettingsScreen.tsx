@@ -28,8 +28,8 @@ import { AreaIcon, UnitIcon } from '../components/PrefIcons';
 import { ThemePicker } from '../components/ThemePicker';
 
 /** ۱۵. تنظیمات */
-export function SettingsScreen({ onBack, canGoBack, onHelp, onSupport, onOpenTopic, focus }: {
-  onBack: () => void; canGoBack: boolean; onHelp?: () => void; onSupport?: () => void;
+export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focus }: {
+  onBack: () => void; canGoBack: boolean; onSupport?: () => void;
   /** باز کردن موضوع آموزش (لینک «راهنمای این بخش») */
   onOpenTopic?: (topicId: string) => void;
   /** شناسهٔ بخشی که باید دیده شود (از دکمهٔ «باز کردن …» در آموزش) */
@@ -66,20 +66,20 @@ export function SettingsScreen({ onBack, canGoBack, onHelp, onSupport, onOpenTop
 
   return (
     <>
-      <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} onHelp={onHelp} onSupport={onSupport} />
+      <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} onSupport={onSupport} />
       <main className="screen screen--settings">
-        <Accordion id="years" onHelp={help('years')} title="سال‌ها">
+        <Accordion id="years" onTopic={help('years')} title="سال‌ها">
           <p className="card__hint">
             فهرست را باز کنید و سال‌های مورد نیاز را فعال یا غیرفعال کنید. فقط سال‌های فعال در کشوی سال صفحه «ثبت قبض جدید» و «سوابق» نمایش داده می‌شوند. حداقل یک سال باید فعال بماند.
           </p>
           <YearPicker years={years} active={settings.activeYears} onToggle={onYear} />
         </Accordion>
 
-        <Accordion id="building" onHelp={help('building')} title="ساختمان">
+        <Accordion id="building" onTopic={help('building')} title="ساختمان">
           <BuildingSection reloadKey={restoreKey} />
         </Accordion>
 
-        <Accordion id="entry-prefs" onHelp={help('entry-prefs')} title="انواع قبض و روش‌های محاسبه" className="entry-prefs">
+        <Accordion id="entry-prefs" onTopic={help('entry-prefs')} title="انواع قبض و روش‌های محاسبه" className="entry-prefs">
           <p className="card__hint">
             نوع خاموش از فرم ثبت، سوابق، فیلترها، گزارش‌ها و جمع‌ها کنار می‌رود و با روشن شدن دوباره برمی‌گردد (داده پاک نمی‌شود).
             روش خاموش در انتخاب نحوه تقسیم نمی‌آید. از هر گروه دست‌کم یکی باید روشن بماند.
@@ -112,7 +112,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp, onSupport, onOpenTop
           {prefs.methods.length === 1 && <p className="card__hint entry-prefs__note">فقط یک روش روشن است؛ انتخابگر نحوه تقسیم در فرم ثبت قبض پنهان و همین روش استفاده می‌شود.</p>}
         </Accordion>
 
-        <Accordion id="report-prefs" onHelp={help('report-prefs')} title="نمایش گزارش‌ها" className="entry-prefs">
+        <Accordion id="report-prefs" onTopic={help('report-prefs')} title="نمایش گزارش‌ها" className="entry-prefs">
           <p className="card__hint">
             گزارش خاموش از فهرست «گزارش‌ها» کنار می‌رود و با روشن کردن دوباره برمی‌گردد (هیچ داده‌ای پاک نمی‌شود). دست‌کم یک گزارش باید روشن بماند.
           </p>
@@ -129,7 +129,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp, onSupport, onOpenTop
           })}
         </Accordion>
 
-        <Accordion id="appearance" onHelp={help('appearance')} title="تنظیمات ظاهری" className="appearance-card">
+        <Accordion id="appearance" onTopic={help('appearance')} title="تنظیمات ظاهری" className="appearance-card">
           <p className="card__hint">فقط شکل نمایش را عوض می‌کند؛ روی قبض‌ها و محاسبه‌ها اثری ندارد و در فایل پشتیبان نیست.</p>
           <ThemePicker />
 
@@ -197,7 +197,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp, onSupport, onOpenTop
 
           <div className="settings-group" role="group" aria-labelledby="notif-mode-title">
             <h3 className="settings-sub" id="notif-mode-title">نحوه نمایش اعلان‌ها</h3>
-            <p className="card__hint">با زدن زنگولهٔ بالای صفحه، اعلان‌های مهلت پرداخت (از ۲ روز قبل) به این شکل باز می‌شوند.</p>
+            <p className="card__hint">با زدن زنگوله (اعلان) بالای صفحه، اعلان‌های مهلت پرداخت (از ۲ روز قبل) به این شکل باز می‌شوند.</p>
             <div className="seg" role="radiogroup" aria-label="نحوه نمایش اعلان‌ها">
               {NOTIF_MODES.map((m) => (
                 <button
@@ -217,7 +217,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp, onSupport, onOpenTop
 
         </Accordion>
 
-        <Accordion id="warnings" onHelp={help('warnings')} title="هشدارها">
+        <Accordion id="warnings" onTopic={help('warnings')} title="هشدارها">
           <div className="setting-row">
             <label htmlFor="sw-save" className="setting-row__text">
               <span className="setting-row__label">نمایش هشدار قبل از ذخیره</span>
@@ -245,7 +245,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp, onSupport, onOpenTop
           )}
         </Accordion>
 
-        <Accordion id="backup" onHelp={help('backup')} title="پشتیبان‌گیری و بازیابی">
+        <Accordion id="backup" onTopic={help('backup')} title="پشتیبان‌گیری و بازیابی">
           <BackupSection onRestored={() => setRestoreKey((k) => k + 1)} />
         </Accordion>
         <p className="app-version">آپارتمانت — {APP_VERSION_FA} — کاملاً آفلاین</p>

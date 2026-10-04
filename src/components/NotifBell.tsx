@@ -2,7 +2,7 @@ import { IconBell } from './Icons';
 import { useNotif } from '../context/NotifContext';
 import { toPersianDigits } from '../logic/formatting';
 
-/** زنگوله اعلان‌ها با عدد قرمز (تعداد همه اعلان‌های فعال) — کنار «؟» و دکمه تم */
+/** زنگوله اعلان‌ها با عدد قرمز (تعداد همه اعلان‌های فعال) — کنار «پشتیبانی» و دکمه تم */
 export function NotifBell() {
   const { all, open, setOpen } = useNotif();
   const count = all.length;
