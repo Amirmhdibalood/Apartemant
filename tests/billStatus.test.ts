@@ -73,7 +73,7 @@ describe('گزارش «پرداخت قبض‌ها»', () => {
     const r = billPaymentReport(all, 1405, null, TODAY);
     expect(r.rows).toHaveLength(7);
     expect(r.rows.map((x) => x.bill.month)).toEqual([7, 7, 7, 6, 5, 4, 3]);
-    expect(r.summary).toEqual({ total: 7, early: 1, exact: 1, onTime: 2, late: 2, paid: 4, paidUndated: 0, unpaid: 3, overdue: 1, unpaidNoDue: 1, avgLateDays: 7 });
+    expect(r.summary).toEqual({ total: 7, early: 1, exact: 1, onTime: 2, late: 2, paid: 4, paidNoDue: 0, paidUndated: 0, unpaid: 3, overdue: 1, unpaidNoDue: 1, avgLateDays: 7 });
 
     const gas = billPaymentReport(all, 1405, 'gas', TODAY);
     expect(gas.rows.map((x) => x.timing)).toEqual(['early', 'onTime', 'late', 'unpaidNoDue']);

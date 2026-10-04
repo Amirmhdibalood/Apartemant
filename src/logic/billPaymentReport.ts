@@ -15,7 +15,7 @@ export type PaymentTiming =
   | 'onTime' // سر موعد
   | 'late' // با تأخیر
   | 'paidNoDue' // پرداخت‌شده، بدون مهلت
-  | 'paidUnknown' // پرداخت‌شده، تاریخ نامشخص
+  | 'paidUnknown' // پرداخت‌شده، مهلت دارد ولی تاریخ پرداخت نامشخص
   | 'pending' // پرداخت‌نشده، مهلت نرسیده
   | 'overdue' // پرداخت‌نشده، مهلت گذشته
   | 'unpaidNoDue'; // پرداخت‌نشده، بدون مهلت (فقط پرداخت‌نشده است؛ هرگز «گذشته از مهلت» نمی‌شود)
@@ -36,14 +36,17 @@ export interface BillPaymentRow {
 
 export interface BillPaymentSummary {
   total: number;
-  /** زودتر از مهلت + سر موعد */
+  /** به‌موقع = زودتر از مهلت + سر موعد + پرداخت‌شدهٔ بدون مهلت (بدون مهلت نمی‌تواند دیر باشد) */
   onTime: number;
   early: number;
   exact: number;
+  /** پرداخت‌شده‌های بدون مهلت (بخشی از onTime) */
+  paidNoDue: number;
   late: number;
   /** پرداخت‌شده (همهٔ حالت‌ها، از جمله بدون مهلت/بدون تاریخ) */
   paid: number;
-  /** پرداخت‌شده‌های بدون مهلت یا بدون تاریخ پرداخت (نه به‌موقع نه با تأخیر قابل قضاوت) */
+  /** پرداخت‌شده‌هایی که مهلت دارند ولی تاریخ پرداختشان نامعتبر/خالی است (نه به‌موقع نه با تأخیر قابل قضاوت)؛
+   *  onTime + late + paidUndated = paid */
   paidUndated: number;
   /** پرداخت‌نشده (در انتظار + گذشته از مهلت + بدون مهلت)؛ paid + unpaid = total */
   unpaid: number;
@@ -77,8 +80,8 @@ export function classifyBillPayment(bill: Bill, today: JalaliDate): BillPaymentR
   let timing: PaymentTiming;
   let days: number | null = null;
   if (paid) {
-    if (!paidDate) timing = 'paidUnknown';
-    else if (!dueDate) timing = 'paidNoDue';
+    if (!dueDate) timing = 'paidNoDue'; // بدون مهلت هرگز دیر نیست (حتی اگر تاریخ پرداخت ثبت نشده باشد)
+    else if (!paidDate) timing = 'paidUnknown'; // مهلت دارد ولی تاریخ پرداخت نامعتبر/خالی: به‌موقع یا دیر قابل قضاوت نیست
     else {
       const diff = jalaliDiffDays(dueDate, paidDate); // مثبت = بعد از مهلت
       timing = diff < 0 ? 'early' : diff === 0 ? 'onTime' : 'late';
@@ -115,10 +118,11 @@ export function billPaymentReport(
     total: rows.length,
     early,
     exact,
-    onTime: early + exact,
+    paidNoDue: count('paidNoDue'),
+    onTime: early + exact + count('paidNoDue'),
     late: late.length,
     paid: rows.filter((r) => isPaidTiming(r.timing)).length,
-    paidUndated: count('paidNoDue') + count('paidUnknown'),
+    paidUndated: count('paidUnknown'),
     unpaid: count('pending') + count('overdue') + count('unpaidNoDue'),
     overdue: count('overdue'),
     unpaidNoDue: count('unpaidNoDue'),
@@ -136,11 +140,11 @@ export const PAYMENT_STATUS_LABEL: Record<PaymentStatusFilter, string> = {
 
 /**
  * پرداخت‌شده = همهٔ پرداخت‌شده‌ها (به‌موقع + با تأخیر + بدون مهلت/تاریخ)؛ پرداخت‌نشده = در انتظار + گذشته از مهلت + بدون مهلت؛
- * به‌موقع = زودتر + سر موعد. «پرداخت‌شده» و «پرداخت‌نشده» یکدیگر را کامل می‌کنند (هر قبض در دقیقاً یکی).
+ * به‌موقع = زودتر + سر موعد + پرداخت‌شدهٔ بدون مهلت. «پرداخت‌شده» و «پرداخت‌نشده» یکدیگر را کامل می‌کنند (هر قبض در دقیقاً یکی).
  */
 export function matchesPaymentStatus(row: Pick<BillPaymentRow, 'timing'>, status: PaymentStatusFilter): boolean {
   switch (status) {
-    case 'onTime': return row.timing === 'early' || row.timing === 'onTime';
+    case 'onTime': return row.timing === 'early' || row.timing === 'onTime' || row.timing === 'paidNoDue';
     case 'late': return row.timing === 'late';
     case 'paid': return isPaidTiming(row.timing);
     case 'unpaid': return !isPaidTiming(row.timing);

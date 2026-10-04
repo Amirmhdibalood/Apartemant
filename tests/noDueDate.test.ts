@@ -47,12 +47,12 @@ describe('گزارش پرداخت قبض‌ها: قبض بدون مهلت', () =
 
   it('پرداخت‌شدهٔ بدون مهلت (با/بدون تاریخ پرداخت) «پرداخت‌شده» است و هرگز با تأخیر/گذشته از مهلت نیست', () => {
     const r = billPaymentReport([NO_DUE_PAID, NO_DUE_PAID_NODATE], 1405, null, TODAY);
-    expect(r.rows.map((x) => x.timing).sort()).toEqual(['paidNoDue', 'paidUnknown']);
-    expect(r.summary).toMatchObject({ total: 2, paid: 2, paidUndated: 2, unpaid: 0, late: 0, overdue: 0, unpaidNoDue: 0 });
+    expect(r.rows.map((x) => x.timing).sort()).toEqual(['paidNoDue', 'paidNoDue']);
+    expect(r.summary).toMatchObject({ total: 2, paid: 2, paidNoDue: 2, paidUndated: 0, onTime: 2, unpaid: 0, late: 0, overdue: 0, unpaidNoDue: 0 });
     expect(filterPaymentRows(r.rows, 'paid')).toHaveLength(2);
     expect(filterPaymentRows(r.rows, 'unpaid')).toHaveLength(0);
-    // «به‌موقع/با تأخیر» برای آن‌ها قضاوت نمی‌شود
-    expect(filterPaymentRows(r.rows, 'onTime')).toHaveLength(0);
+    // (۱.۷.۲) بدون مهلت دیر نمی‌شود ⇒ در «به‌موقع» حساب می‌شود
+    expect(filterPaymentRows(r.rows, 'onTime')).toHaveLength(2);
     expect(filterPaymentRows(r.rows, 'late')).toHaveLength(0);
   });
 
@@ -90,14 +90,14 @@ describe('گزارش پرداخت قبض‌ها: قبض بدون مهلت', () =
         expect(inPaid !== inUnpaid).toBe(true); // دقیقاً یکی
         expect(inPaid).toBe(isPaidTiming(row.timing));
         expect(inPaid).toBe(row.bill.billPaid);
-        if (!row.dueDate) expect(['paidNoDue', 'paidUnknown', 'unpaidNoDue']).toContain(row.timing);
+        if (!row.dueDate) expect(['paidNoDue', 'unpaidNoDue']).toContain(row.timing);
         expect(matchesPaymentStatus(row, 'all')).toBe(true);
       }
     }
     // تعداد بدون مهلت‌ها هم در کارت‌ها محاسبه شده است
     const { rows, summary } = billPaymentReport(data, 1405, null, TODAY);
     expect(summary.unpaidNoDue).toBe(rows.filter((x) => !x.dueDate && !x.bill.billPaid).length);
-    expect(summary.paidUndated).toBeGreaterThanOrEqual(rows.filter((x) => !x.dueDate && x.bill.billPaid).length);
+    expect(summary.paidNoDue).toBe(rows.filter((x) => !x.dueDate && x.bill.billPaid).length);
   });
 
   it('رابط: چیپ «پرداخت‌شده» و شمارش «بدون مهلت» روی کارت پرداخت‌نشده', () => {

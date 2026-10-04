@@ -79,7 +79,7 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
             <button type="button" className={'bp-summary__item is-ontime' + (status === 'onTime' ? ' is-selected' : '')} aria-pressed={status === 'onTime'} onClick={() => tap('onTime')}>
               <b className="num">{s.onTime}</b>
               <span>به‌موقع</span>
-              <small>زودتر <span className="num">{s.early}</span> · سر موعد <span className="num">{s.exact}</span></small>
+              <small>زودتر <span className="num">{s.early}</span> · سر موعد <span className="num">{s.exact}</span>{s.paidNoDue > 0 && <> · بدون مهلت <span className="num">{s.paidNoDue}</span></>}</small>
               {status === 'onTime' && <i className="bp-tick"><IconCheck size={12} /></i>}
             </button>
             <button type="button" className={'bp-summary__item is-late' + (status === 'late' ? ' is-selected' : '')} aria-pressed={status === 'late'} onClick={() => tap('late')}>

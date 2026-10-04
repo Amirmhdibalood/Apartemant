@@ -201,7 +201,7 @@
 :root[data-theme="dark"] .tp-pal.is-active .tp-check { color: #f4f6fa; }
 :root[data-theme="dark"] .acc__head:focus-visible { outline: 3px solid rgba(71,132,242,0.35); }
 :root[data-theme="dark"] .print-sheet { box-shadow: 0 -8px 30px rgba(0,0,0,0.5); }
-:root[data-theme="dark"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #2a3858; --sw-off-ring: #7a89ad; --sw-thumb: #aab4cf; --sw-on-ring: #7fa6f5; --cb-ring: #7a89ad; --cb-on-border: #64df9e; --warn-border: #6b2f33; --warn-color: #ffb4ad; --warn-bg: #3a1f26; --ppm-border: #2c4a86; --badge-area-bg: #17423f; --badge-area-color: #7de3d3; }
+:root[data-theme="dark"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #2a3858; --sw-off-ring: #7a89ad; --sw-thumb: #aab4cf; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #7a89ad; --cb-on-border: #64df9e; --warn-border: #6b2f33; --warn-color: #ffb4ad; --warn-bg: #3a1f26; --ppm-border: #2c4a86; --badge-area-bg: #17423f; --badge-area-color: #7de3d3; }
 
 /* ---- پالت charcoal: زغالی خنثی (فقط تفاوت‌ها با سرمه‌ای) ---- */
 :root[data-theme="dark"][data-palette="charcoal"] { --bg: #121314; --card: #1d1e20; --text: #dadbdc; --text-2: #c9cacd; --muted: #a9abb0; --border: #2e3034; --border-2: #36383d; --soft-panel: #27292c; }
@@ -306,7 +306,7 @@
 :root[data-theme="dark"][data-palette="charcoal"] .notif-pop__head { color: #dadbdc; }
 :root[data-theme="dark"][data-palette="charcoal"] .notif-empty { color: #a9abb0; }
 :root[data-theme="dark"][data-palette="charcoal"] .bp-all { background: #1d1e20; }
-:root[data-theme="dark"][data-palette="charcoal"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #2e3033; --sw-off-ring: #868a91; --sw-thumb: #b3b7bd; --sw-on-ring: #7fa6f5; --cb-ring: #868a91; --cb-on-border: #64df9e; --warn-border: #6b3434; --warn-color: #ffb4ad; --warn-bg: #321f1f; --ppm-border: #33518f; --badge-area-bg: #17423f; --badge-area-color: #7de3d3; }
+:root[data-theme="dark"][data-palette="charcoal"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #2e3033; --sw-off-ring: #868a91; --sw-thumb: #b3b7bd; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #868a91; --cb-on-border: #64df9e; --warn-border: #6b3434; --warn-color: #ffb4ad; --warn-bg: #321f1f; --ppm-border: #33518f; --badge-area-bg: #17423f; --badge-area-color: #7de3d3; }
 
 /* ---- پالت amoled: مشکی AMOLED (فقط تفاوت‌ها با سرمه‌ای) ---- */
 :root[data-theme="dark"][data-palette="amoled"] { --bg: #000000; --card: #111111; --text: #dbdbdb; --text-2: #cbcbcb; --muted: #acacac; --border: #232323; --border-2: #2b2b2b; --soft-panel: #1b1b1b; }
@@ -411,7 +411,7 @@
 :root[data-theme="dark"][data-palette="amoled"] .notif-pop__head { color: #dbdbdb; }
 :root[data-theme="dark"][data-palette="amoled"] .notif-empty { color: #acacac; }
 :root[data-theme="dark"][data-palette="amoled"] .bp-all { background: #111111; }
-:root[data-theme="dark"][data-palette="amoled"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #26272a; --sw-off-ring: #8a8d92; --sw-thumb: #b6b9be; --sw-on-ring: #7fa6f5; --cb-ring: #8a8d92; --cb-on-border: #64df9e; --warn-border: #6b3434; --warn-color: #ffb4ad; --warn-bg: #2a1517; --ppm-border: #33518f; --badge-area-bg: #10312f; --badge-area-color: #7de3d3; }
+:root[data-theme="dark"][data-palette="amoled"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #26272a; --sw-off-ring: #8a8d92; --sw-thumb: #b6b9be; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #8a8d92; --cb-on-border: #64df9e; --warn-border: #6b3434; --warn-color: #ffb4ad; --warn-bg: #2a1517; --ppm-border: #33518f; --badge-area-bg: #10312f; --badge-area-color: #7de3d3; }
 
 /* ---- پالت warm: قهوه‌ای گرم (فقط تفاوت‌ها با سرمه‌ای) ---- */
 :root[data-theme="dark"][data-palette="warm"] { --bg: #1a1714; --card: #27221e; --text: #dddbd9; --text-2: #cecbc8; --muted: #b3aca6; --border: #3b342e; --border-2: #443c36; --primary: #3ed2be; --primary-press: #96ede2; --primary-soft: #173d38; --soft-panel: #332d28; --summary: #1b3834; }
@@ -550,4 +550,4 @@
 :root[data-theme="dark"][data-palette="warm"] .tp-pal:focus-visible { outline: 3px solid rgba(62,210,190,0.35); }
 :root[data-theme="dark"][data-palette="warm"] .tp-pal.is-active { box-shadow: 0 0 0 3px rgba(62,210,190,0.12); }
 :root[data-theme="dark"][data-palette="warm"] .acc__head:focus-visible { outline: 3px solid rgba(62,210,190,0.35); }
-:root[data-theme="dark"][data-palette="warm"] { --primary-fill: #12806f; --primary-fill-press: #0f6b5d; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #3a332c; --sw-off-ring: #9b8f82; --sw-thumb: #c4b9ab; --sw-on-ring: #6fd6c4; --cb-ring: #9b8f82; --cb-on-border: #64df9e; --warn-border: #703a30; --warn-color: #ffb4ad; --warn-bg: #3a2420; --ppm-border: #2b6a60; --badge-area-bg: #143e38; --badge-area-color: #7de3d3; }
+:root[data-theme="dark"][data-palette="warm"] { --primary-fill: #12806f; --primary-fill-press: #0f6b5d; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #3a332c; --sw-off-ring: #9b8f82; --sw-thumb: #c4b9ab; --sw-on-bg: #26b5a0; --sw-on-ring: #6fd6c4; --cb-ring: #9b8f82; --cb-on-border: #64df9e; --warn-border: #703a30; --warn-color: #ffb4ad; --warn-bg: #3a2420; --ppm-border: #2b6a60; --badge-area-bg: #143e38; --badge-area-color: #7de3d3; }

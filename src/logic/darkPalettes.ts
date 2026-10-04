@@ -8,7 +8,7 @@ export type DarkPaletteId = 'navy' | 'charcoal' | 'amoled' | 'warm';
 /** رنگ‌های «دستی» وابسته به پالت که در dark.css به‌صورت متغیر مصرف می‌شوند */
 export interface PaletteExtras {
   primaryFill: string; primaryFillPress: string; successFill: string; successFillPress: string; dangerFill: string;
-  swOffBg: string; swOffRing: string; swThumb: string; swOnRing: string; cbRing: string; cbOnBorder: string;
+  swOffBg: string; swOffRing: string; swThumb: string; swOnBg: string; swOnRing: string; cbRing: string; cbOnBorder: string;
   warnBorder: string; warnColor: string; warnBg: string; ppmBorder: string; badgeAreaBg: string; badgeAreaColor: string;
 }
 
@@ -31,7 +31,7 @@ export interface DarkPalette {
 
 const NAVY_EXTRAS: PaletteExtras = {
   primaryFill: '#2e68d6', primaryFillPress: '#2658bd', successFill: '#1c7f4f', successFillPress: '#166b42', dangerFill: '#c93838',
-  swOffBg: '#2a3858', swOffRing: '#7a89ad', swThumb: '#aab4cf', swOnRing: '#7fa6f5', cbRing: '#7a89ad', cbOnBorder: '#64df9e',
+  swOffBg: '#2a3858', swOffRing: '#7a89ad', swThumb: '#aab4cf', swOnBg: '#4d8bff', swOnRing: '#7fa6f5', cbRing: '#7a89ad', cbOnBorder: '#64df9e',
   warnBorder: '#6b2f33', warnColor: '#ffb4ad', warnBg: '#3a1f26', ppmBorder: '#2c4a86', badgeAreaBg: '#17423f', badgeAreaColor: '#7de3d3',
 };
 
@@ -58,7 +58,7 @@ export const DARK_PALETTES: Record<DarkPaletteId, DarkPalette> = {
     bgL: 0.09, cardL: 0.135, neutralHue: 28, neutralSat: 0.12, textSat: 0.06, greyCap: 0.08, accentHue: 172,
     metaColor: '#1a1714',
     extras: {
-      ...NAVY_EXTRAS, primaryFill: '#12806f', primaryFillPress: '#0f6b5d', swOffBg: '#3a332c', swOffRing: '#9b8f82', swThumb: '#c4b9ab',
+      ...NAVY_EXTRAS, primaryFill: '#12806f', primaryFillPress: '#0f6b5d', swOffBg: '#3a332c', swOffRing: '#9b8f82', swThumb: '#c4b9ab', swOnBg: '#26b5a0',
       swOnRing: '#6fd6c4', cbRing: '#9b8f82', warnBorder: '#703a30', warnBg: '#3a2420', ppmBorder: '#2b6a60', badgeAreaBg: '#143e38',
     },
   },

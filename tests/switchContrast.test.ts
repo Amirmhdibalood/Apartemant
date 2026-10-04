@@ -26,7 +26,7 @@ describe('کلید روشن/خاموش در حالت تاریک (قاعده‌ه
   it('روشن و خاموش قاعدهٔ جدا دارند و قاعدهٔ روشن از خودکارِ generated قوی‌تر/دیرتر است', () => {
     expect(gen).toContain(':root[data-theme="dark"] .switch {');
     expect(prop(on, 'background')).not.toBe(prop(off, 'background'));
-    expect(prop(on, 'background')).toBe('var(--primary-fill)');
+    expect(prop(on, 'background')).toBe('var(--sw-on-bg)');
     expect(prop(off, 'background')).toBe('var(--sw-off-bg)');
     expect(dark).toContain('.checkbox.is-checked .checkbox__box { background: var(--success-fill)');
   });
