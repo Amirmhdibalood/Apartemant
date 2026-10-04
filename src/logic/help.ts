@@ -49,6 +49,7 @@ export function helpTopicForRoute(route: Route): string | undefined {
     case 'unitHistory': return 'history';
     case 'unitPay': return 'debtpay';
     case 'settings': return 'settings';
+    case 'support': return 'support';
     case 'tutorial': return undefined;
     case 'report':
       switch (route.tab) {
@@ -72,21 +73,7 @@ export const ACCORDION_TOPIC: Record<string, string> = {
   'report-prefs': 'prefs',
   appearance: 'theme',
   warnings: 'warn',
-  support: 'support',
   backup: 'backup',
-};
-
-/** پنجره‌ها و لایه‌ها → موضوع (آزمون همهٔ *Dialog.tsx را می‌پاید) */
-export const DIALOG_TOPIC: Record<string, string> = {
-  BillSavedDialog: 'image',
-  WarningDialog: 'warn',
-  LockedDialog: 'details',
-  ConfirmDialog: 'details',
-  ErrorDialog: 'newbill',
-  PaymentDialog: 'unitpay',
-  RestoreConfirmDialog: 'backup',
-  NotificationsLayer: 'bell',
-  ReportPreview: 'export',
 };
 
 /** مقصد دکمهٔ «باز کردن …» → مسیر */
@@ -97,6 +84,7 @@ export function routeForTarget(t: HelpTarget): Route {
     case 'records': return { name: 'records' };
     case 'reports': return t.report ? { name: 'report', tab: t.report } : { name: 'report' };
     case 'settings': return t.section ? { name: 'settings', focus: t.section } : { name: 'settings' };
+    case 'support': return { name: 'support', tab: t.tab };
   }
 }
 
@@ -144,4 +132,32 @@ export function searchTopics(query: string, cfg: SupportConfig = SUPPORT): HelpT
     .filter((x) => x.s > 0)
     .sort((a, b) => b.s - a.s || a.i - b.i)
     .map((x) => x.t);
+}
+
+// ───────────── سؤال‌های رایج (از همان متن موضوع‌ها؛ متن تکراری ندارد) ─────────────
+export interface FaqItem { q: string; a: string; topicId: string; topicTitle: string }
+
+export function faqItems(cfg: SupportConfig = SUPPORT): FaqItem[] {
+  return visibleTopics(cfg).flatMap((t) => (t.qa ?? []).map((x) => ({ q: x.q, a: x.a, topicId: t.id, topicTitle: t.title })));
+}
+
+/** جست‌وجوی آفلاین در سؤال‌ها (سؤال، پاسخ و نام موضوع). عبارت خالی = همهٔ سؤال‌ها */
+export function searchFaq(query: string, cfg: SupportConfig = SUPPORT): FaqItem[] {
+  const all = faqItems(cfg);
+  const words = normalizeFa(query).split(' ').filter(Boolean);
+  if (words.length === 0) return all;
+  return all
+    .map((f, i) => {
+      const q = normalizeFa(f.q), a = normalizeFa(f.a), t = normalizeFa(f.topicTitle);
+      let total = 0;
+      for (const w of words) {
+        const sc = q.includes(w) ? 10 : t.includes(w) ? 6 : a.includes(w) ? 3 : 0;
+        if (sc === 0) return { f, s: 0, i };
+        total += sc;
+      }
+      return { f, s: total, i };
+    })
+    .filter((x) => x.s > 0)
+    .sort((x, y) => y.s - x.s || x.i - y.i)
+    .map((x) => x.f);
 }

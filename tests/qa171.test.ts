@@ -588,13 +588,13 @@ describe('QA 1.7.1 — هم‌خوانی متن راهنما با رفتار', (
   const src = (p: string) => readFileSync(new URL('../src/' + p, import.meta.url), 'utf8');
   it('راهنمای مهلت پرداخت «۲ روز قبل» است (همان ALERT_DAYS_BEFORE)', () => {
     expect(ALERT_DAYS_BEFORE).toBe(2);
-    for (const f of ['screens/NewBillScreen.tsx', 'screens/BillDetailsScreen.tsx', 'screens/TutorialScreen.tsx']) {
+    for (const f of ['screens/NewBillScreen.tsx', 'screens/BillDetailsScreen.tsx', 'content/help.ts']) {
       expect(src(f)).toContain('از ۲ روز قبل');
       expect(src(f)).not.toContain('از یک روز قبل');
     }
   });
   it('توضیح واحد خالی از «سه» روش تقسیم می‌گوید و هیچ نویسهٔ خراب (U+FFFD) در متن‌ها نیست', () => {
     expect(src('components/BuildingSection.tsx')).toContain('هیچ‌کدام از سه روش تقسیم');
-    for (const f of ['screens/TutorialScreen.tsx', 'components/BuildingSection.tsx', 'screens/NewBillScreen.tsx', 'screens/BillDetailsScreen.tsx']) expect(src(f)).not.toContain('\uFFFD');
+    for (const f of ['content/help.ts', 'screens/TutorialScreen.tsx', 'components/BuildingSection.tsx', 'screens/NewBillScreen.tsx', 'screens/BillDetailsScreen.tsx']) expect(src(f)).not.toContain('\uFFFD');
   });
 });

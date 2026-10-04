@@ -7,7 +7,8 @@ import { useFeedback } from '../context/FeedbackContext';
 import { YearPicker } from '../components/YearPicker';
 import { BackupSection } from '../components/BackupSection';
 import { BuildingSection } from '../components/BuildingSection';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { ACCORDION_TOPIC } from '../logic/help';
 import { selectableYears, toggleYear } from '../logic/years';
 import { APP_VERSION_FA, DEVELOPER_EMAIL, DEVELOPER_NAME } from '../appVersion';
 import { Errors } from '../logic/errors';
@@ -27,7 +28,13 @@ import { AreaIcon, UnitIcon } from '../components/PrefIcons';
 import { ThemePicker } from '../components/ThemePicker';
 
 /** ۱۵. تنظیمات */
-export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => void; canGoBack: boolean; onHelp?: () => void }) {
+export function SettingsScreen({ onBack, canGoBack, onHelp, onSupport, onOpenTopic, focus }: {
+  onBack: () => void; canGoBack: boolean; onHelp?: () => void; onSupport?: () => void;
+  /** باز کردن موضوع آموزش (لینک «راهنمای این بخش») */
+  onOpenTopic?: (topicId: string) => void;
+  /** شناسهٔ بخشی که باید دیده شود (از دکمهٔ «باز کردن …» در آموزش) */
+  focus?: string;
+}) {
   const { settings, updateSettings } = useSettings();
   const { showErrors, toast } = useFeedback();
   const { mode, setMode } = useNotif();
@@ -37,6 +44,16 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
   const { prefs: reportPrefs, setReportOn } = useReportPrefs();
   const years = selectableYears();
   const [restoreKey, setRestoreKey] = useState(0);
+  const help = (id: string) => {
+    const topic = ACCORDION_TOPIC[id];
+    return onOpenTopic && topic ? () => onOpenTopic(topic) : undefined;
+  };
+
+  useEffect(() => {
+    if (!focus) return;
+    const t = window.setTimeout(() => document.querySelector(`[data-acc="${focus}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60);
+    return () => window.clearTimeout(t);
+  }, [focus]);
 
   const onYear = (y: number) => {
     const next = toggleYear(settings.activeYears, y);
@@ -49,20 +66,20 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
 
   return (
     <>
-      <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} onHelp={onHelp} />
+      <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} onHelp={onHelp} onSupport={onSupport} />
       <main className="screen screen--settings">
-        <Accordion id="years" title="سال‌ها">
+        <Accordion id="years" onHelp={help('years')} title="سال‌ها">
           <p className="card__hint">
             فهرست را باز کنید و سال‌های مورد نیاز را فعال یا غیرفعال کنید. فقط سال‌های فعال در کشوی سال صفحه «ثبت قبض جدید» و «سوابق» نمایش داده می‌شوند. حداقل یک سال باید فعال بماند.
           </p>
           <YearPicker years={years} active={settings.activeYears} onToggle={onYear} />
         </Accordion>
 
-        <Accordion id="building" title="ساختمان">
+        <Accordion id="building" onHelp={help('building')} title="ساختمان">
           <BuildingSection reloadKey={restoreKey} />
         </Accordion>
 
-        <Accordion id="entry-prefs" title="انواع قبض و روش‌های محاسبه" className="entry-prefs">
+        <Accordion id="entry-prefs" onHelp={help('entry-prefs')} title="انواع قبض و روش‌های محاسبه" className="entry-prefs">
           <p className="card__hint">
             نوع خاموش از فرم ثبت، سوابق، فیلترها، گزارش‌ها و جمع‌ها کنار می‌رود و با روشن شدن دوباره برمی‌گردد (داده پاک نمی‌شود).
             روش خاموش در انتخاب نحوه تقسیم نمی‌آید. از هر گروه دست‌کم یکی باید روشن بماند.
@@ -95,7 +112,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
           {prefs.methods.length === 1 && <p className="card__hint entry-prefs__note">فقط یک روش روشن است؛ انتخابگر نحوه تقسیم در فرم ثبت قبض پنهان و همین روش استفاده می‌شود.</p>}
         </Accordion>
 
-        <Accordion id="report-prefs" title="نمایش گزارش‌ها" className="entry-prefs">
+        <Accordion id="report-prefs" onHelp={help('report-prefs')} title="نمایش گزارش‌ها" className="entry-prefs">
           <p className="card__hint">
             گزارش خاموش از فهرست «گزارش‌ها» کنار می‌رود و با روشن کردن دوباره برمی‌گردد (هیچ داده‌ای پاک نمی‌شود). دست‌کم یک گزارش باید روشن بماند.
           </p>
@@ -112,7 +129,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
           })}
         </Accordion>
 
-        <Accordion id="appearance" title="تنظیمات ظاهری" className="appearance-card">
+        <Accordion id="appearance" onHelp={help('appearance')} title="تنظیمات ظاهری" className="appearance-card">
           <p className="card__hint">فقط شکل نمایش را عوض می‌کند؛ روی قبض‌ها و محاسبه‌ها اثری ندارد و در فایل پشتیبان نیست.</p>
           <ThemePicker />
 
@@ -200,7 +217,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
 
         </Accordion>
 
-        <Accordion id="warnings" title="هشدارها">
+        <Accordion id="warnings" onHelp={help('warnings')} title="هشدارها">
           <div className="setting-row">
             <label htmlFor="sw-save" className="setting-row__text">
               <span className="setting-row__label">نمایش هشدار قبل از ذخیره</span>
@@ -228,7 +245,7 @@ export function SettingsScreen({ onBack, canGoBack, onHelp }: { onBack: () => vo
           )}
         </Accordion>
 
-        <Accordion id="backup" title="پشتیبان‌گیری و بازیابی">
+        <Accordion id="backup" onHelp={help('backup')} title="پشتیبان‌گیری و بازیابی">
           <BackupSection onRestored={() => setRestoreKey((k) => k + 1)} />
         </Accordion>
         <p className="app-version">آپارتمانت — {APP_VERSION_FA} — کاملاً آفلاین</p>

@@ -18,6 +18,9 @@ import { UnitHistoryScreen } from './screens/UnitHistoryScreen';
 import { UnitPaymentScreen } from './screens/UnitPaymentScreen';
 import { BillDetailsScreen } from './screens/BillDetailsScreen';
 import { TutorialScreen } from './screens/TutorialScreen';
+import { SupportScreen } from './screens/SupportScreen';
+import { QUICK_TOPIC, helpTopicForRoute, routeForTarget, type HelpTarget } from './logic/help';
+import { setAccordionOpen } from './logic/accordionState';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { IntroScreen } from './screens/IntroScreen';
 import { BillSavedDialog } from './components/BillSavedDialog';
@@ -73,12 +76,15 @@ export default function App() {
   useEffect(() => {
     let alive = true;
     onboardingRepository.consumeFirstRun().then((first) => {
-      if (alive && first) setStack((s) => (s.length === 1 && s[0].name === 'home' ? [...s, { name: 'tutorial' }] : s));
+      if (alive && first) setStack((s) => (s.length === 1 && s[0].name === 'home' ? [...s, { name: 'tutorial', topic: QUICK_TOPIC }] : s));
     }).catch(() => undefined);
     return () => { alive = false; };
   }, []);
 
-  const openHelp = () => { if (route.name !== 'tutorial') push({ name: 'tutorial' }); };
+  /** «؟» در چهار صفحهٔ اصلی: آموزشِ همان صفحه (خانه = فهرست موضوع‌ها) */
+  const openHelp = () => { if (route.name !== 'tutorial') push({ name: 'tutorial', topic: helpTopicForRoute(route) }); };
+  const openSupport = () => { if (route.name !== 'support') push({ name: 'support' }); };
+  const openTopic = (topic: string) => push({ name: 'tutorial', topic });
 
   const startNewBill = async () => {
     const now = currentJalali();
@@ -86,6 +92,14 @@ export default function App() {
     const building = await buildingRepository.get().catch(() => null);
     setDraft(emptyDraft(pickDefaultYear(settings.activeYears, now.year), now.month, building));
     push({ name: 'newBill' });
+  };
+
+  /** دکمهٔ «باز کردن …» پایین موضوع‌های آموزش */
+  const openTarget = (t: HelpTarget) => {
+    if (t.kind === 'home') { setStack([{ name: 'home' }]); return; }
+    if (t.kind === 'newBill') { void startNewBill(); return; }
+    if (t.kind === 'settings' && t.section) setAccordionOpen(t.section, true);
+    push(routeForTarget(t));
   };
 
   const onTab = (t: TabId) => {
@@ -113,6 +127,7 @@ export default function App() {
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onDismiss={notif.dismissBanner}
           onHelp={openHelp}
+          onSupport={openSupport}
         />
       );
       break;
@@ -152,6 +167,7 @@ export default function App() {
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onBack={stack.length > 1 && stack[stack.length - 2].name === 'report' ? back : undefined}
           onHelp={openHelp}
+          onSupport={openSupport}
         />
       );
       break;
@@ -169,6 +185,7 @@ export default function App() {
           onOpenUnit={(unitNumber) => push({ name: 'unitHistory', unitNumber })}
           onPayUnit={(unitNumber) => push({ name: 'unitPay', unitNumber })}
           onHelp={openHelp}
+          onSupport={openSupport}
         />
       );
       break;
@@ -188,7 +205,6 @@ export default function App() {
           unitNumber={route.unitNumber}
           onBack={back}
           onOpenHistory={(unitNumber) => replaceTop({ name: 'unitHistory', unitNumber })}
-          onHelp={openHelp}
         />
       );
       break;
@@ -203,10 +219,24 @@ export default function App() {
       );
       break;
     case 'tutorial':
-      screen = <TutorialScreen onBack={back} onDone={() => setStack([{ name: 'home' }])} canGoBack={stack.length > 1} />;
+      screen = (
+        <TutorialScreen
+          topic={route.topic}
+          onBack={back}
+          onDone={() => setStack([{ name: 'home' }])}
+          canGoBack={stack.length > 1}
+          onPushTopic={openTopic}
+          onReplaceTopic={(topic) => replaceTop({ name: 'tutorial', topic })}
+          onOpenTarget={openTarget}
+          onOpenSupport={openSupport}
+        />
+      );
+      break;
+    case 'support':
+      screen = <SupportScreen key={route.tab ?? 'faq'} initialTab={route.tab} onBack={back} onOpenTopic={openTopic} />;
       break;
     case 'settings':
-      screen = <SettingsScreen onBack={back} canGoBack={stack.length > 1} onHelp={openHelp} />;
+      screen = <SettingsScreen onBack={back} canGoBack={stack.length > 1} onHelp={openHelp} onSupport={openSupport} onOpenTopic={openTopic} focus={route.focus} />;
       break;
   }
 

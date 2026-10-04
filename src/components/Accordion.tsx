@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from 'react';
-import { IconChevronDown } from './Icons';
+import { IconChevronDown, IconHelp } from './Icons';
 import { isAccordionOpen, setAccordionOpen } from '../logic/accordionState';
 
 interface Props {
@@ -8,13 +8,15 @@ interface Props {
   title: string;
   children: ReactNode;
   className?: string;
+  /** لینک «راهنمای این بخش» بالای محتوا (باز کردن موضوع آموزش همین بخش) */
+  onHelp?: () => void;
 }
 
 /**
  * کارت آکاردئونی: با لمس نوار عنوان باز/بسته می‌شود (پیش‌فرض بسته).
  * عنوان یک <h2> حاوی <button aria-expanded> است؛ محتوای بسته visibility:hidden است تا فوکوس نگیرد.
  */
-export function Accordion({ id, title, children, className = '' }: Props) {
+export function Accordion({ id, title, children, className = '', onHelp }: Props) {
   const [open, setOpen] = useState(() => isAccordionOpen(id));
   const uid = useId();
   const headId = `${uid}-head`;
@@ -32,7 +34,12 @@ export function Accordion({ id, title, children, className = '' }: Props) {
         </button>
       </h2>
       <div id={bodyId} className="acc__body" role="region" aria-labelledby={headId}>
-        <div className="acc__inner"><div className="acc__pad">{children}</div></div>
+        <div className="acc__inner"><div className="acc__pad">
+          {onHelp && (
+            <button type="button" className="acc__help" onClick={onHelp}><IconHelp size={16} /><span>راهنمای این بخش</span></button>
+          )}
+          {children}
+        </div></div>
       </div>
     </section>
   );

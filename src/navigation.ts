@@ -9,6 +9,8 @@ export type Route =
   | { name: 'tutorial'; topic?: string }
   /** focus: شناسهٔ بخش آکاردئونی که باید باز و دیده شود (۱.۷.۷) */
   | { name: 'settings'; focus?: string }
+  /** پشتیبانی (۱.۷.۷): زبانهٔ «سؤال‌های رایج» یا «تماس با ما» */
+  | { name: 'support'; tab?: 'faq' | 'contact' }
   /** سوابق: month / type نبودن یا null = «همه»؛ status نبودن = «همه» (بدون حذف‌شده‌ها) */
   | { name: 'records'; year?: number; month?: number | null; type?: ExpenseType | null; status?: StatusFilter }
   | { name: 'report'; tab?: ReportTab; year?: number; type?: ExpenseType | null }

@@ -24,7 +24,6 @@ interface Props {
   unitNumber: number;
   onBack: () => void;
   onOpenHistory: (unitNumber: number) => void;
-  onHelp?: () => void;
 }
 
 const fa = (n: number) => toPersianDigits(n);
@@ -64,7 +63,7 @@ function Lines({ lines, done }: { lines: AllocationLine[]; done: boolean }) {
 interface Done { allocation: Allocation; batchId: string; paidAtLabel: string }
 
 /** صفحهٔ «پرداخت بدهی واحد»: تسویه کامل یا مبلغ دلخواه با پیش‌نمایش زندهٔ تخصیص از قدیمی‌ترین قبض + نتیجه + لغو */
-export function UnitPaymentScreen({ unitNumber, onBack, onOpenHistory, onHelp }: Props) {
+export function UnitPaymentScreen({ unitNumber, onBack, onOpenHistory }: Props) {
   const { toast, showErrors, confirmDanger } = useFeedback();
   const [allRaw, setAll] = useState<BillWithUnits[] | null>(null);
   const all = useVisibleBills(allRaw);
@@ -148,7 +147,7 @@ export function UnitPaymentScreen({ unitNumber, onBack, onOpenHistory, onHelp }:
     const remain = all ? unitTotalDebt(all, unitNumber) : d.remainingDebt;
     return (
       <>
-        <AppHeader title="پرداخت ثبت شد" onBack={onBack} onHelp={onHelp} />
+        <AppHeader title="پرداخت ثبت شد" onBack={onBack} />
         <main className="screen screen--report up-screen">
           <div className="up-ok">
             <span className="up-ok__icon"><IconCheck size={34} /></span>
@@ -178,7 +177,7 @@ export function UnitPaymentScreen({ unitNumber, onBack, onOpenHistory, onHelp }:
 
   return (
     <>
-      <AppHeader title={title} onBack={onBack} onHelp={onHelp} />
+      <AppHeader title={title} onBack={onBack} />
       <main className="screen screen--report up-screen">
         {!all && null}
         {all && totalDebt <= 0 && (

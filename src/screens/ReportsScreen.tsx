@@ -32,13 +32,14 @@ interface Props {
   /** پرداخت بدهی یک واحد (دکمهٔ «پرداخت» در بدهکاران) */
   onPayUnit: (unitNumber: number) => void;
   onHelp?: () => void;
+  onSupport?: () => void;
 }
 
 /**
  * مرکز گزارش‌ها (از ۱.۷.۰): فهرست گزارش‌ها مثل تنظیمات + صفحهٔ جداگانهٔ هر گزارش.
  * گزارش‌های خاموش‌شده در «تنظیمات ← نمایش گزارش‌ها» در فهرست نمی‌آیند (داده دست‌نخورده می‌ماند).
  */
-export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenReport, onBack, onOpenMonth, onOpenBill, onOpenUnit, onPayUnit, onHelp }: Props) {
+export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenReport, onBack, onOpenMonth, onOpenBill, onOpenUnit, onPayUnit, onHelp, onSupport }: Props) {
   const { prefs } = useEntryPrefs();
   const { prefs: reportPrefs } = useReportPrefs();
   const type = typeProp ? activeTypeFilter(prefs, typeProp) : typeProp;
@@ -55,7 +56,7 @@ export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenRepor
   if (!page) {
     return (
       <>
-        <AppHeader title="گزارش‌ها" onHelp={onHelp} start={<span className="header-icon"><IconChart size={24} /></span>} />
+        <AppHeader title="گزارش‌ها" onHelp={onHelp} onSupport={onSupport} start={<span className="header-icon"><IconChart size={24} /></span>} />
         <main className="screen screen--report screen--hub">
           <ReportsHub prefs={reportPrefs} onOpen={onOpenReport} />
         </main>
@@ -64,7 +65,7 @@ export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenRepor
   }
   return (
     <>
-      <AppHeader title={reportInfo(page).title} onBack={onBack} onHelp={onHelp} start={<span className="header-icon"><IconChart size={24} /></span>} />
+      <AppHeader title={reportInfo(page).title} onBack={onBack} start={<span className="header-icon"><IconChart size={24} /></span>} />
       <main className="screen screen--report" data-report={page}>
         {page === 'yearly' && <YearlyReportView all={all} year={year} onYearChange={(y) => onChange('yearly', y)} onOpenMonth={onOpenMonth} />}
         {page === 'monthly' && <MonthlyTotalView all={all} />}

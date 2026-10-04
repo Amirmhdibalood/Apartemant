@@ -316,3 +316,45 @@ export const IconReceipt = (p: P) => (
     <path d="M9.5 8h5M9.5 12h5" />
   </S>
 );
+
+export const IconHeadset = (p: P) => (
+  <S {...p}>
+    <path d="M4 14v-2a8 8 0 0 1 16 0v2" />
+    <rect x="3" y="14" width="4" height="6" rx="1.8" />
+    <rect x="17" y="14" width="4" height="6" rx="1.8" />
+    <path d="M19 20c0 1.4-2 2-5 2" />
+  </S>
+);
+export const IconSearch = (p: P) => (
+  <S {...p}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M20 20l-3.5-3.5" />
+  </S>
+);
+export const IconMail = (p: P) => (
+  <S {...p}>
+    <rect x="3" y="5" width="18" height="14" rx="2.5" />
+    <path d="M3.5 7l8.5 6 8.5-6" />
+  </S>
+);
+export const IconPhone = (p: P) => (
+  <S {...p}>
+    <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />
+  </S>
+);
+export const IconChat = (p: P) => (
+  <S {...p}>
+    <path d="M4 5h16v11H9l-5 4z" />
+  </S>
+);
+export const IconSend = (p: P) => (
+  <S {...p}>
+    <path d="M21 4L3 11l6 2.5L11.5 20l3-5.5z" />
+  </S>
+);
+export const IconCopy = (p: P) => (
+  <S {...p}>
+    <rect x="8" y="8" width="12" height="12" rx="2.5" />
+    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+  </S>
+);

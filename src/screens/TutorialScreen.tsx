@@ -1,41 +1,153 @@
+import { useMemo, useState, type ReactNode } from 'react';
 import { AppHeader } from '../components/AppHeader';
+import {
+  IconBell, IconBook, IconChart, IconChevronLeft, IconGear, IconHeadset, IconPlus, IconSearch, IconShield, IconWallet,
+} from '../components/Icons';
+import { toPersianDigits } from '../logic/formatting';
+import { QUICK_TOPIC, neighbours, searchTopics, topicById, topicsByGroup, type HelpGroupId, type HelpTarget, type HelpTopic } from '../logic/help';
 
-/** ۱۴. آموزش مرحله‌ای */
-export const TUTORIAL_STEPS: string[] = [
-  'ابتدا در «تنظیمات ← ساختمان» تعداد واحدها را با دکمه‌های + و − تعیین کنید و برای هر واحد در صورت تمایل «اسم مستعار» (مثل «آقای رضایی») و تعداد نفرات پیش‌فرض بنویسید. واحد بدون اسم «واحد ۱»، «واحد ۲» و ... نمایش داده می‌شود و با اسم مستعار مثل «واحد ۱ - آقای رضایی».',
-  'ماه و سال را انتخاب کنید.',
-  'نوع هزینه را انتخاب کنید (آب، برق، گاز، شارژ ساختمان، نظافت، تعمیرات، زیبایی ساختمان یا متفرقه).',
-  'شماره قبض و توضیحات را در صورت نیاز وارد کنید. «مهلت پرداخت» (آخرین مهلت پرداخت قبض، اختیاری) را هم می‌توانید تعیین کنید؛ از ۲ روز قبل از مهلت (و پس از گذشتن آن)، تا وقتی قبض «پرداخت شد» نخورده، کارت هشدار قرمز بالای صفحه اصلی نمایش داده می‌شود و با زدن آن جزئیات قبض باز می‌شود.',
-  'واحدها خودکار از «تنظیمات ← ساختمان» وارد می‌شوند. در صورت نیاز برای همین قبض با دکمه + واحد اضافه و با دکمه − حذف کنید (واحد جدید «واحد N» با ۱ نفر است). این تغییرات فقط روی همین قبض اثر دارد؛ با «ذخیره به‌عنوان پیش‌فرض» می‌توانید آن‌ها را پیش‌فرض قبض‌های بعدی کنید و با «پیش‌فرض ساختمان» به تنظیمات برگردید.',
-  'تعداد نفرات هر واحد را در صورت نیاز تغییر دهید (برای واحد بدون ساکن تیک «خالی» را بزنید؛ سهمی ندارد). سهم هر واحد همان‌جا کنار نام واحد نمایش داده می‌شود. سپس «نحوه تقسیم» را انتخاب کنید: «بر اساس نفرات» (سهم متناسب با نفرات) یا «بر اساس واحد» (سهم برابر برای هر واحد، مثلاً گاز). آخرین روش هر نوع هزینه به خاطر سپرده می‌شود.',
-  'مبلغ قبض را وارد کنید.',
-  'دکمه «محاسبه و ادامه» را بزنید تا سهم هر واحد محاسبه شود.',
-  'نتیجه را بررسی و اطلاعات را ذخیره کنید. پس از ذخیره می‌توانید تصویر قبض را با «اشتراک‌گذاری تصویر» مستقیم به گروه تلگرام ساختمان بفرستید یا با «ذخیره در گالری» نگه دارید (در جزئیات قبض هم این دو دکمه هست).',
-  'هر قبض واحدهای خودش (شماره، اسم مستعار، نفرات و سهم) را نگه می‌دارد؛ تغییر بعدی تنظیمات ساختمان روی قبض‌ها، گزارش‌ها، بدهی‌ها و پرداخت‌های قبلی اثری ندارد. اگر تعداد واحدها را کم کنید و واحد حذف‌شده هنوز بدهی داشته باشد، هشدار داده می‌شود و بدهی‌های قبلی در گزارش‌ها باقی می‌ماند.',
-  'قبض‌های ثبت‌شده را در «سوابق» ببینید و با فیلترهای سال، ماه، نوع هزینه و وضعیت (همه، پرداخت‌شده، پرداخت‌نشده، حذف‌شده) جست‌وجو کنید. رنگ کارت‌ها: سبز = پرداخت‌شده، آبی = پرداخت‌نشده، قرمز = مهلت پرداخت نزدیک (۳ روز یا کمتر) یا گذشته.',
-  'وقتی خودِ قبض را به اداره/شرکت پرداخت کردید، در جزئیات قبض تیک «پرداخت شد» را بزنید؛ تاریخ پرداخت قبض پیش‌فرض امروز است و قابل تغییر است. این وضعیت جدا از پرداخت ساکنان است و در تصویر اشتراکی قبض نمایش داده نمی‌شود.',
-  'قبض حذف‌شده به دسته «حذف‌شده» (فیلتر وضعیت در سوابق) می‌رود و از گزارش‌ها و بدهی‌ها کنار گذاشته می‌شود؛ از جزئیات آن می‌توانید «بازگردانی» یا «حذف دائمی» را بزنید. قبض «پرداخت شد» قابل حذف نیست؛ ابتدا تیک آن را بردارید.',
-  '«گزارش‌ها» (نوار پایین یا صفحه اصلی) فهرستی از گزارش‌هاست و هر گزارش صفحهٔ جداگانهٔ خودش را دارد (با دکمهٔ بازگشت). «هزینه‌های سال» جمع هر نوع هزینه، درصد و ماه‌به‌ماه را نشان می‌دهد. «جمع قبض‌های ماه» مبلغ قابل پرداخت هر واحد از مجموع همهٔ قبض‌های یک ماه را می‌دهد (واحد خالی «خالی» نوشته می‌شود و در جمع نمی‌آید) و «با جزئیات» سهم هر واحد از هر قبض را هم نشان می‌دهد. «گزارش نموداری» مبلغ ماه‌ها را با نمودار میله‌ای، خطی یا دایره‌ای (با فیلتر سال، نوع قبض و بازهٔ ماه) و تغییر نسبت به ماه قبل نشان می‌دهد. «بدهکاران» بدهی هر واحد را با سابقه پرداخت و «پرداخت قبض‌ها» مهلت و تاریخ پرداخت خودِ قبض‌ها را با وضعیت «زودتر از مهلت»، «سر موعد» یا «با تأخیر» نشان می‌دهد. در پایین هر گزارش سه دکمهٔ «ذخیره»، «اشتراک‌گذاری» و «پرینت» هست: ذخیره و اشتراک‌گذاری تصویر گزارش را مثل تصویر قبض می‌دهند و پرینت، تصویر JPEG یا فایل PDF (A4، A5 یا اندازه عادی) می‌سازد. گزارش‌هایی که نمی‌خواهید را از «تنظیمات ← نمایش گزارش‌ها» خاموش کنید (داده‌ها پاک نمی‌شوند). تاریخ هر پرداخت خودکار ثبت می‌شود و فقط در گزارش‌ها نمایش داده می‌شود.',
-  'در جزئیات قبض، دکمه «پرداخت» هر واحد را بزنید: «تسویه کامل» کل مانده را ثبت می‌کند و با «پرداخت مبلغ» می‌توانید بخشی از بدهی را (حتی چند بار) ثبت کنید؛ با صفر شدن مانده، واحد «تسویه» می‌شود.',
-  'پس از تسویه تمام واحدها، قبض دیگر قابل ویرایش نیست.',
-  'برای جلوگیری از از دست رفتن اطلاعات، از «تنظیمات ← پشتیبان‌گیری و بازیابی» نسخه پشتیبان بگیرید و فایل را بیرون از گوشی (تلگرام، Google Drive یا ایمیل) نگه دارید؛ روی گوشی جدید با «بازیابی از فایل پشتیبان» همه‌چیز برمی‌گردد.',
-];
+const GROUP_ICON: Record<HelpGroupId, (p: { size?: number }) => ReactNode> = {
+  start: IconBook, setup: IconGear, bill: IconPlus, pay: IconWallet, reports: IconChart, look: IconBell, data: IconShield,
+};
 
-export function TutorialScreen({ onBack, onDone, canGoBack }: { onBack: () => void; onDone: () => void; canGoBack: boolean }) {
+interface Props {
+  /** شناسهٔ موضوع؛ نبودن = فهرست موضوع‌ها */
+  topic?: string;
+  onBack: () => void;
+  onDone: () => void;
+  canGoBack: boolean;
+  /** از فهرست به موضوع (روی پشته اضافه می‌شود) */
+  onPushTopic: (id: string) => void;
+  /** از موضوعی به موضوع دیگر / به فهرست (جایگزین صفحهٔ فعلی) */
+  onReplaceTopic: (id: string | undefined) => void;
+  onOpenTarget: (t: HelpTarget) => void;
+  onOpenSupport: () => void;
+}
+
+/** آموزش (۱.۷.۷): فهرست موضوع‌ها با جست‌وجو + صفحهٔ هر موضوع. متن‌ها در `content/help.ts` است. */
+export function TutorialScreen({ topic, onBack, onDone, canGoBack, onPushTopic, onReplaceTopic, onOpenTarget, onOpenSupport }: Props) {
+  const t = topicById(topic);
   return (
     <>
       <AppHeader title="آموزش" onBack={canGoBack ? onBack : undefined} />
       <main className="screen screen--tutorial">
-        <ol className="steps">
-          {TUTORIAL_STEPS.map((s, i) => (
-            <li key={i} className="step">
-              <span className="step__num">{i + 1}</span>
-              <span className="step__text">{s}</span>
-            </li>
-          ))}
-        </ol>
-        <button type="button" className="btn btn--primary btn--block btn--lg steps__done" onClick={onDone}>متوجه شدم</button>
+        {t ? (
+          <TopicPage t={t} onDone={onDone} onReplaceTopic={onReplaceTopic} onOpenTarget={onOpenTarget} />
+        ) : (
+          <TopicList onPushTopic={onPushTopic} onOpenSupport={onOpenSupport} />
+        )}
       </main>
     </>
+  );
+}
+
+function TopicList({ onPushTopic, onOpenSupport }: { onPushTopic: (id: string) => void; onOpenSupport: () => void }) {
+  const [q, setQ] = useState('');
+  const groups = useMemo(() => topicsByGroup(), []);
+  const found = useMemo(() => (q.trim() ? searchTopics(q) : null), [q]);
+  const quick = topicById(QUICK_TOPIC);
+  return (
+    <>
+      <label className="hp-search">
+        <IconSearch size={20} />
+        <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="جست‌وجو در آموزش… مثلاً «متراژ» یا «لغو پرداخت»" aria-label="جست‌وجو در آموزش" enterKeyHint="search" />
+      </label>
+
+      {found ? (
+        <>
+          <div className="hp-gt"><span>نتیجهٔ جست‌وجو</span><span>{toPersianDigits(found.length)} موضوع</span></div>
+          {found.length === 0 && <div className="empty-state"><p>موضوعی با این عبارت پیدا نشد. عبارت دیگری بنویسید.</p></div>}
+          {found.length > 0 && <div className="hp-grp">{found.map((x) => <Row key={x.id} t={x} onOpen={onPushTopic} />)}</div>}
+        </>
+      ) : (
+        <>
+          {quick && (
+            <div className="hp-quick">
+              <b>{quick.title}</b>
+              <small>اولین بار است؟ این پنج قدم کافی است.</small>
+              <button type="button" className="btn btn--primary btn--block" onClick={() => onPushTopic(quick.id)}>شروع سریع (۱ دقیقه)</button>
+            </div>
+          )}
+          {groups.map((g) => (
+            <section key={g.id} aria-label={g.title}>
+              <div className="hp-gt"><span>{g.title}</span><span>{toPersianDigits(g.topics.length)} موضوع</span></div>
+              <div className="hp-grp">{g.topics.map((x) => <Row key={x.id} t={x} onOpen={onPushTopic} />)}</div>
+            </section>
+          ))}
+        </>
+      )}
+
+      <button type="button" className="hp-sup" onClick={onOpenSupport}>
+        <span className="sp-ic"><IconHeadset size={22} /></span>
+        <span className="hp-sup__tx"><b>جواب‌تان را پیدا نکردید؟</b><small>به صفحهٔ «پشتیبانی» بروید: سؤال‌های رایج و راه‌های تماس.</small></span>
+        <IconChevronLeft size={20} className="hp-ch" />
+      </button>
+    </>
+  );
+}
+
+function Row({ t, onOpen }: { t: HelpTopic; onOpen: (id: string) => void }) {
+  const Icon = GROUP_ICON[t.group];
+  return (
+    <button type="button" className="hp-row" onClick={() => onOpen(t.id)} data-topic={t.id}>
+      <span className="hp-ic"><Icon size={20} /></span>
+      <span className="hp-tx"><b>{t.title}{t.isNew && <span className="hp-new">جدید</span>}</b><small>{t.summary}</small></span>
+      <IconChevronLeft size={20} className="hp-ch" />
+    </button>
+  );
+}
+
+function TopicPage({ t, onDone, onReplaceTopic, onOpenTarget }: { t: HelpTopic; onDone: () => void; onReplaceTopic: (id: string | undefined) => void; onOpenTarget: (x: HelpTarget) => void }) {
+  const Icon = GROUP_ICON[t.group];
+  const { prev, next } = neighbours(t.id);
+  const related = t.related.map((id) => topicById(id)).filter((x): x is HelpTopic => !!x);
+  const groupTitle = topicsByGroup().find((g) => g.id === t.group)?.title ?? '';
+  return (
+    <article className="hp-topic" data-topic={t.id}>
+      <nav className="hp-crumb" aria-label="مسیر">
+        <button type="button" onClick={() => onReplaceTopic(undefined)}>همهٔ موضوعات</button><span>‹</span><span>{groupTitle}</span>
+      </nav>
+      <div className="hp-hero">
+        <span className="hp-ic"><Icon size={26} /></span>
+        <h2>{t.title}{t.isNew && <span className="hp-new">جدید</span>}</h2>
+      </div>
+
+      <h3 className="hp-h">این بخش برای چیست؟</h3>
+      <p className="hp-intro">{t.intro}</p>
+
+      <h3 className="hp-h">قدم‌به‌قدم</h3>
+      <ol className="steps">
+        {t.steps.map((s, i) => (
+          <li key={i} className="step">
+            <span className="step__num">{toPersianDigits(i + 1)}</span>
+            <span className="step__text">{s}</span>
+          </li>
+        ))}
+      </ol>
+
+      {t.tips?.map((x, i) => <div className="hp-tip" key={i}><b>نکته: </b>{x}</div>)}
+
+      {t.qa && t.qa.length > 0 && (
+        <>
+          <h3 className="hp-h">پرسش‌های پرتکرار</h3>
+          {t.qa.map((x, i) => <div className="hp-qa" key={i}><b>{x.q}</b>{x.a}</div>)}
+        </>
+      )}
+
+      {t.open && <button type="button" className="btn btn--primary btn--block hp-open" onClick={() => onOpenTarget(t.open!.target)}>{t.open.label}</button>}
+      {t.id === QUICK_TOPIC && <button type="button" className="btn btn--block hp-done" onClick={onDone}>متوجه شدم</button>}
+
+      {related.length > 0 && (
+        <>
+          <h3 className="hp-h">موضوع‌های مرتبط</h3>
+          <div className="hp-chips">{related.map((x) => <button type="button" key={x.id} onClick={() => onReplaceTopic(x.id)}>{x.title}</button>)}</div>
+        </>
+      )}
+
+      <div className="hp-nav">
+        {prev ? <button type="button" onClick={() => onReplaceTopic(prev.id)}><small>› موضوع قبلی</small>{prev.title}</button> : <span />}
+        {next ? <button type="button" onClick={() => onReplaceTopic(next.id)}><small>موضوع بعدی ‹</small>{next.title}</button> : <span />}
+      </div>
+    </article>
   );
 }

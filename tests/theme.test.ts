@@ -139,7 +139,10 @@ describe('محل دکمه‌ها و تصویر قبض', () => {
     expect([...pos].sort((a, b) => a - b)).toEqual(pos);
     expect(html).toContain('app-header--two');
     const noHelp = renderToStaticMarkup(createElement(ThemeProvider, null, createElement(NotifProvider, null, createElement(AppHeader, { title: 'آموزش' }))));
-    expect(noHelp).not.toContain('حالت تاریک');
+    // ۱.۷.۷: صفحه‌های داخلی فقط بازگشت + تم دارند (بدون «؟»، پشتیبانی و زنگوله)
+    expect(noHelp).toContain('حالت تاریک');
+    expect(noHelp).not.toContain('راهنما (آموزش)');
+    expect(noHelp).not.toContain('bell-btn');
   });
   it('تصویر قبض (canvas) از تم مستقل است: رنگ ثابت و بدون وابستگی به تم/CSS', () => {
     for (const f of ['../src/services/billImage.tsx', '../src/logic/billImage.ts']) {
