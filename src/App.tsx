@@ -27,6 +27,7 @@ import { BillSavedDialog } from './components/BillSavedDialog';
 import { useNotif } from './context/NotifContext';
 import { NotificationsLayer } from './components/NotificationsLayer';
 import { onboardingRepository } from './storage/onboardingRepository';
+import { billRepository } from './storage/billRepository';
 
 export default function App() {
   const { settings, loaded } = useSettings();
@@ -71,6 +72,7 @@ export default function App() {
 
   // مهاجرت نسخه ۱.۶.۰: در اولین اجرا تنظیمات «ساختمان» از واحدهای جدیدترین قبض ساخته می‌شود
   useEffect(() => { buildingRepository.get().catch(() => undefined); }, []);
+  useEffect(() => { void billRepository.warm().catch(() => undefined); }, []);
 
   // اجرای اول بعد از نصب: آموزش یک‌بار خودکار نمایش داده می‌شود (پرچم ماندگار؛ بازیابی پشتیبان آن را دوباره فعال نمی‌کند)
   useEffect(() => {

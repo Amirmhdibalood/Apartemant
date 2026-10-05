@@ -10,11 +10,11 @@ import { useSettings } from '../context/SettingsContext';
 import { useEntryPrefs, useVisibleBills } from '../context/EntryPrefsContext';
 import { activeTypeFilter, typeFilterOptions } from '../logic/entryPrefs';
 import { billRepository } from '../storage/billRepository';
+import { VirtualList } from '../components/VirtualList';
 import { currentJalali, pickDefaultYear } from '../logic/date';
 import { formatAmount } from '../logic/formatting';
 import { settledCount } from '../logic/settlement';
 import { recordYearOptions } from '../logic/years';
-import { isBillDeleted } from '../logic/billPaid';
 import {
   MONTH_FILTER_OPTIONS, STATUS_FILTER_OPTIONS, emptyMessage, filterBills, hasActiveFilters,
   normalizeMonth, normalizeStatus, normalizeType, summarizeBills, type RecordsFilter, type StatusFilter,
@@ -44,17 +44,27 @@ export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp
   const { prefs } = useEntryPrefs();
   const typeOptions = typeFilterOptions(prefs);
   const [allRaw, setAll] = useState<BillWithUnits[] | null>(null);
+  const [yearList, setYearList] = useState<number[]>([]);
   // قبض‌های نوعِ خاموش در سوابق دیده نمی‌شوند (داده پاک نمی‌شود)
   const all = useVisibleBills(allRaw);
+
   useEffect(() => {
     let alive = true;
-    billRepository.getAllWithDeleted().then((r) => { if (alive) setAll(r); });
+    void billRepository.getYears({ includeDeleted: true }).then((ys) => { if (alive) setYearList(ys); });
     return () => { alive = false; };
   }, []);
 
-  // سال‌های فعال + سال‌هایی که قبض ذخیره‌شده دارند (قبض‌های سال‌های قدیمی‌تر همچنان دیده می‌شوند)
-  const years = recordYearOptions(settings.activeYears, (all ?? []).filter((x) => !isBillDeleted(x.bill) || statusProp === 'deleted').map((x) => x.bill.year));
+  // سال‌های فعال + سال‌هایی که قبض ذخیره‌شده دارند
+  const years = recordYearOptions(settings.activeYears, yearList);
   const year = yearProp && years.includes(yearProp) ? yearProp : pickDefaultYear(settings.activeYears, now.year);
+
+  useEffect(() => {
+    let alive = true;
+    setAll(null);
+    void billRepository.getByYear(year, { includeDeleted: true }).then((r) => { if (alive) setAll(r); });
+    return () => { alive = false; };
+  }, [year]);
+
   const filter: RecordsFilter = { year, month: normalizeMonth(monthProp), type: activeTypeFilter(prefs, normalizeType(typeProp)), status: normalizeStatus(statusProp) };
   const items = useMemo(() => (all ? filterBills(all, filter) : null), [all, filter.year, filter.month, filter.type, filter.status]); // eslint-disable-line react-hooks/exhaustive-deps
   const today = todayJalali();
@@ -134,44 +144,51 @@ export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp
         )}
 
         <div className="record-list">
-          {items?.map(({ bill, units }) => {
-            const info = EXPENSE_TYPES[bill.expenseType];
-            const settled = settledCount(units);
-            const tone = billTone(bill, today);
-            const due = tone === 'unpaid' || tone === 'due' ? dueText(bill, today) : null;
-            return (
-              <button type="button" key={bill.id} className={`record-card tone-${tone}`} onClick={() => onOpenBill(bill.id)}>
-                <div className="record-card__main">
-                  <div className="record-card__title">
-                    <span>{info.label}</span>
-                    {filter.month === null && <span className="record-card__period">{monthName(bill.month)}</span>}
-                  </div>
-                  <div className="record-card__amount">
-                    مبلغ قبض: <b className="num">{formatAmount(bill.totalAmount)}</b> {CURRENCY}
-                  </div>
-                  <div className="record-card__badges">
-                    <span className={`bill-paid-badge tone-${tone}`}>
-                      {tone === 'paid' && <IconCheck size={13} strokeWidth={3} />}
-                      {tone === 'due' ? 'پرداخت نشده' : toneLabel(tone)}
-                    </span>
-                    {due && <span className={'due-chip' + (tone === 'due' ? ' is-due' : '')}>{due}</span>}
-                  </div>
-                  {!bill.isFullySettled && settled > 0 && (
-                    <div className="record-card__progress">
-                      <span className="num">{settled}</span> از <span className="num">{occupiedCount(units)}</span> واحد تسویه شده
+          {items && (
+            <VirtualList
+              items={items}
+              estimateHeight={108}
+              keyOf={(row) => row.bill.id}
+              renderItem={({ bill, units }) => {
+                const info = EXPENSE_TYPES[bill.expenseType];
+                const settled = settledCount(units);
+                const tone = billTone(bill, today);
+                const due = tone === 'unpaid' || tone === 'due' ? dueText(bill, today) : null;
+                return (
+                  <button type="button" className={`record-card tone-${tone}`} onClick={() => onOpenBill(bill.id)}>
+                    <div className="record-card__main">
+                      <div className="record-card__title">
+                        <span>{info.label}</span>
+                        {filter.month === null && <span className="record-card__period">{monthName(bill.month)}</span>}
+                      </div>
+                      <div className="record-card__amount">
+                        مبلغ قبض: <b className="num">{formatAmount(bill.totalAmount)}</b> {CURRENCY}
+                      </div>
+                      <div className="record-card__badges">
+                        <span className={`bill-paid-badge tone-${tone}`}>
+                          {tone === 'paid' && <IconCheck size={13} strokeWidth={3} />}
+                          {tone === 'due' ? 'پرداخت نشده' : toneLabel(tone)}
+                        </span>
+                        {due && <span className={'due-chip' + (tone === 'due' ? ' is-due' : '')}>{due}</span>}
+                      </div>
+                      {!bill.isFullySettled && settled > 0 && (
+                        <div className="record-card__progress">
+                          <span className="num">{settled}</span> از <span className="num">{occupiedCount(units)}</span> واحد تسویه شده
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="record-card__side">
-                  <ExpenseIcon type={bill.expenseType} size={46} />
-                  <span className={'status-text' + (bill.isFullySettled ? ' is-settled' : '')}>
-                    {bill.isFullySettled ? 'تسویه شده' : 'ثبت شده'}
-                  </span>
-                </div>
-                <IconChevronLeft size={18} className="record-card__arrow" />
-              </button>
-            );
-          })}
+                    <div className="record-card__side">
+                      <ExpenseIcon type={bill.expenseType} size={46} />
+                      <span className={'status-text' + (bill.isFullySettled ? ' is-settled' : '')}>
+                        {bill.isFullySettled ? 'تسویه شده' : 'ثبت شده'}
+                      </span>
+                    </div>
+                    <IconChevronLeft size={18} className="record-card__arrow" />
+                  </button>
+                );
+              }}
+            />
+          )}
         </div>
       </main>
     </>

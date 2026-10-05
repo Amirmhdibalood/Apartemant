@@ -35,3 +35,9 @@ keystore/
 keystore.properties
 *PASSWORDS*.txt
 release-signing.env
+
+# perf datasets & results (large)
+perf/data/
+perf/results/
+perf/node_modules
+perf/node_modules/

@@ -1,6 +1,6 @@
 # Full project briefing for "Apartemant" (for any AI coding assistant)
 
-> Describes the project up to **v1.7.8 (versionCode 31)**. It contains no passwords, tokens or keys. (Persian original: `PROJECT-PROMPT-fa.md`.)
+> Describes the project up to **v1.7.9 (versionCode 32)**. It contains no passwords, tokens or keys. (Persian original: `PROJECT-PROMPT-fa.md`.)
 
 ## 1) Purpose and user
 "آپارتمانت" (Apartemant; package id `ir.buildingcharge.app`) is a **fully offline, Persian (RTL) Android app** for a **building manager**. It records shared bills (water, electricity, gas, building charge, cleaning, repairs, beautification, misc), splits each one fairly across the units, tracks every unit's payments, and reports (yearly costs, debtors, per-unit payment history, bill-payment timing). A bill can be shared as an image (e.g. to the building's Telegram group). It requests **no Android permissions at all** (not even internet), has no accounts and no server; all data lives on the phone and moves between phones via a JSON backup file.
@@ -10,7 +10,7 @@ The user (Raidana System / developer AmirMahdi Balood) speaks Persian and cares 
 - React 19 + TypeScript 5.9 + Vite 8, no UI library, no router (stack navigation in `src/navigation.ts` and `App.tsx`).
 - Capacitor 8 (Android); plugins `app`, `filesystem`, `preferences`, `share`, `splash-screen`. Key/value storage via `@capacitor/preferences` behind `src/storage/kvStore.ts`; in a browser it falls back to `localStorage` with prefix `bc.`.
 - Vazirmatn font bundled in the APK; own Jalali (Persian) calendar implementation (`src/logic/jalali.ts`).
-- Tests: Vitest 5 (`npm test`), node environment, no jsdom (components are tested with `renderToStaticMarkup`). **804 tests in 53 files** (1.7.8).
+- Tests: Vitest 5 (`npm test`), node environment, no jsdom (components are tested with `renderToStaticMarkup`). **809 tests in 54 files** (1.7.9).
 - Android: minSdk 24, **compileSdk 36, targetSdk 36**, no minification, Node ≥ 22.12, JDK 21.
 
 ## 3) Repository layout (only the `app/` folder is under git)
@@ -70,9 +70,10 @@ Limitation: aggregate sums beyond `Number.MAX_SAFE_INTEGER` (≈ 9 quadrillion t
 - **Settings** (all accordions, collapsed by default, state per session only): 1) Years 2) Building (unit count, alias, persons, vacant, area) 3) Bill types and calculation methods 4) Appearance (**Theme** [1.6.12: collapsible "Dark" with 4 palettes + collapsible "Light" with 5 palettes], area display mode, unit icon, area icon, notification display) 5) Alerts 6) Backup & restore; version/developer lines stay visible below. Light/dark can be switched from the header button and from the "Theme" group (kept in sync).
 - A first-run tutorial, re-openable via the "Tutorial" (آموزش) button on Home.
 
-## 8) Feature history (1.0 → 1.7.8)
+## 8) Feature history (1.0 → 1.7.9)
 - **1.0.0** bill entry, per-person split with largest remainder • **1.1.0** backup/restore • **1.2.0** reports, partial payments, remembered units, 3 new types (backup v2) • **1.3.0** per-unit split, internet permission removed (v3) • **1.4.0** shareable bill image, edge-to-edge.
 - **1.5.0** "bill paid", due dates, status colours, filters, soft delete, bill-payments report (v4) • **1.5.1** system notifications and all permissions removed; in-app alert card.
+- **1.7.9** IndexedDB storage + perf (Map join, shared store, virtualization, compact backup, safe Preferences migration).
 - **1.7.8** The "?" button was removed from all headers (the tutorial opens from Home's «آموزش» button; Settings keeps its per-section «راهنمای این بخش» links); user-facing wording unified everywhere: «آموزش», «پشتیبانی» (not "headset"), «زنگوله (اعلان)», «تم»; header order: theme, support, bell; guard tests `help177`/`headerOrder`/`theme`/`notifications` updated.
 - **1.7.7** Full in-app tutorial (`src/content/help.ts`: 30 topics, offline search, the «?» on each main screen opens that screen's topic, first run opens «Quick start»; **usage-only text, no formulas or calculation methods**; guarded by `help177`) + a «Support» screen (headset icon next to the bell; «FAQ» tab built from the topics' `qa`, «Contact» tab from `src/config/support.ts`; values are empty for now ⇒ a «coming soon» card; guarded by `support177`). Header rule: «?» + support + bell only on the 4 main screens; inner screens have back + theme only.
 - **1.7.6** The «active years» check mark (and similar indicators) was invisible in the non-default light themes / lost its fill in dark: the theme generator only rewrote declarations with literal #hex colours, so state rules using var(...) (`.year-row.is-active .year-row__box`) lost to the higher-specificity generated base rule. The generator now emits state rules in full under the theme prefix, tick colours are fixed in dark.css/light.css, and `checkmarkVisibility176` (CSS cascade simulator, 9 themes) guards it.

@@ -1,3 +1,4 @@
+import { resetIdbForTests } from '../src/storage/idb';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppSettings, Bill, Unit } from '../src/models/types';
 import {
@@ -274,16 +275,17 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
 });
 
 describe('مخزن پشتیبان (گرفتن و بازیابی کامل داده‌ها)', () => {
-  beforeEach(() => { mem.clear(); billRepository._resetCache(); });
+  beforeEach(async () => { mem.clear(); billRepository._resetCache(); await resetIdbForTests(); });
 
   it('گرفتن پشتیبان → بازیابی روی «گوشی جدید» → همان داده‌ها', async () => {
     const d = sample();
     await backupRepository.replaceAll(d);
     const json = serializeBackup(createBackup(await backupRepository.collect(), '1.1.0', NOW));
 
-    // گوشی جدید: حافظه خالی
+    // گوشی جدید: حافظه و IndexedDB خالی
     mem.clear();
     billRepository._resetCache();
+    await resetIdbForTests();
     expect((await backupRepository.collect()).bills).toHaveLength(0);
 
     const r = parseBackup(json);

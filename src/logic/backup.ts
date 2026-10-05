@@ -34,7 +34,7 @@ export const BACKUP_APP_ID = 'apartemant';
  */
 export const BACKUP_VERSION = 7;
 /** حداکثر حجم قابل قبول فایل پشتیبان */
-export const MAX_BACKUP_BYTES = 20 * 1024 * 1024;
+export const MAX_BACKUP_BYTES = 64 * 1024 * 1024;
 
 export interface BackupData {
   bills: Bill[];
@@ -123,8 +123,9 @@ function withTemplate(raw: unknown): { unitTemplate?: number[] } {
   return t ? { unitTemplate: t } : {};
 }
 
+/** فشرده (بدون فاصله) — از ۱.۷.۹؛ parseBackup همچنان پشتیبان‌های pretty قدیمی را می‌پذیرد. */
 export function serializeBackup(backup: BackupFile): string {
-  return JSON.stringify(backup, null, 2);
+  return JSON.stringify(backup);
 }
 
 export function summarizeBackup(backup: BackupFile): BackupSummary {

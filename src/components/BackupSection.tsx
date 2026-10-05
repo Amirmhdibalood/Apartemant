@@ -18,6 +18,7 @@ import {
   type BackupSummary,
 } from '../logic/backup';
 import { backupRepository } from '../storage/backupRepository';
+import { legacyPrefsNearQuota } from '../storage/migration';
 import { exportBackupFile, readPickedFile } from '../services/backupFile';
 import { exportFailureError } from '../logic/backupExport';
 import { APP_VERSION } from '../appVersion';
@@ -37,6 +38,7 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
   const { showErrors, toast } = useFeedback();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [nearQuota, setNearQuota] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
   const [currentBills, setCurrentBills] = useState(0);
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
@@ -54,6 +56,9 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
   }, []);
 
   useEffect(() => { void refresh(); }, [refresh]);
+  useEffect(() => {
+    void legacyPrefsNearQuota().then((r) => setNearQuota(r.near)).catch(() => undefined);
+  }, []);
 
   const onBackup = async () => {
     if (busy) return;
@@ -134,6 +139,9 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
 
   return (
     <div className="backup-card">
+      {nearQuota && (
+        <p className="card__hint" role="status">فضای ذخیره‌سازی قبلی برنامه تقریباً پر بود؛ داده‌ها به پایگاه داخلی منتقل شدند. یک نسخهٔ پشتیبان تازه بگیرید.</p>
+      )}
       <p className="card__hint">
         برای اینکه با خرابی یا تعویض گوشی اطلاعاتتان از بین نرود، هر چند وقت یک‌بار نسخه پشتیبان بگیرید و فایل را در جایی بیرون از گوشی
         (تلگرام، Google Drive، ایمیل یا کامپیوتر) نگه دارید. روی گوشی جدید با «بازیابی از فایل پشتیبان» همه قبض‌ها و تنظیمات برمی‌گردند.

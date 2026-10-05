@@ -45,13 +45,19 @@ export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenRepor
   const [allRaw, setAll] = useState<BillWithUnits[] | null>(null);
   // قبض‌های نوعِ خاموش از همهٔ گزارش‌ها و جمع‌ها کنار می‌روند (داده پاک نمی‌شود)
   const all = useVisibleBills(allRaw);
-  useEffect(() => {
-    let alive = true;
-    billRepository.getAll().then((r) => { if (alive) setAll(r); });
-    return () => { alive = false; };
-  }, []);
-
   const page = tab && isReportVisible(reportPrefs, tab) ? tab : undefined;
+
+  useEffect(() => {
+    if (!page) { setAll(null); return; }
+    let alive = true;
+    const needsAllYears = page === 'debtors';
+    const loader = needsAllYears || year == null
+      ? billRepository.getAll()
+      : billRepository.getByYear(year);
+    void loader.then((r) => { if (alive) setAll(r); });
+    return () => { alive = false; };
+  }, [page, year]);
+
   if (!page) {
     return (
       <>

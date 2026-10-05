@@ -1,3 +1,4 @@
+import { resetIdbForTests } from '../src/storage/idb';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Bill, BillDraft, Unit } from '../src/models/types';
 import {
@@ -123,20 +124,28 @@ describe('«پرداخت شد» قبض: منطق خالص', () => {
   });
 });
 
+
+function seedLegacyPrefs(bills: unknown, units: unknown, schema: unknown = 1) {
+  const p = (globalThis as unknown as { __prefsMem: Map<string, string> }).__prefsMem;
+  p.set('bc.bills', JSON.stringify(bills));
+  p.set('bc.units', JSON.stringify(units));
+  p.set('bc.schemaVersion', JSON.stringify(schema));
+}
+
 describe('مخزن داده: مهاجرت، محافظ حذف، حذف نرم', () => {
-  beforeEach(() => { mem.clear(); billRepository._resetCache(); });
+  beforeEach(async () => { mem.clear(); billRepository._resetCache(); await resetIdbForTests(); });
 
   it('داده ذخیره‌شده نسخه‌های قبلی هنگام بارگذاری مهاجرت و دوباره ذخیره می‌شود', async () => {
-    mem.set('bills', JSON.stringify([legacyBill('b1'), legacyBill('b2', { month: 8 })]));
-    mem.set('units', JSON.stringify([...units('b1'), ...units('b2')]));
-    mem.set('schemaVersion', '1');
+    seedLegacyPrefs([legacyBill('b1'), legacyBill('b2', { month: 8 })], [...units('b1'), ...units('b2')], 1);
     const all = await billRepository.getAll();
     expect(all.map((x) => [x.bill.billPaid, x.bill.billPaidDate, x.bill.dueDate, x.bill.deletedAt])).toEqual([[false, null, null, null], [false, null, null, null]]);
-    const stored = JSON.parse(mem.get('bills')!) as Bill[];
-    expect(stored.every((b) => b.billPaid === false && b.billPaidDate === null && b.dueDate === null && b.deletedAt === null)).toBe(true);
-    expect(JSON.parse(mem.get('schemaVersion')!)).toBe(SCHEMA_VERSION);
+    // پس از مهاجرت، داده در IndexedDB است (با فیلدهای صریح)
+    billRepository._resetCache();
+    const again = await billRepository.getAllWithDeleted();
+    expect(again).toHaveLength(2);
+    expect(again.every((x) => x.bill.billPaid === false && x.bill.deletedAt === null)).toBe(true);
     expect(SCHEMA_VERSION).toBe(2);
-    expect(JSON.parse(mem.get('units')!)).toHaveLength(4); // واحدها دست‌نخورده
+    expect(again.reduce((n, x) => n + x.units.length, 0)).toBe(4);
   });
 
   it('قبض پرداخت‌شده حذف نمی‌شود (BillDeleteBlockedError)؛ پس از برداشتن تیک به «حذف‌شده» منتقل می‌شود', async () => {
@@ -166,7 +175,9 @@ describe('مخزن داده: مهاجرت، محافظ حذف، حذف نرم', 
     await billRepository.remove('b2', NOW);
     await billRepository.purge('b2');
     expect(await billRepository.getById('b2')).toBeNull();
-    expect((JSON.parse(mem.get('units')!) as Unit[]).map((u) => u.billId)).toEqual(['b1', 'b1']);
+    const left = await billRepository.getAllWithDeleted();
+    expect(left.map((x) => x.bill.id)).toEqual(['b1']);
+    expect(left[0].units).toHaveLength(2);
   });
 
   it('onChange پس از هر تغییر ذخیره‌شده خبر می‌دهد و قابل لغو است', async () => {

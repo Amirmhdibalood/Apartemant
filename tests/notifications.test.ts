@@ -1,3 +1,4 @@
+import { resetIdbForTests } from '../src/storage/idb';
 import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -69,7 +70,7 @@ describe('بنر صفحه اصلی بر اساس حالت نمایش', () => {
 });
 
 describe('تنظیم «نحوه نمایش اعلان‌ها»', () => {
-  beforeEach(() => mem.clear());
+  beforeEach(async () => { mem.clear(); billRepository._resetCache(); await resetIdbForTests(); });
   it('پیش‌فرض پنجره پایین؛ مقدار نامعتبر نادیده گرفته می‌شود', async () => {
     expect(DEFAULT_NOTIF_MODE).toBe('sheet');
     expect(NOTIF_MODES.map((m) => m.id)).toEqual(['sheet', 'dropdown']);

@@ -1,47 +1,80 @@
 /**
- * مخزن قبض‌ها و واحدها (دو «جدول» جدا مطابق Entityها: bills و units)
+ * مخزن قبض‌ها و واحدها (IndexedDB + حافظه با ایندکس Map).
+ * از ۱.۷.۹: دادهٔ بزرگ از Preferences به IndexedDB مهاجرت می‌شود؛ join با Map به‌جای filter تودرتو.
  */
 import type { Bill, BillWithUnits, Unit } from '../models/types';
-import { readJson, writeJson } from './kvStore';
 import { BillDeleteBlockedError, BillPaidMessages, isBillDeleted, migrateBill, needsBillMigration, restoreBill, softDeleteBill } from '../logic/billPaid';
+import { idbReplaceAllTables } from './idb';
+import { clearLegacyPrefsAfterMigration, ensureMigrated } from './migration';
+import { SCHEMA_VERSION } from './schema';
 
-const BILLS_KEY = 'bills';
-const UNITS_KEY = 'units';
-const SCHEMA_KEY = 'schemaVersion';
-/** ۱: تا نسخه ۱.۴ — ۲: از نسخه ۱.۵ (فیلدهای صریح billPaid / billPaidDate / dueDate / deletedAt در هر قبض) */
-export const SCHEMA_VERSION = 2;
+export { SCHEMA_VERSION };
 
 interface Tables { bills: Bill[]; units: Unit[] }
 
-let cache: Tables | null = null;
-let writeChain: Promise<void> = Promise.resolve();
-
-async function load(): Promise<Tables> {
-  if (cache) return cache;
-  const [bills, units] = await Promise.all([
-    readJson<Bill[]>(BILLS_KEY, []),
-    readJson<Unit[]>(UNITS_KEY, []),
-  ]);
-  const rawBills = Array.isArray(bills) ? bills : [];
-  const tables: Tables = { bills: rawBills.map(migrateBill), units: Array.isArray(units) ? units : [] };
-  cache = tables;
-  // مهاجرت داده‌های نسخه‌های قبلی: پرداخت‌نشده، بدون مهلت پرداخت، حذف‌نشده (یک‌بار در حافظه ذخیره می‌شود)
-  if (rawBills.some(needsBillMigration)) await persist(tables, false).catch(() => undefined);
-  return tables;
+interface Store {
+  bills: Bill[];
+  units: Unit[];
+  /** billId → units (sorted by unitNumber) */
+  unitsByBill: Map<string, Unit[]>;
 }
+
+let store: Store | null = null;
+let loadPromise: Promise<Store> | null = null;
+let writeChain: Promise<void> = Promise.resolve();
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
 
-function persist(tables: Tables, notify = true): Promise<void> {
-  cache = tables;
-  // نوشتن‌ها به‌ترتیب انجام می‌شوند تا تداخل پیش نیاید
+const byUnitNumber = (a: Unit, b: Unit) => a.unitNumber - b.unitNumber;
+
+function buildIndex(units: Unit[]): Map<string, Unit[]> {
+  const map = new Map<string, Unit[]>();
+  for (const u of units) {
+    let arr = map.get(u.billId);
+    if (!arr) {
+      arr = [];
+      map.set(u.billId, arr);
+    }
+    arr.push(u);
+  }
+  for (const arr of map.values()) arr.sort(byUnitNumber);
+  return map;
+}
+
+function makeStore(bills: Bill[], units: Unit[]): Store {
+  return { bills, units, unitsByBill: buildIndex(units) };
+}
+
+function withUnits(s: Store, bill: Bill): BillWithUnits {
+  return { bill, units: s.unitsByBill.get(bill.id) ?? [] };
+}
+
+async function load(): Promise<Store> {
+  if (store) return store;
+  if (loadPromise) return loadPromise;
+  loadPromise = (async () => {
+    const { bills, units } = await ensureMigrated();
+    const tables = makeStore(bills, units);
+    store = tables;
+    // fire-and-forget: free Preferences quota after verified migration
+    void clearLegacyPrefsAfterMigration().catch(() => undefined);
+    if (bills.some(needsBillMigration)) await persist(tables, false).catch(() => undefined);
+    return tables;
+  })();
+  try {
+    return await loadPromise;
+  } finally {
+    loadPromise = null;
+  }
+}
+
+function persist(s: Store, notify = true): Promise<void> {
+  store = s;
   writeChain = writeChain
     .catch(() => undefined)
     .then(async () => {
-      await writeJson(BILLS_KEY, tables.bills);
-      await writeJson(UNITS_KEY, tables.units);
-      await writeJson(SCHEMA_KEY, SCHEMA_VERSION);
+      await idbReplaceAllTables(s.bills, s.units, SCHEMA_VERSION);
     });
   if (notify) {
     void writeChain.then(() => listeners.forEach((l) => { try { l(); } catch { /* ignore */ } }), () => undefined);
@@ -49,111 +82,123 @@ function persist(tables: Tables, notify = true): Promise<void> {
   return writeChain;
 }
 
-const byUnitNumber = (a: Unit, b: Unit) => a.unitNumber - b.unitNumber;
-
-const withUnits = (t: Tables, bill: Bill): BillWithUnits => ({
-  bill,
-  units: t.units.filter((u) => u.billId === bill.id).sort(byUnitNumber),
-});
+function mapBills(s: Store, bills: Bill[]): BillWithUnits[] {
+  return bills.map((b) => withUnits(s, b));
+}
 
 export const billRepository = {
-  /** همه قبض‌های فعال (بدون حذف‌شده‌ها) — برای سوابق، گزارش‌ها، بدهکاران، الگوی واحدها و ... */
+  /** همه قبض‌های فعال (بدون حذف‌شده‌ها) */
   async getAll(): Promise<BillWithUnits[]> {
-    const t = await load();
-    return t.bills.filter((b) => !isBillDeleted(b)).map((b) => withUnits(t, b));
+    const s = await load();
+    return mapBills(s, s.bills.filter((b) => !isBillDeleted(b)));
   },
 
-  /** همه قبض‌ها به‌همراه حذف‌شده‌ها (فقط برای فیلتر «حذف‌شده» صفحه سوابق) */
+  /** همه قبض‌ها به‌همراه حذف‌شده‌ها */
   async getAllWithDeleted(): Promise<BillWithUnits[]> {
-    const t = await load();
-    return t.bills.map((b) => withUnits(t, b));
-  },
-
-  /** یک قبض (حذف‌شده هم برگردانده می‌شود تا جزئیات و «بازگردانی» آن ممکن باشد) */
-  async getById(id: string): Promise<BillWithUnits | null> {
-    const t = await load();
-    const bill = t.bills.find((b) => b.id === id);
-    if (!bill) return null;
-    return { bill, units: t.units.filter((u) => u.billId === id).sort(byUnitNumber) };
-  },
-
-  /** قبض‌های یک سال/ماه مشخص (جدیدترین اول) */
-  async findByYearMonth(year: number, month: number): Promise<BillWithUnits[]> {
-    const all = await this.getAll();
-    return all
-      .filter((x) => x.bill.year === year && x.bill.month === month)
-      .sort((a, b) => b.bill.createdAt.localeCompare(a.bill.createdAt));
-  },
-
-  /** درج یا جایگزینی کامل یک قبض و واحدهایش */
-  async upsert(bill: Bill, units: Unit[]): Promise<void> {
-    const t = await load();
-    const bills = t.bills.filter((b) => b.id !== bill.id).concat(migrateBill(bill));
-    const others = t.units.filter((u) => u.billId !== bill.id);
-    await persist({ bills, units: others.concat(units.map((u) => ({ ...u, billId: bill.id }))) });
-  },
-
-  /** درج/جایگزینی چند قبض با **یک** نوشتن (برای پرداخت بدهی واحد؛ یا همه ذخیره می‌شوند یا هیچ‌کدام) */
-  async upsertMany(items: { bill: Bill; units: Unit[] }[]): Promise<void> {
-    if (items.length === 0) return;
-    const t = await load();
-    const ids = new Set(items.map((i) => i.bill.id));
-    const bills = t.bills.filter((b) => !ids.has(b.id)).concat(items.map((i) => migrateBill(i.bill)));
-    const units = t.units.filter((u) => !ids.has(u.billId))
-      .concat(items.flatMap((i) => i.units.map((u) => ({ ...u, billId: i.bill.id }))));
-    await persist({ bills, units });
+    const s = await load();
+    return mapBills(s, s.bills);
   },
 
   /**
-   * حذف (نرم): قبض به «حذف‌شده» منتقل می‌شود و داده‌هایش باقی می‌ماند.
-   * قبض «پرداخت شد» قابل حذف نیست (BillDeleteBlockedError).
+   * قبض‌های یک سال (فعال، بدون حذف‌شده) — برای گزارش‌ها/سوابق سال‌محور بدون join همهٔ تاریخچه.
+   * newest first by createdAt.
    */
+  async getByYear(year: number, opts?: { includeDeleted?: boolean }): Promise<BillWithUnits[]> {
+    const s = await load();
+    const bills = s.bills.filter((b) => b.year === year && (opts?.includeDeleted || !isBillDeleted(b)));
+    return mapBills(s, bills).sort((a, b) => b.bill.createdAt.localeCompare(a.bill.createdAt));
+  },
+
+  /** سال‌هایی که حداقل یک قبض دارند (بدون join واحدها) */
+  async getYears(opts?: { includeDeleted?: boolean }): Promise<number[]> {
+    const s = await load();
+    const set = new Set<number>();
+    for (const b of s.bills) {
+      if (!opts?.includeDeleted && isBillDeleted(b)) continue;
+      set.add(b.year);
+    }
+    return [...set].sort((a, b) => a - b);
+  },
+
+  async getById(id: string): Promise<BillWithUnits | null> {
+    const s = await load();
+    const bill = s.bills.find((b) => b.id === id);
+    if (!bill) return null;
+    return withUnits(s, bill);
+  },
+
+  async findByYearMonth(year: number, month: number): Promise<BillWithUnits[]> {
+    const s = await load();
+    return mapBills(
+      s,
+      s.bills.filter((b) => !isBillDeleted(b) && b.year === year && b.month === month),
+    ).sort((a, b) => b.bill.createdAt.localeCompare(a.bill.createdAt));
+  },
+
+  async upsert(bill: Bill, units: Unit[]): Promise<void> {
+    const s = await load();
+    const bills = s.bills.filter((b) => b.id !== bill.id).concat(migrateBill(bill));
+    const others = s.units.filter((u) => u.billId !== bill.id);
+    await persist(makeStore(bills, others.concat(units.map((u) => ({ ...u, billId: bill.id })))));
+  },
+
+  async upsertMany(items: { bill: Bill; units: Unit[] }[]): Promise<void> {
+    if (items.length === 0) return;
+    const s = await load();
+    const ids = new Set(items.map((i) => i.bill.id));
+    const bills = s.bills.filter((b) => !ids.has(b.id)).concat(items.map((i) => migrateBill(i.bill)));
+    const units = s.units.filter((u) => !ids.has(u.billId))
+      .concat(items.flatMap((i) => i.units.map((u) => ({ ...u, billId: i.bill.id }))));
+    await persist(makeStore(bills, units));
+  },
+
   async remove(billId: string, now: Date = new Date()): Promise<void> {
-    const t = await load();
-    const bill = t.bills.find((b) => b.id === billId);
+    const s = await load();
+    const bill = s.bills.find((b) => b.id === billId);
     if (!bill) return;
     const deleted = softDeleteBill(bill, now);
-    await persist({ bills: t.bills.map((b) => (b.id === billId ? deleted : b)), units: t.units });
+    await persist(makeStore(s.bills.map((b) => (b.id === billId ? deleted : b)), s.units));
   },
 
-  /** بازگردانی قبض حذف‌شده */
   async restore(billId: string): Promise<void> {
-    const t = await load();
-    if (!t.bills.some((b) => b.id === billId)) return;
-    await persist({ bills: t.bills.map((b) => (b.id === billId ? restoreBill(b) : b)), units: t.units });
+    const s = await load();
+    if (!s.bills.some((b) => b.id === billId)) return;
+    await persist(makeStore(s.bills.map((b) => (b.id === billId ? restoreBill(b) : b)), s.units));
   },
 
-  /** حذف دائمی قبض و واحدهایش — فقط برای قبض حذف‌شده */
   async purge(billId: string): Promise<void> {
-    const t = await load();
-    const bill = t.bills.find((b) => b.id === billId);
+    const s = await load();
+    const bill = s.bills.find((b) => b.id === billId);
     if (!bill) return;
     if (!isBillDeleted(bill)) throw new BillDeleteBlockedError(BillPaidMessages.purgeNotDeleted);
-    await persist({
-      bills: t.bills.filter((b) => b.id !== billId),
-      units: t.units.filter((u) => u.billId !== billId),
-    });
+    await persist(makeStore(
+      s.bills.filter((b) => b.id !== billId),
+      s.units.filter((u) => u.billId !== billId),
+    ));
   },
 
-  /** کپی کامل جدول‌ها (برای پشتیبان‌گیری) */
   async exportTables(): Promise<Tables> {
-    const t = await load();
-    return { bills: t.bills.map((b) => ({ ...b })), units: t.units.map((u) => ({ ...u })) };
+    const s = await load();
+    return { bills: s.bills.map((b) => ({ ...b })), units: s.units.map((u) => ({ ...u })) };
   },
 
-  /** جایگزینی کامل همه قبض‌ها و واحدها (برای بازیابی از پشتیبان) */
   async replaceAll(bills: Bill[], units: Unit[]): Promise<void> {
-    await persist({ bills: bills.map(migrateBill), units: units.map((u) => ({ ...u })) });
+    await persist(makeStore(bills.map(migrateBill), units.map((u) => ({ ...u }))));
   },
 
-  /** اطلاع از هر تغییر ذخیره‌شده (مثلاً برای به‌روزرسانی هشدار مهلت پرداخت صفحه اصلی) */
   onChange(listener: Listener): () => void {
     listeners.add(listener);
     return () => { listeners.delete(listener); };
   },
 
-  /** فقط برای تست */
+  /** فقط برای تست — کش حافظه را خالی می‌کند (IDB نمی‌زند) */
   _resetCache(): void {
-    cache = null;
+    store = null;
+    loadPromise = null;
+  },
+
+  /** اطمینان از load مشترک (برای صفحهٔ اصلی / شروع) */
+  async warm(): Promise<void> {
+    await load();
   },
 };

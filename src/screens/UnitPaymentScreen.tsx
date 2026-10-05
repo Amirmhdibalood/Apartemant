@@ -9,6 +9,7 @@ import { IconCheck } from '../components/Icons';
 import { useFeedback } from '../context/FeedbackContext';
 import { useEntryPrefs, useVisibleBills } from '../context/EntryPrefsContext';
 import { billRepository } from '../storage/billRepository';
+import { VirtualList } from '../components/VirtualList';
 import { Errors } from '../logic/errors';
 import { visibleBills } from '../logic/entryPrefs';
 import { latestAliases } from '../logic/building';
@@ -32,11 +33,15 @@ const KIND_LABEL = { settled: '✓ تسویه کامل', partial: 'پرداخت 
 
 function Lines({ lines, done }: { lines: AllocationLine[]; done: boolean }) {
   return (
-    <div className="up-alloc" role="list">
-      {lines.map((l) => {
+    <VirtualList
+      className="up-alloc"
+      items={lines}
+      estimateHeight={72}
+      keyOf={(l) => l.billId}
+      renderItem={(l) => {
         const pct = l.share > 0 ? Math.round((100 * (l.share - l.remainingAfter)) / l.share) : 0;
         return (
-          <div key={l.billId} className="up-line" role="listitem" data-kind={l.kind}>
+          <div className="up-line" role="listitem" data-kind={l.kind}>
             <ExpenseIcon type={l.expenseType} size={36} />
             <span className="up-line__main">
               <span className="up-line__title">
@@ -55,8 +60,8 @@ function Lines({ lines, done }: { lines: AllocationLine[]; done: boolean }) {
             </span>
           </div>
         );
-      })}
-    </div>
+      }}
+    />
   );
 }
 
