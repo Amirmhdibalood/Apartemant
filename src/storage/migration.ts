@@ -1,16 +1,29 @@
 /**
- * Idempotent Preferences → IndexedDB migration for bills/units.
- * Keeps Preferences data until verification succeeds; clears large keys only after that.
- * Rollback-safe: on failure, IDB may be partial but Preferences remain source of truth until status=done.
+ * Idempotent migration chain:
+ *   Preferences (legacy) → IndexedDB (1.7.9) → SQLite (1.8.0+)
+ * SQLite is the canonical domain store after this module succeeds.
  */
 import { Preferences } from '@capacitor/preferences';
-import type { Bill, Unit } from '../models/types';
+import type { Bill, BuildingSettings, Unit } from '../models/types';
 import { migrateBill } from '../logic/billPaid';
+import { sanitizeBuilding } from '../logic/building';
 import {
   idbCount, idbGetAllBills, idbGetAllUnits, idbGetMeta, idbReplaceAllTables, idbSetMeta,
   type MigrationMeta,
 } from './idb';
 import { SCHEMA_VERSION } from './schema';
+import { readJson } from './kvStore';
+import { openSqlite, withSqlite, withSqliteWrite } from './sqlite/db';
+import {
+  ensureDefaultBuilding,
+  isSqliteMigrationDone,
+  markSqliteMigrationDone,
+  readAllBills,
+  readAllUnits,
+  replaceAllDomain,
+  replaceUnitTemplates,
+} from './sqlite/domain';
+import { DEFAULT_BUILDING_ID } from './sqlite/schema';
 
 const PREFIX = 'bc.';
 const BILLS_KEY = PREFIX + 'bills';
@@ -53,14 +66,8 @@ function verify(a: Bill[], b: Unit[], ca: Bill[], cb: Unit[]): string | null {
   return null;
 }
 
-/**
- * Ensure IDB holds the canonical bills/units.
- * - If migration already done → no-op (returns current IDB tables).
- * - If Preferences empty and IDB has data → mark done.
- * - If Preferences has data → copy, verify, mark done; leave prefs until clearLegacyPrefsAfterMigration().
- * - Corrupted prefs JSON → treat as empty arrays (do not wipe IDB if already populated).
- */
-export async function ensureMigrated(): Promise<{ bills: Bill[]; units: Unit[]; migratedNow: boolean }> {
+/** Preferences → IndexedDB (legacy 1.7.9 path). Still used as a source for SQLite migration. */
+export async function ensureIdbMigrated(): Promise<{ bills: Bill[]; units: Unit[]; migratedNow: boolean }> {
   const existing = await idbGetMeta<MigrationMeta>('migration');
   if (existing?.status === 'done') {
     const [bills, units] = await Promise.all([idbGetAllBills<Bill>(), idbGetAllUnits<Unit>()]);
@@ -71,7 +78,6 @@ export async function ensureMigrated(): Promise<{ bills: Bill[]; units: Unit[]; 
   const idbBillCount = await idbCount('bills').catch(() => 0);
   const idbUnitCount = await idbCount('units').catch(() => 0);
 
-  // Preferences empty: either fresh install or already cleared after migration
   if (!legacy.rawBills && !legacy.rawUnits) {
     if (idbBillCount > 0 || idbUnitCount > 0) {
       await idbSetMeta<MigrationMeta>('migration', {
@@ -103,20 +109,57 @@ export async function ensureMigrated(): Promise<{ bills: Bill[]; units: Unit[]; 
     await idbSetMeta<MigrationMeta>('migration', {
       status: 'failed', at: new Date().toISOString(), error: message,
     }).catch(() => undefined);
-    // Fall back to Preferences data in memory so the app still runs; next launch retries.
     return { bills: legacy.bills, units: legacy.units, migratedNow: false };
   }
 }
 
-/** After verified migration, drop large Preferences keys so WebView quota is freed. Idempotent. */
+/**
+ * Ensure SQLite holds canonical bills/units (and default building).
+ * Pulls from existing SQLite, else IDB/Preferences via ensureIdbMigrated.
+ */
+export async function ensureMigrated(): Promise<{ bills: Bill[]; units: Unit[]; migratedNow: boolean }> {
+  await openSqlite();
+
+  const done = await withSqlite((db) => isSqliteMigrationDone(db));
+  if (done) {
+    return withSqlite((db) => {
+      const bills = readAllBills(db).map((row) => {
+        const { buildingId: _bid, ...rest } = row;
+        return migrateBill(rest);
+      });
+      return { bills, units: readAllUnits(db), migratedNow: false };
+    });
+  }
+
+  const source = await ensureIdbMigrated();
+  const building = sanitizeBuilding(await readJson<unknown>('building', null));
+
+  await withSqliteWrite((db) => {
+    ensureDefaultBuilding(db);
+    replaceAllDomain(db, DEFAULT_BUILDING_ID, source.bills, source.units);
+    if (building) replaceUnitTemplates(db, DEFAULT_BUILDING_ID, building as BuildingSettings);
+    markSqliteMigrationDone(db, source.bills.length, source.units.length);
+  });
+
+  // Verify flag stuck (guards against lost meta)
+  const verified = await withSqlite((db) => isSqliteMigrationDone(db));
+  if (!verified) {
+    await withSqliteWrite((db) => {
+      markSqliteMigrationDone(db, source.bills.length, source.units.length);
+    });
+  }
+
+  return { bills: source.bills.map(migrateBill), units: source.units, migratedNow: true };
+}
+
+/** After verified SQLite migration, drop large Preferences keys. Idempotent. */
 export async function clearLegacyPrefsAfterMigration(): Promise<boolean> {
-  const meta = await idbGetMeta<MigrationMeta>('migration');
-  if (meta?.status !== 'done') return false;
+  const db = await openSqlite();
+  if (!isSqliteMigrationDone(db)) return false;
   const cleared = await idbGetMeta<boolean>('prefsCleared');
   if (cleared) return false;
   await Preferences.remove({ key: BILLS_KEY });
   await Preferences.remove({ key: UNITS_KEY });
-  // schemaVersion can stay or go; remove to avoid confusion
   await Preferences.remove({ key: SCHEMA_KEY });
   await idbSetMeta('prefsCleared', true);
   return true;

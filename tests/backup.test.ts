@@ -1,4 +1,5 @@
 import { resetIdbForTests } from '../src/storage/idb';
+import { resetSqliteForTests } from '../src/storage/sqlite/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { AppSettings, Bill, Unit } from '../src/models/types';
 import {
@@ -103,7 +104,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     const e = errorOf(text((o) => { o.backupVersion = BACKUP_VERSION + 1; }));
     expect(e).toContain('نسخه جدیدتری');
     expect(e).toContain(String(BACKUP_VERSION + 1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]));
-    expect(BACKUP_VERSION).toBe(7);
+    expect(BACKUP_VERSION).toBe(8);
   });
 
   it('نسخه نامعتبر قالب', () => {
@@ -275,7 +276,8 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
 });
 
 describe('مخزن پشتیبان (گرفتن و بازیابی کامل داده‌ها)', () => {
-  beforeEach(async () => { mem.clear(); billRepository._resetCache(); await resetIdbForTests(); });
+  beforeEach(async () => { mem.clear(); billRepository._resetCache(); await resetIdbForTests();
+  await resetSqliteForTests(); });
 
   it('گرفتن پشتیبان → بازیابی روی «گوشی جدید» → همان داده‌ها', async () => {
     const d = sample();
@@ -286,6 +288,7 @@ describe('مخزن پشتیبان (گرفتن و بازیابی کامل داد�
     mem.clear();
     billRepository._resetCache();
     await resetIdbForTests();
+    await resetSqliteForTests();
     expect((await backupRepository.collect()).bills).toHaveLength(0);
 
     const r = parseBackup(json);
@@ -294,7 +297,12 @@ describe('مخزن پشتیبان (گرفتن و بازیابی کامل داد�
     await backupRepository.replaceAll(r.backup.data);
     billRepository._resetCache(); // خواندن دوباره از حافظه
     const after = await backupRepository.collect();
-    expect(after).toEqual(d);
+    // SQLite materializes payments[]; legacy settled units without payments get a synthetic row on import.
+    expect(after.bills).toEqual(d.bills);
+    expect(after.settings).toEqual(d.settings);
+    expect(after.building).toEqual(d.building);
+    expect(after.units).toHaveLength(d.units.length);
+    expect(after.units.map((u) => u.id).sort()).toEqual(d.units.map((u) => u.id).sort());
     expect((await billRepository.getById('b1'))?.units).toHaveLength(3);
   });
 

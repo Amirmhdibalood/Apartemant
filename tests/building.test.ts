@@ -1,4 +1,5 @@
 import { resetIdbForTests } from '../src/storage/idb';
+import { resetSqliteForTests } from '../src/storage/sqlite/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BillDraft, BillWithUnits } from '../src/models/types';
 import { DEFAULT_PERSON_COUNT, addDraftUnit, buildBill, draftFromBill, emptyDraft, removeDraftUnit } from '../src/logic/billFactory';
@@ -180,7 +181,8 @@ describe('فرم قبض جدید از تنظیمات ساختمان', () => {
 });
 
 describe('ذخیره تنظیمات ساختمان و مهاجرت اولین اجرا', () => {
-  beforeEach(async () => { mem.clear(); billRepository._resetCache(); await resetIdbForTests(); (globalThis as unknown as { __prefsMem: Map<string, string> }).__prefsMem?.clear(); });
+  beforeEach(async () => { mem.clear(); billRepository._resetCache(); await resetIdbForTests();
+  await resetSqliteForTests(); (globalThis as unknown as { __prefsMem: Map<string, string> }).__prefsMem?.clear(); });
 
   it('نصب تازه: ۱ واحد ۱ نفره ذخیره می‌شود', async () => {
     expect(await buildingRepository.get()).toEqual(defaultBuilding());

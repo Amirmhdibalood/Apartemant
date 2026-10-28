@@ -321,11 +321,11 @@ describe('پشتیبان قالب ۷: متراژ', () => {
   });
   const make = (mut?: (o: any) => void) => { const o = JSON.parse(serializeBackup(createBackup(sample(), '1.6.5', new Date()))); mut?.(o); return JSON.stringify(o); };
 
-  it('نسخه ۷ و رفت‌وبرگشت کامل (متراژ قبض و ساختمان و روش تقسیم)', () => {
-    expect(BACKUP_VERSION).toBe(7);
+  it('نسخه ۸ و رفت‌وبرگشت کامل (متراژ قبض و ساختمان و روش تقسیم)', () => {
+    expect(BACKUP_VERSION).toBe(8);
     const r = parseBackup(make());
     if (!r.ok) throw new Error(r.error);
-    expect(r.backup.backupVersion).toBe(7);
+    expect(r.backup.backupVersion).toBe(8);
     expect(r.backup.data.units.map((u) => u.area)).toEqual([100, 50, undefined]);
     expect(r.backup.data.bills[0].splitMethod).toBe('perArea');
     expect(r.backup.data.building!.units.map((u) => u.area)).toEqual([100, 50.5, undefined]);
@@ -358,7 +358,7 @@ describe('پشتیبان قالب ۷: متراژ', () => {
     expect(missing.ok).toBe(false);
     if (!missing.ok) expect(missing.error).toContain('متراژ');
     // واحد خالی بدون متراژ مشکلی ندارد (u3 همین‌طور است)
-    expect(parseBackup(make((o) => { o.backupVersion = 8; })).ok).toBe(false);
+    expect(parseBackup(make((o) => { o.backupVersion = BACKUP_VERSION + 1; })).ok).toBe(false);
     // متراژ نامعتبر ساختمان نادیده گرفته می‌شود (فقط آن مقدار)
     const b = parseBackup(make((o) => { o.data.building.units[0].area = -1; }));
     if (!b.ok) throw new Error(b.error);

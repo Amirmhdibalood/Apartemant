@@ -20,6 +20,8 @@ export type SplitMethod = 'perPerson' | 'perUnit' | 'perArea';
 /** Entity: Bill (قبض) */
 export interface Bill {
   id: string;
+  /** شناسه ساختمان (از ۱.۸.۰ / SQLite؛ در دادهٔ قدیمی نیست = ساختمان پیش‌فرض) */
+  buildingId?: string;
   year: number;
   /** 1..12 (فروردین تا اسفند) */
   month: number;

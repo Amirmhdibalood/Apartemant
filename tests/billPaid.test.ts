@@ -1,4 +1,5 @@
 import { resetIdbForTests } from '../src/storage/idb';
+import { resetSqliteForTests } from '../src/storage/sqlite/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Bill, BillDraft, Unit } from '../src/models/types';
 import {
@@ -133,7 +134,8 @@ function seedLegacyPrefs(bills: unknown, units: unknown, schema: unknown = 1) {
 }
 
 describe('مخزن داده: مهاجرت، محافظ حذف، حذف نرم', () => {
-  beforeEach(async () => { mem.clear(); billRepository._resetCache(); await resetIdbForTests(); });
+  beforeEach(async () => { mem.clear(); billRepository._resetCache(); await resetIdbForTests();
+  await resetSqliteForTests(); });
 
   it('داده ذخیره‌شده نسخه‌های قبلی هنگام بارگذاری مهاجرت و دوباره ذخیره می‌شود', async () => {
     seedLegacyPrefs([legacyBill('b1'), legacyBill('b2', { month: 8 })], [...units('b1'), ...units('b2')], 1);

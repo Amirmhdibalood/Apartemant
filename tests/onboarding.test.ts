@@ -1,4 +1,5 @@
 import { resetIdbForTests } from '../src/storage/idb';
+import { resetSqliteForTests } from '../src/storage/sqlite/db';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BackupData } from '../src/logic/backup';
 
@@ -14,7 +15,8 @@ const { billRepository } = await import('../src/storage/billRepository');
 const { backupRepository } = await import('../src/storage/backupRepository');
 
 describe('آموزش اجرای اول', () => {
-  beforeEach(async () => { mem.clear(); billRepository._resetCache(); await resetIdbForTests(); (globalThis as unknown as { __prefsMem: Map<string, string> }).__prefsMem.clear(); });
+  beforeEach(async () => { mem.clear(); billRepository._resetCache(); await resetIdbForTests();
+  await resetSqliteForTests(); (globalThis as unknown as { __prefsMem: Map<string, string> }).__prefsMem.clear(); });
 
   it('نصب تازه: فقط یک‌بار true', async () => {
     expect(await onboardingRepository.consumeFirstRun()).toBe(true);

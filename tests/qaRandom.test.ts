@@ -407,7 +407,7 @@ describe('پشتیبان: رفت‌وبرگشت قالب ۷ (۳۰۰ مورد) و
     const mod = (f: (o: any) => void) => { const c = JSON.parse(JSON.stringify(obj)); f(c); return JSON.stringify(c); };
     expect(parseBackup(mod((o) => { o.data.bills[0].totalAmount += 1; })).ok).toBe(false);
     expect(parseBackup(mod((o) => { o.data.bills[1].id = o.data.bills[0].id; })).ok).toBe(false);
-    expect(parseBackup(mod((o) => { o.backupVersion = 8; })).ok).toBe(false);
+    expect(parseBackup(mod((o) => { o.backupVersion = BACKUP_VERSION + 1; })).ok).toBe(false);
     expect(parseBackup(mod((o) => { o.data.units[0].shareAmount = -1; })).ok).toBe(false);
     expect(parseBackup('{bad').ok).toBe(false);
     expect(parseBackup('').ok).toBe(false);

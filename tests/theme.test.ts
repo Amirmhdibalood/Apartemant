@@ -6,6 +6,7 @@ import { adaptColor, darkenCssValue, darkHex, hexToRgb } from '../src/logic/dark
 import { resolveTheme, sanitizeTheme, THEME_META_COLORS, toggleTheme } from '../src/logic/theme';
 import { generateDarkCss, OUT_CSS, SRC_CSS } from '../scripts/dark-css.mjs';
 import { ART_FILES, generateDarkArt } from '../scripts/dark-art.mjs';
+import { resetSqliteForTests } from '../src/storage/sqlite/db';
 
 const mem = new Map<string, string>();
 vi.mock('../src/storage/kvStore', () => ({
@@ -38,7 +39,8 @@ describe('انتخاب تم', () => {
   });
 
   describe('ماندگاری', () => {
-    beforeEach(() => { mem.clear(); billRepository._resetCache(); });
+    beforeEach(async () => { mem.clear(); billRepository._resetCache();
+    await resetSqliteForTests(); });
     it('پیش‌فرض null (پیروی از سیستم)، سپس انتخاب ذخیره می‌شود', async () => {
       expect(await themeRepository.get()).toBeNull();
       await themeRepository.save('dark');

@@ -1,6 +1,6 @@
 # Full project briefing for "Apartemant" (for any AI coding assistant)
 
-> Describes the project up to **v1.7.9 (versionCode 32)**. It contains no passwords, tokens or keys. (Persian original: `PROJECT-PROMPT-fa.md`.)
+> Describes the project up to **v1.8.0 (versionCode 33)**. It contains no passwords, tokens or keys. (Persian original: `PROJECT-PROMPT-fa.md`.)
 
 ## 1) Purpose and user
 "آپارتمانت" (Apartemant; package id `ir.buildingcharge.app`) is a **fully offline, Persian (RTL) Android app** for a **building manager**. It records shared bills (water, electricity, gas, building charge, cleaning, repairs, beautification, misc), splits each one fairly across the units, tracks every unit's payments, and reports (yearly costs, debtors, per-unit payment history, bill-payment timing). A bill can be shared as an image (e.g. to the building's Telegram group). It requests **no Android permissions at all** (not even internet), has no accounts and no server; all data lives on the phone and moves between phones via a JSON backup file.

@@ -4,6 +4,7 @@ import type { AppSettings, Bill, BillWithUnits, ExpenseType, Unit } from '../src
 import { createBackup, parseBackup, serializeBackup } from '../src/logic/backup';
 import { debtorsReport } from '../src/logic/debts';
 import { remainingAmount } from '../src/logic/payments';
+import { resetSqliteForTests } from '../src/storage/sqlite/db';
 import {
   allocateFull, allocateOldestFirst, applyAllocation, listUnitBatches, previewAllocation, undoBatch, unitTotalDebt,
   UnitPayErrors, validateUnitPayAmount, type BillChange,
@@ -205,7 +206,11 @@ describe('۱.۷.۳ — تخصیص پرداخت بدهی واحد', () => {
 });
 
 describe('۱.۷.۳ — ذخیره‌سازی و پشتیبان', () => {
-  beforeEach(() => { mem.clear(); });
+  beforeEach(async () => {
+    mem.clear();
+    billRepository._resetCache();
+    await resetSqliteForTests();
+  });
 
   it('upsertMany: چند قبض با یک نوشتن؛ نتیجه با getAll دیده می‌شود؛ لغو هم از طریق مخزن', async () => {
     const { data } = scene();

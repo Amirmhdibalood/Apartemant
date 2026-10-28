@@ -17,4 +17,7 @@ export default defineConfig({
     target: 'es2020',
   },
   server: { host: true },
+  optimizeDeps: {
+    exclude: ['sql.js'],
+  },
 });

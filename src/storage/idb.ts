@@ -1,7 +1,7 @@
 /**
- * IndexedDB backend for large tables (bills / units).
- * Chosen over Preferences JSON blobs for quota headroom and over a native SQLite
- * plugin to avoid new Capacitor native deps / Android permissions.
+ * Legacy IndexedDB backend for bills/units (1.7.9).
+ * From 1.8.0 the canonical domain store is SQLite (`src/storage/sqlite/`).
+ * This module remains only as a migration source + test helper.
  * Small settings keys stay on Preferences via kvStore.ts.
  */
 const DB_NAME = 'apartemant';

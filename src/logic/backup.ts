@@ -29,10 +29,12 @@ export const BACKUP_APP_ID = 'apartemant';
  * ۷: نسخه ۱٫۶٫۵ برنامه (+ تقسیم «بر اساس متراژ» `splitMethod: "perArea"`، متراژ هر واحد در قبض `area` و در تنظیمات ساختمان
  *    `building.units[].area`؛ متراژ مترمربع است و تا ۳ رقم اعشار دارد). در فایل‌های ۱ تا ۶ متراژی وجود ندارد = وارد نشده
  *    (مهاجرت: همه متراژها خالی). «نحوه نمایش متراژ» یک ترجیح ظاهری است و داخل پشتیبان نیست.
- * همه قالب‌های قدیمی‌تر (۱ تا ۶) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
+ * ۸: نسخه ۱٫۸ برنامه (+ `buildingId` اختیاری روی قبض؛ موتور ذخیرهٔ دامنه = SQLite؛ پرداخت‌ها همچنان داخل `units[].payments` در JSON می‌آیند و هنگام بازیابی به جدول payments باز می‌شوند).
+ *    قالب‌های ۱ تا ۷ بدون buildingId = ساختمان پیش‌فرض.
+ * همه قالب‌های قدیمی‌تر (۱ تا ۷) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
  * بدون dueDate = بدون مهلت پرداخت، بدون deletedAt = حذف‌نشده).
  */
-export const BACKUP_VERSION = 7;
+export const BACKUP_VERSION = 8;
 /** حداکثر حجم قابل قبول فایل پشتیبان */
 export const MAX_BACKUP_BYTES = 64 * 1024 * 1024;
 
@@ -169,7 +171,8 @@ function parseBills(raw: unknown): Bill[] {
       && (b.billPaid == null || typeof b.billPaid === 'boolean') // «پرداخت شد» (از قالب ۴، اختیاری)
       && (b.billPaidDate == null || normalizePaidDate(b.billPaidDate) !== null)
       && (b.dueDate == null || parseJalaliKey(b.dueDate) !== null) // مهلت پرداخت (از قالب ۴، اختیاری)
-      && (b.deletedAt == null || validDate(b.deletedAt)); // حذف نرم (از قالب ۴، اختیاری)
+      && (b.deletedAt == null || validDate(b.deletedAt)) // حذف نرم (از قالب ۴، اختیاری)
+      && (b.buildingId == null || isId(b.buildingId)); // از قالب ۸، اختیاری
     if (!ok) bad(`اطلاعات قبض ${nth(i)} نامعتبر است.`);
     if (ids.has(b.id as string)) bad(`شناسه قبض ${nth(i)} تکراری است.`);
     ids.add(b.id as string);
@@ -188,6 +191,7 @@ function parseBills(raw: unknown): Bill[] {
       billPaidDate: (b.billPaidDate as string | null | undefined) ?? null,
       dueDate: (b.dueDate as string | null | undefined) ?? null,
       deletedAt: (b.deletedAt as string | null | undefined) ?? null,
+      ...(typeof b.buildingId === 'string' && b.buildingId ? { buildingId: b.buildingId } : {}),
     });
   });
 }

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetIdbForTests, idbGetMeta, idbCount } from '../src/storage/idb';
+import { resetSqliteForTests } from '../src/storage/sqlite/db';
 import { ensureMigrated, clearLegacyPrefsAfterMigration, readLegacyPrefsTables } from '../src/storage/migration';
 import { billRepository } from '../src/storage/billRepository';
 import type { Bill, Unit } from '../src/models/types';
@@ -25,6 +26,7 @@ beforeEach(async () => {
   prefs().clear();
   billRepository._resetCache();
   await resetIdbForTests();
+  await resetSqliteForTests();
 });
 
 describe('۱.۷.۹ — مهاجرت Preferences → IndexedDB', () => {
@@ -65,6 +67,7 @@ describe('۱.۷.۹ — مهاجرت Preferences → IndexedDB', () => {
     await clearLegacyPrefsAfterMigration();
     billRepository._resetCache();
     await resetIdbForTests();
+    await resetSqliteForTests();
     // re-seed IDB by migrating again then clear prefs... simpler: upsert via repo
     await billRepository.replaceAll([bill('keep')], [unit('uk', 'keep')]);
     prefs().clear();

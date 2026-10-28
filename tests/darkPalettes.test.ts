@@ -10,6 +10,7 @@ import { typeColors } from '../src/logic/typeColor';
 import { EXPENSE_TYPE_ORDER } from '../src/models/constants';
 import { generateDarkCss, OUT_CSS, SRC_CSS } from '../scripts/dark-css.mjs';
 import { ART_FILES, artName, generateDarkArt } from '../scripts/dark-art.mjs';
+import { resetSqliteForTests } from '../src/storage/sqlite/db';
 
 const mem = new Map<string, string>();
 vi.mock('../src/storage/kvStore', () => ({
@@ -202,7 +203,8 @@ describe('تصویر شبانه صفحه ورود برای هر پالت', () =>
 });
 
 describe('ماندگاری انتخاب پالت', () => {
-  beforeEach(() => { mem.clear(); billRepository._resetCache(); });
+  beforeEach(async () => { mem.clear(); billRepository._resetCache();
+    await resetSqliteForTests(); });
   it('پیش‌فرض سرمه‌ای؛ ذخیره و خواندن؛ مقدار خراب ← سرمه‌ای', async () => {
     expect(await themeRepository.getPalette()).toBe('navy');
     for (const id of DARK_PALETTE_ORDER) { await themeRepository.savePalette(id); expect(await themeRepository.getPalette()).toBe(id); }
