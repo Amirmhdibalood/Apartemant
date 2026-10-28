@@ -24,6 +24,14 @@ describe('OptionPicker (ظاهر مشترک با «سال‌های فعال»)',
     const b = renderToStaticMarkup(createElement(OptionPicker, { id: 'y', label: 'سال', value: 7, options: opts, onChange: () => {} }));
     expect(b).toContain('—');
   });
+
+  it('مقدار رشته (شناسهٔ ساختمان) را هم می‌پذیرد', () => {
+    const bopts = [{ value: 'default', label: 'پیش‌فرض' }, { value: 'b2', label: 'گلستان' }];
+    const html = renderToStaticMarkup(createElement(OptionPicker, { id: 'b', label: 'ساختمان فعال', value: 'b2', options: bopts, onChange: () => {} }));
+    expect(html).toContain('گلستان');
+    expect(html).toContain('year-picker');
+    expect(html).not.toContain('seg__btn');
+  });
   it('SelectField دیگر <select> بومی نمی‌سازد', () => {
     const html = renderToStaticMarkup(createElement(SelectField, { id: 's', label: 'نوع', value: 1, options: opts, onChange: () => {} }));
     expect(html).not.toContain('<select');

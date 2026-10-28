@@ -68,7 +68,7 @@ export function helpTopicForRoute(route: Route): string | undefined {
 /** بخش‌های آکاردئونی تنظیمات → موضوع */
 export const ACCORDION_TOPIC: Record<string, string> = {
   years: 'years',
-  building: 'building',
+  building: 'buildings',
   fund: 'fund',
   management: 'management',
   'share-app': 'shareapp',

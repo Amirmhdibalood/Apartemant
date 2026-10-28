@@ -15,7 +15,14 @@ interface Props {
 export function SelectField({ id, label, value, options, onChange }: Props) {
   return (
     <div className="field select-field">
-      <OptionPicker id={id} label={label ?? ''} ariaLabel={label} value={value} options={options} onChange={onChange} />
+      <OptionPicker
+        id={id}
+        label={label ?? ''}
+        ariaLabel={label}
+        value={value}
+        options={options}
+        onChange={(v) => { if (typeof v === 'number') onChange(v); }}
+      />
     </div>
   );
 }

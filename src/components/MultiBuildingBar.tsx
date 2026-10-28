@@ -4,9 +4,11 @@ import { useFeedback } from '../context/FeedbackContext';
 import { DEFAULT_BUILDING_ID } from '../storage/sqlite/schema';
 import { Errors } from '../logic/errors';
 import { toPersianDigits } from '../logic/formatting';
+import { OptionPicker } from './OptionPicker';
 
 /**
  * فهرست ساختمان‌ها وقتی سوییچ «چند ساختمان» (روی عنوان آکاردئون) روشن است.
+ * انتخاب ساختمان فعال با همان کشوی OptionPicker / year-picker (تیک کنار گزینهٔ فعال).
  * خودِ سوییچ اینجا نیست — کنار عنوان «ساختمان‌ها» در Settings است.
  */
 export function MultiBuildingBar({ reloadKey = 0, onBuildingChange }: { reloadKey?: number; onBuildingChange?: () => void }) {
@@ -52,11 +54,11 @@ export function MultiBuildingBar({ reloadKey = 0, onBuildingChange }: { reloadKe
     }
   };
 
-  const rename = async (id: string) => {
-    const current = buildings.find((b) => b.id === id)?.name ?? '';
+  const renameActive = async () => {
+    const current = buildings.find((b) => b.id === activeId)?.name ?? '';
     const next = window.prompt('نام جدید ساختمان', current);
     if (next == null) return;
-    await buildingRepository.rename(id, next);
+    await buildingRepository.rename(activeId, next);
     await reload();
   };
 
@@ -78,21 +80,14 @@ export function MultiBuildingBar({ reloadKey = 0, onBuildingChange }: { reloadKe
 
   return (
     <div className="multi-building">
-      <div className="seg multi-building__seg" role="radiogroup" aria-label="ساختمان فعال">
-        {buildings.map((b) => (
-          <button
-            key={b.id}
-            type="button"
-            role="radio"
-            aria-checked={activeId === b.id}
-            className={'seg__btn' + (activeId === b.id ? ' is-active' : '')}
-            onClick={() => void select(b.id)}
-            onContextMenu={(e) => { e.preventDefault(); void rename(b.id); }}
-          >
-            {b.name}
-          </button>
-        ))}
-      </div>
+      <OptionPicker
+        id="building-active-picker"
+        label="ساختمان فعال"
+        ariaLabel="ساختمان فعال"
+        value={activeId}
+        options={buildings.map((b) => ({ value: b.id, label: b.name }))}
+        onChange={(v) => { void select(String(v)); }}
+      />
       <div className="multi-building__add">
         <input
           className="input"
@@ -103,12 +98,17 @@ export function MultiBuildingBar({ reloadKey = 0, onBuildingChange }: { reloadKe
         />
         <button type="button" className="btn btn--primary" onClick={() => void add()}>افزودن</button>
       </div>
-      {activeId !== DEFAULT_BUILDING_ID && (
-        <button type="button" className="btn btn--ghost btn--sm" onClick={() => void archive(activeId)}>
-          بایگانی ساختمان فعال
+      <div className="multi-building__actions">
+        <button type="button" className="btn btn--ghost btn--sm" onClick={() => void renameActive()}>
+          تغییر نام ساختمان فعال
         </button>
-      )}
-      <p className="card__hint">برای تغییر نام، روی نام ساختمان لمس طولانی / راست‌کلیک کنید.</p>
+        {activeId !== DEFAULT_BUILDING_ID && (
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => void archive(activeId)}>
+            بایگانی ساختمان فعال
+          </button>
+        )}
+      </div>
+      <p className="card__hint">واحدها، قبض‌ها، صندوق و دورهٔ مدیریت مربوط به ساختمانی است که اینجا انتخاب می‌کنید.</p>
     </div>
   );
 }

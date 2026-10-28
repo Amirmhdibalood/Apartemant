@@ -121,7 +121,7 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
           <ManagementSection reloadKey={restoreKey + buildingKey} />
         </Accordion>
 
-        <Accordion id="share-app" title="اشتراک‌گذاری نرم‌افزار">
+        <Accordion id="share-app" onTopic={help('share-app')} title="اشتراک‌گذاری نرم‌افزار">
           <ShareAppSection />
         </Accordion>
 

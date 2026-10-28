@@ -18,10 +18,10 @@ const textsOf = (t: HelpTopic): string[] => [
 const ALL = HELP_TOPICS.flatMap((t) => textsOf(t).map((text) => ({ id: t.id, text })));
 
 describe('۱.۷.۷ — ساختار آموزش', () => {
-  it('شناسه‌ها یکتا، گروه‌ها معتبر و ۳۳ موضوع', () => {
+  it('شناسه‌ها یکتا، گروه‌ها معتبر و ۳۴ موضوع', () => {
     const ids = HELP_TOPICS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.length).toBe(33);
+    expect(ids.length).toBe(34);
     const groups = HELP_GROUPS.map((g) => g.id);
     for (const t of HELP_TOPICS) expect(groups).toContain(t.group);
     for (const g of HELP_GROUPS) expect(HELP_TOPICS.some((t) => t.group === g.id)).toBe(true);
@@ -125,6 +125,8 @@ describe('۱.۷.۷ — جست‌وجوی آفلاین', () => {
     expect(searchTopics('متراژ')[0].id).toBe('area');
     expect(searchTopics('متراژ').map((t) => t.id)).toContain('theme');
     expect(normalizeFa('پرداخت‌شدنِ ي ك ۱۲٣')).toBe('پرداختشدن ی ک 123');
+    expect(searchTopics('چند ساختمان')[0].id).toBe('buildings');
+    expect(searchTopics('ساختمان‌ها').map((t) => t.id)).toContain('buildings');
     expect(searchTopics('بدهکاران').map((t) => t.id)).toContain('debtors');
     expect(searchTopics('پشتیبانی').map((t) => t.id)).toContain('home');
     expect(searchTopics('   ')).toEqual([]);
