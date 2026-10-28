@@ -227,6 +227,8 @@
 :root[data-theme="light"][data-light="paper"] .tp-mode.is-open .tp-chev { color: var(--primary); }
 :root[data-theme="light"][data-light="paper"] .tp-pal.is-active { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 3px rgba(29,97,175,0.12); }
 :root[data-theme="light"][data-light="paper"] .tp-pal.is-active .tp-check { background: var(--primary-fill, var(--primary)); border-color: var(--primary); color: #fff; }
+:root[data-theme="light"][data-light="paper"] .fund-ledger__row.is-in strong { color: var(--success); }
+:root[data-theme="light"][data-light="paper"] .fund-ledger__row.is-out strong { color: var(--danger); }
 :root[data-theme="light"][data-light="paper"] .acc__head:focus-visible { outline: 3px solid rgba(29,97,175,0.35); }
 :root[data-theme="light"][data-light="paper"] .acc.is-open .acc__chevron { color: var(--primary); }
 :root[data-theme="light"][data-light="paper"] .rt-chip.is-paid { background: var(--success-soft); color: var(--success-press); }
@@ -493,6 +495,8 @@
 :root[data-theme="light"][data-light="mint"] .tp-mode.is-open .tp-chev { color: var(--primary); }
 :root[data-theme="light"][data-light="mint"] .tp-pal.is-active { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 3px rgba(14,120,137,0.12); }
 :root[data-theme="light"][data-light="mint"] .tp-pal.is-active .tp-check { background: var(--primary-fill, var(--primary)); border-color: var(--primary); color: #fff; }
+:root[data-theme="light"][data-light="mint"] .fund-ledger__row.is-in strong { color: var(--success); }
+:root[data-theme="light"][data-light="mint"] .fund-ledger__row.is-out strong { color: var(--danger); }
 :root[data-theme="light"][data-light="mint"] .acc__head:focus-visible { outline: 3px solid rgba(14,120,137,0.35); }
 :root[data-theme="light"][data-light="mint"] .acc.is-open .acc__chevron { color: var(--primary); }
 :root[data-theme="light"][data-light="mint"] .rt-chip.is-paid { background: var(--success-soft); color: var(--success-press); }
@@ -759,6 +763,8 @@
 :root[data-theme="light"][data-light="lavender"] .tp-mode.is-open .tp-chev { color: var(--primary); }
 :root[data-theme="light"][data-light="lavender"] .tp-pal.is-active { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 3px rgba(95,81,214,0.12); }
 :root[data-theme="light"][data-light="lavender"] .tp-pal.is-active .tp-check { background: var(--primary-fill, var(--primary)); border-color: var(--primary); color: #fff; }
+:root[data-theme="light"][data-light="lavender"] .fund-ledger__row.is-in strong { color: var(--success); }
+:root[data-theme="light"][data-light="lavender"] .fund-ledger__row.is-out strong { color: var(--danger); }
 :root[data-theme="light"][data-light="lavender"] .acc__head:focus-visible { outline: 3px solid rgba(95,81,214,0.35); }
 :root[data-theme="light"][data-light="lavender"] .acc.is-open .acc__chevron { color: var(--primary); }
 :root[data-theme="light"][data-light="lavender"] .rt-chip.is-paid { background: var(--success-soft); color: var(--success-press); }
@@ -1025,6 +1031,8 @@
 :root[data-theme="light"][data-light="graycool"] .tp-mode.is-open .tp-chev { color: var(--primary); }
 :root[data-theme="light"][data-light="graycool"] .tp-pal.is-active { border-color: var(--primary); background: var(--primary-soft); box-shadow: 0 0 0 3px rgba(18,69,186,0.12); }
 :root[data-theme="light"][data-light="graycool"] .tp-pal.is-active .tp-check { background: var(--primary-fill, var(--primary)); border-color: var(--primary); color: #fff; }
+:root[data-theme="light"][data-light="graycool"] .fund-ledger__row.is-in strong { color: var(--success); }
+:root[data-theme="light"][data-light="graycool"] .fund-ledger__row.is-out strong { color: var(--danger); }
 :root[data-theme="light"][data-light="graycool"] .acc__head:focus-visible { outline: 3px solid rgba(18,69,186,0.35); }
 :root[data-theme="light"][data-light="graycool"] .acc.is-open .acc__chevron { color: var(--primary); }
 :root[data-theme="light"][data-light="graycool"] .rt-chip.is-paid { background: var(--success-soft); color: var(--success-press); }

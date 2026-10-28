@@ -6,17 +6,20 @@ interface Props {
   /** شناسهٔ پایدار برای نگه‌داشتن وضعیت در همین نشست */
   id: string;
   title: string;
+  /** توضیح کوتاه زیر عنوان (مثلاً معنی سوییچ کنار عنوان) */
+  titleHint?: string;
   children: ReactNode;
   className?: string;
-  /** لینک «راهنمای این بخش» بالای محتوا (باز کردن موضوع آموزش همین بخش) */
+  /** لینک «راهنمای این بخش» بالای محتوا */
   onTopic?: () => void;
+  /** کنترل کنار عنوان (مثلاً سوییچ) — باز/بسته کردن آکاردئون را تریگر نمی‌کند */
+  trailing?: ReactNode;
 }
 
 /**
  * کارت آکاردئونی: با لمس نوار عنوان باز/بسته می‌شود (پیش‌فرض بسته).
- * عنوان یک <h2> حاوی <button aria-expanded> است؛ محتوای بسته visibility:hidden است تا فوکوس نگیرد.
  */
-export function Accordion({ id, title, children, className = '', onTopic }: Props) {
+export function Accordion({ id, title, titleHint, children, className = '', onTopic, trailing }: Props) {
   const [open, setOpen] = useState(() => isAccordionOpen(id));
   const uid = useId();
   const headId = `${uid}-head`;
@@ -27,11 +30,15 @@ export function Accordion({ id, title, children, className = '', onTopic }: Prop
   };
   return (
     <section className={'card settings-card acc' + (open ? ' is-open' : '') + (className ? ' ' + className : '')} data-acc={id}>
-      <h2 className="acc__title" id={headId}>
+      <h2 className={'acc__title' + (trailing ? ' has-trailing' : '') + (titleHint ? ' has-hint' : '')} id={headId}>
         <button type="button" className="acc__head" aria-expanded={open} aria-controls={bodyId} onClick={toggle}>
-          <span className="acc__label">{title}</span>
+          <span className="acc__text">
+            <span className="acc__label">{title}</span>
+            {titleHint ? <span className="acc__hint">{titleHint}</span> : null}
+          </span>
           <IconChevronDown size={22} className="acc__chevron" />
         </button>
+        {trailing ? <div className="acc__trailing">{trailing}</div> : null}
       </h2>
       <div id={bodyId} className="acc__body" role="region" aria-labelledby={headId}>
         <div className="acc__inner"><div className="acc__pad">

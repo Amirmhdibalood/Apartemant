@@ -13,17 +13,21 @@ vi.mock('../src/context/EntryPrefsContext', () => ({ useEntryPrefs: () => ({ pre
 vi.mock('../src/context/ThemeContext', () => ({ useTheme: () => ({ theme: 'light', palette: 'navy', lightPalette: 'sky', toggle: () => undefined, setTheme: () => undefined, setPalette: () => undefined, setLightPalette: () => undefined }) }));
 vi.mock('../src/components/AppHeader', () => ({ AppHeader: () => null }));
 vi.mock('../src/components/BuildingSection', () => ({ BuildingSection: () => createElement('div', { className: 'building-card' }, 'محتوای ساختمان') }));
+vi.mock('../src/components/MultiBuildingBar', () => ({ MultiBuildingBar: () => null }));
+vi.mock('../src/components/FundSection', () => ({ FundSection: () => createElement('div', { className: 'fund-card' }, 'صندوق') }));
+vi.mock('../src/components/ManagementSection', () => ({ ManagementSection: () => createElement('div', { className: 'mgmt-card' }, 'مدیریت') }));
+vi.mock('../src/components/ShareAppSection', () => ({ ShareAppSection: () => createElement('div', { className: 'share-app-card' }, 'اشتراک') }));
+vi.mock('../src/storage/buildingRepository', () => ({ buildingRepository: { isMultiEnabled: async () => false, setMultiEnabled: async () => undefined, onActiveChange: () => () => undefined } }));
 vi.mock('../src/components/BackupSection', () => ({ BackupSection: () => createElement('div', { className: 'backup-card' }, 'محتوای پشتیبان') }));
 const { SettingsScreen } = await import('../src/screens/SettingsScreen');
 
 const html = renderToStaticMarkup(createElement(SettingsScreen, { onBack: () => undefined, canGoBack: true }));
-const strip = (x: string) => x.replace(/<[^>]*>/g, '');
-const h2s = [...html.matchAll(/<h2[^>]*>(.*?)<\/h2>/g)].map((m) => strip(m[1]));
+const h2s = [...html.matchAll(/class="acc__label"[^>]*>([^<]*)/g)].map((m) => m[1]);
 const h3s = [...html.matchAll(/<h3[^>]*>(.*?)<\/h3>/g)].map((m) => m[1]);
 
 describe('ترتیب و یکدستی صفحهٔ تنظیمات', () => {
-  it('ترتیب بخش‌ها: سال‌ها ← ساختمان ← انواع قبض ← نمایش گزارش‌ها ← تنظیمات ظاهری ← هشدارها ← پشتیبان', () => {
-    expect(h2s).toEqual(['سال‌ها', 'ساختمان', 'انواع قبض و روش‌های محاسبه', 'نمایش گزارش‌ها', 'تنظیمات ظاهری', 'هشدارها', 'پشتیبان‌گیری و بازیابی']);
+  it('ترتیب بخش‌ها: سال‌ها ← ساختمان‌ها ← صندوق ← دوره مدیریت ← اشتراک ← انواع قبض ← گزارش‌ها ← ظاهر ← هشدارها ← پشتیبان', () => {
+    expect(h2s).toEqual(['سال‌ها', 'ساختمان‌ها', 'صندوق ساختمان', 'دورهٔ مدیریت', 'اشتراک‌گذاری نرم‌افزار', 'انواع قبض و روش‌های محاسبه', 'نمایش گزارش‌ها', 'تنظیمات ظاهری', 'هشدارها', 'پشتیبان‌گیری و بازیابی']);
   });
   it('«تنظیمات ظاهری» پنج زیرگروه دارد: تم (اول)، نحوه نمایش متراژ، نماد واحد، نماد متراژ، نحوه نمایش اعلان‌ها', () => {
     const a = html.indexOf('data-acc="appearance"');
@@ -47,15 +51,15 @@ describe('ترتیب و یکدستی صفحهٔ تنظیمات', () => {
     expect(rule).not.toMatch(/\d+px/);
   });
 
-  it('هر ۶ بخش آکاردئون و پیش‌فرض بسته‌اند؛ دکمهٔ عنوان داخل h2 با aria-expanded/aria-controls و ناحیهٔ region', () => {
-    expect(html.match(/class="card settings-card acc[ "]/g)).toHaveLength(7);
-    expect(html.match(/class="acc__head" aria-expanded="false"/g)).toHaveLength(7);
+  it('هر بخش آکاردئون و پیش‌فرض بسته‌اند؛ دکمهٔ عنوان داخل h2 با aria-expanded/aria-controls و ناحیهٔ region', () => {
+    expect(html.match(/class="card settings-card acc[ "]/g)).toHaveLength(10);
+    expect(html.match(/class="acc__head" aria-expanded="false"/g)).toHaveLength(10);
     expect(html).not.toContain('aria-expanded="true"');
     expect(html).not.toContain('acc is-open');
-    for (const m of html.matchAll(/<h2 class="acc__title" id="([^"]+)"><button[^>]*aria-controls="([^"]+)"/g)) {
+    for (const m of html.matchAll(/<h2 class="acc__title[^"]*" id="([^"]+)"><button[^>]*aria-controls="([^"]+)"/g)) {
       expect(html).toContain(`id="${m[2]}" class="acc__body" role="region" aria-labelledby="${m[1]}"`);
     }
-    expect(html.match(/acc__chevron/g)).toHaveLength(7);
+    expect(html.match(/acc__chevron/g)).toHaveLength(10);
   });
   it('نسخه بیرون از آکاردئون و همیشه دیده می‌شود؛ نام و ایمیل سازنده فعلاً پنهان است (TODO: نام مستعار و ایمیل کاری بعداً جایگزین شود)', () => {
     const tail = html.slice(html.lastIndexOf('</section>'));

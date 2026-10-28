@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=390, initial-scale=1"/>
+<title>دمو UI — آپارتمانت ۱.۸</title>
+<style>
+@font-face{font-family:Vazirmatn;src:local('Vazirmatn'),local('Tahoma')}
+:root{--bg:#f4f7fc;--card:#fff;--text:#1c2440;--muted:#7a8398;--border:#e4e9f2;--primary:#2f74f0;--primary-soft:#eaf1fe;--success:#25a865;--success-soft:#e8f7ef;--danger:#ef4444;--soft:#eef2f8;--radius:14px;--shadow:0 4px 18px rgba(33,56,102,.07)}
+*{box-sizing:border-box}body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:#dde3ee;color:var(--text);font-size:15px;line-height:1.6}
+.phone{width:390px;margin:16px auto;background:var(--bg);border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.12)}
+.header{background:rgba(244,247,252,.98);padding:14px 16px;text-align:center;font-weight:800;border-bottom:1px solid var(--border)}
+.screen{padding:10px 16px 24px}
+.card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:14px;margin-bottom:14px;border:1px solid #eef1f7}
+.card__title{font-weight:800;font-size:15px;margin:0 0 8px}
+.card__hint{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.setting-row__label{font-weight:700;font-size:14.5px}
+.switch{width:46px;height:28px;border-radius:999px;background:#c9d2e3;position:relative;flex-shrink:0}
+.switch.on{background:var(--primary)}
+.switch i{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.switch.on i{right:auto;left:3px}
+.seg{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.seg__btn{padding:8px 12px;border-radius:999px;background:var(--soft);border:1px solid var(--border);font-weight:700;font-size:13px}
+.seg__btn.is-active{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+.row{display:flex;gap:8px;margin-top:8px}
+.input{flex:1;border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:#fff;width:100%}
+.btn{border:0;border-radius:12px;padding:10px 14px;font-weight:700;font-family:inherit}
+.btn--primary{background:var(--primary);color:#fff}
+.btn--ghost{background:var(--soft);color:var(--text)}
+.btn--sm{padding:6px 10px;font-size:12.5px}
+.fund-balance{background:var(--success-soft);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center;margin:10px 0}
+.fund-balance__value{color:var(--success);font-size:18px}
+.ledger{list-style:none;padding:0;margin:8px 0 0}
+.ledger li{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.ledger .in{color:var(--success)}.ledger .out{color:var(--danger)}
+.meta{font-size:12px;color:var(--muted)}
+.field{display:block;margin:8px 0}.field__label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px}
+.mgmt{padding:0;margin:0;list-style:none}
+.mgmt li{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px solid var(--border)}
+.badge{display:inline-block;background:var(--primary-soft);color:var(--primary);font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="phone" id="p1">
+  <div class="header">تنظیمات</div>
+  <div class="screen">
+    <div class="card">
+      <div class="badge">نمونه UI — سوییچ کنار عنوان</div>
+      <div class="setting-row" style="margin-bottom:4px">
+        <div>
+          <div class="setting-row__label" style="font-size:15px">ساختمان‌ها</div>
+          <div class="card__hint" style="margin:2px 0 0">با روشن کردن، مدیریت چند ساختمان جدا (واحد، قبض، صندوق و دورهٔ مدیریت هرکدام) فعال می‌شود.</div>
+        </div>
+        <div class="switch on" title="چند ساختمان"><i></i></div>
+      </div>
+      <div class="seg">
+        <span class="seg__btn is-active">ساختمان ۱</span>
+        <span class="seg__btn">برج آفتاب</span>
+      </div>
+      <div class="row">
+        <input class="input" placeholder="نام ساختمان جدید"/>
+        <button class="btn btn--primary">افزودن</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="phone" id="p2">
+  <div class="header">تنظیمات · صندوق</div>
+  <div class="screen">
+    <div class="card">
+      <div class="badge">نمونه UI برای تأیید</div>
+      <h2 class="card__title">صندوق ساختمان</h2>
+      <p class="card__hint">اختیاری برای هر ساختمان. پرداخت روی قبض شارژ → واریز به صندوق.</p>
+      <div class="setting-row"><span class="setting-row__label">صندوق این ساختمان</span><div class="switch on"><i></i></div></div>
+      <div class="fund-balance"><span>موجودی</span><strong class="fund-balance__value">۱۲٬۵۰۰٬۰۰۰ تومان</strong></div>
+      <label class="field"><span class="field__label">مبلغ (تومان)</span><input class="input" value="2500000" dir="ltr"/></label>
+      <label class="field"><span class="field__label">توضیح</span><input class="input" value="تعمیر آسانسور"/></label>
+      <div class="row">
+        <button class="btn btn--primary" style="flex:1">برداشت از صندوق</button>
+        <button class="btn btn--ghost" style="flex:1">واریز دستی</button>
+      </div>
+      <h3 style="margin:14px 0 0;font-size:14px">گردش صندوق</h3>
+      <ul class="ledger">
+        <li><div><div>واریز از پرداخت شارژ</div><div class="meta">۱۴۰۴/۰۷/۰۱</div></div><strong class="in">+۸٬۰۰۰٬۰۰۰</strong></li>
+        <li><div><div>برداشت / هزینه</div><div class="meta">تعمیر آسانسور</div></div><strong class="out">−۲٬۵۰۰٬۰۰۰</strong></li>
+        <li><div><div>واریز از پرداخت شارژ</div><div class="meta">۱۴۰۴/۰۸/۰۱</div></div><strong class="in">+۷٬۰۰۰٬۰۰۰</strong></li>
+      </ul>
+    </div>
+  </div>
+</div>
+<div class="phone" id="p3">
+  <div class="header">تنظیمات · دورهٔ مدیریت</div>
+  <div class="screen">
+    <div class="card">
+      <div class="badge">نمونه UI برای تأیید</div>
+      <h2 class="card__title">دورهٔ مدیریت</h2>
+      <p class="card__hint">تاریخچهٔ مدیران؛ بستن زودهنگام و ثبت مدیر جدید.</p>
+      <label class="field"><span class="field__label">نام / عنوان مدیر</span><input class="input" placeholder="مثلاً آقای رضایی"/></label>
+      <label class="field"><span class="field__label">شروع دوره</span><input class="input" value="۱۴۰۴/۰۱/۰۱" dir="ltr"/></label>
+      <label class="field"><span class="field__label">پایان دوره</span><input class="input" value="۱۴۰۴/۱۲/۲۹" dir="ltr"/></label>
+      <button class="btn btn--primary" style="width:100%;margin-top:8px">ثبت دوره / مدیر جدید</button>
+      <h3 style="margin:14px 0 8px;font-size:14px">تاریخچه</h3>
+      <ul class="mgmt">
+        <li><div><strong>آقای محمدی</strong><div class="meta">۱۴۰۳/۰۱/۰۱ تا ۱۴۰۳/۱۲/۲۹</div></div><button class="btn btn--ghost btn--sm">حذف</button></li>
+        <li><div><strong>خانم احمدی</strong><div class="meta">۱۴۰۴/۰۱/۰۱ تا ۱۴۰۴/۱۲/۲۹</div></div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <button class="btn btn--ghost btn--sm">بستن زودهنگام</button>
+            <button class="btn btn--ghost btn--sm">حذف</button>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+</body></html>

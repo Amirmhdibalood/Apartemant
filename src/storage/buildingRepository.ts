@@ -1,82 +1,259 @@
 /**
- * تنظیمات «ساختمان» — Preferences برای سازگاری UI + آینه در SQLite (building_unit_templates).
- * از ۱.۸.۰ جداول buildings / templates در SQLite وجود دارند؛ fund_enabled فعلاً فقط در SQLite.
+ * Buildings + unit templates + fund + management periods (SQLite) with active-building focus.
  */
 import type { BuildingSettings } from '../models/types';
 import { readJson, removeKey, writeJson } from './kvStore';
 import { billRepository } from './billRepository';
-import { buildingFromBills, sanitizeBuilding } from '../logic/building';
-import { withSqliteWrite } from './sqlite/db';
-import { ensureDefaultBuilding, replaceUnitTemplates, setBuildingFundEnabled, getBuildingFundEnabled, readUnitTemplates } from './sqlite/domain';
+import { buildingFromBills, defaultBuilding, sanitizeBuilding } from '../logic/building';
+import { withSqlite, withSqliteWrite } from './sqlite/db';
+import {
+  addFundEntry,
+  archiveBuilding,
+  createBuilding,
+  endManagementPeriodEarly,
+  ensureDefaultBuilding,
+  fundBalance,
+  getBuildingFundEnabled,
+  getBuildingName,
+  insertManagementPeriod,
+  listBuildings,
+  listManagementPeriods,
+  readFundEntries,
+  readUnitTemplates,
+  renameBuilding,
+  replaceUnitTemplates,
+  setBuildingFundEnabled,
+  deleteManagementPeriod,
+  type BuildingRow,
+  type FundEntryRow,
+  type ManagementPeriodRow,
+} from './sqlite/domain';
 import { DEFAULT_BUILDING_ID } from './sqlite/schema';
 import { ensureMigrated } from './migration';
+import { activeBuildingStore } from './activeBuildingStore';
 
-const KEY = 'building';
-/** کلید «الگوی واحدها»ی نسخه‌های ۱.۲ تا ۱.۵ (فقط برای مهاجرت خوانده و سپس پاک می‌شود) */
+const LEGACY_KEY = 'building';
 const LEGACY_TEMPLATE_KEY = 'unitTemplate';
+const PREFS_PREFIX = 'buildingSettings.';
 
 interface Stored extends BuildingSettings { updatedAt: string }
 
-async function mirrorToSqlite(clean: BuildingSettings): Promise<void> {
-  await ensureMigrated();
-  await withSqliteWrite((db) => {
-    ensureDefaultBuilding(db);
-    replaceUnitTemplates(db, DEFAULT_BUILDING_ID, clean);
-  });
+async function prefsKeyFor(buildingId: string): Promise<string> {
+  return PREFS_PREFIX + buildingId;
 }
 
+export type { BuildingRow, FundEntryRow, ManagementPeriodRow };
+
 export const buildingRepository = {
-  async get(): Promise<BuildingSettings> {
+  async getActiveId(): Promise<string> {
     await ensureMigrated().catch(() => undefined);
-    const stored = sanitizeBuilding(await readJson<unknown>(KEY, null));
-    if (stored) {
-      void mirrorToSqlite(stored).catch(() => undefined);
-      return stored;
-    }
-    // Prefer SQLite templates if Preferences empty (restored / migrated)
-    const fromDb = await withSqliteWrite((db) => {
+    const id = await activeBuildingStore.getActiveId();
+    const known = await withSqlite((db) => {
       ensureDefaultBuilding(db);
-      return readUnitTemplates(db, DEFAULT_BUILDING_ID);
-    }).catch(() => null);
-    if (fromDb) {
-      await writeJson<Stored>(KEY, { ...fromDb, updatedAt: new Date().toISOString() });
-      return fromDb;
+      return listBuildings(db).some((b) => b.id === id);
+    });
+    if (!known) {
+      await activeBuildingStore.setActiveId(DEFAULT_BUILDING_ID);
+      return DEFAULT_BUILDING_ID;
     }
-    const legacy = await readJson<{ personCounts?: unknown } | null>(LEGACY_TEMPLATE_KEY, null);
-    const seeded = buildingFromBills(await billRepository.getAll(), legacy?.personCounts);
-    await this.save(seeded);
-    await removeKey(LEGACY_TEMPLATE_KEY).catch(() => undefined);
+    return id;
+  },
+
+  async setActiveId(id: string): Promise<void> {
+    await activeBuildingStore.setActiveId(id);
+    billRepository._resetCache();
+  },
+
+  async isMultiEnabled(): Promise<boolean> {
+    return activeBuildingStore.isMultiEnabled();
+  },
+
+  async setMultiEnabled(on: boolean): Promise<void> {
+    await activeBuildingStore.setMultiEnabled(on);
+    billRepository._resetCache();
+  },
+
+  async list(): Promise<BuildingRow[]> {
+    await ensureMigrated();
+    return withSqlite((db) => listBuildings(db));
+  },
+
+  async create(name: string, copyTemplatesFromActive = true): Promise<string> {
+    await ensureMigrated();
+    const active = await this.getActiveId();
+    const id = await withSqliteWrite(async (db) => {
+      const templates = copyTemplatesFromActive
+        ? (readUnitTemplates(db, active) ?? defaultBuilding())
+        : defaultBuilding();
+      return createBuilding(db, name, templates);
+    });
+    return id;
+  },
+
+  async rename(id: string, name: string): Promise<void> {
+    await ensureMigrated();
+    await withSqliteWrite((db) => { renameBuilding(db, id, name); });
+  },
+
+  async archive(id: string): Promise<void> {
+    await ensureMigrated();
+    const active = await this.getActiveId();
+    await withSqliteWrite((db) => { archiveBuilding(db, id); });
+    if (active === id) await this.setActiveId(DEFAULT_BUILDING_ID);
+  },
+
+  async getName(id?: string): Promise<string> {
+    await ensureMigrated();
+    const bid = id ?? await this.getActiveId();
+    return withSqlite((db) => getBuildingName(db, bid) ?? 'ساختمان');
+  },
+
+  /** Unit templates for active (or given) building */
+  async get(buildingId?: string): Promise<BuildingSettings> {
+    await ensureMigrated().catch(() => undefined);
+    const bid = buildingId ?? await this.getActiveId();
+
+    // Prefer SQLite templates
+    const fromDb = await withSqlite((db) => {
+      ensureDefaultBuilding(db);
+      return readUnitTemplates(db, bid);
+    }).catch(() => null);
+    if (fromDb) return fromDb;
+
+    // Legacy single-building prefs → default building only
+    if (bid === DEFAULT_BUILDING_ID) {
+      const stored = sanitizeBuilding(await readJson<unknown>(LEGACY_KEY, null));
+      if (stored) {
+        await this.save(stored, bid);
+        return stored;
+      }
+      const legacy = await readJson<{ personCounts?: unknown } | null>(LEGACY_TEMPLATE_KEY, null);
+      const seeded = buildingFromBills(await billRepository.getAll(), legacy?.personCounts);
+      await this.save(seeded, bid);
+      await removeKey(LEGACY_TEMPLATE_KEY).catch(() => undefined);
+      return seeded;
+    }
+
+    const seeded = defaultBuilding();
+    await this.save(seeded, bid);
     return seeded;
   },
 
-  async save(b: BuildingSettings): Promise<BuildingSettings> {
+  async save(b: BuildingSettings, buildingId?: string): Promise<BuildingSettings> {
     const clean = sanitizeBuilding(b);
     if (!clean) throw new Error('invalid building settings');
-    await writeJson<Stored>(KEY, { ...clean, updatedAt: new Date().toISOString() });
-    await mirrorToSqlite(clean);
-    return clean;
-  },
-
-  /** بازیابی پشتیبان: جایگزینی کامل */
-  async replace(b: BuildingSettings): Promise<void> {
-    await this.save(b);
-    await removeKey(LEGACY_TEMPLATE_KEY).catch(() => undefined);
-  },
-
-  /** صندوق این ساختمان (پیش‌فرض خاموش) — ذخیره فقط در SQLite */
-  async getFundEnabled(buildingId: string = DEFAULT_BUILDING_ID): Promise<boolean> {
-    await ensureMigrated();
-    return withSqliteWrite((db) => {
-      ensureDefaultBuilding(db);
-      return getBuildingFundEnabled(db, buildingId);
-    });
-  },
-
-  async setFundEnabled(enabled: boolean, buildingId: string = DEFAULT_BUILDING_ID): Promise<void> {
+    const bid = buildingId ?? await this.getActiveId();
     await ensureMigrated();
     await withSqliteWrite((db) => {
       ensureDefaultBuilding(db);
-      setBuildingFundEnabled(db, buildingId, enabled);
+      replaceUnitTemplates(db, bid, clean);
+    });
+    // Mirror default building to legacy prefs for old backup paths
+    if (bid === DEFAULT_BUILDING_ID) {
+      await writeJson<Stored>(LEGACY_KEY, { ...clean, updatedAt: new Date().toISOString() });
+    }
+    await writeJson<Stored>(await prefsKeyFor(bid), { ...clean, updatedAt: new Date().toISOString() });
+    return clean;
+  },
+
+  async replace(b: BuildingSettings): Promise<void> {
+    await this.save(b, DEFAULT_BUILDING_ID);
+    await removeKey(LEGACY_TEMPLATE_KEY).catch(() => undefined);
+  },
+
+  async getFundEnabled(buildingId?: string): Promise<boolean> {
+    await ensureMigrated();
+    const bid = buildingId ?? await this.getActiveId();
+    return withSqlite((db) => {
+      ensureDefaultBuilding(db);
+      return getBuildingFundEnabled(db, bid);
     });
   },
+
+  async setFundEnabled(enabled: boolean, buildingId?: string): Promise<void> {
+    await ensureMigrated();
+    const bid = buildingId ?? await this.getActiveId();
+    await withSqliteWrite((db) => {
+      ensureDefaultBuilding(db);
+      setBuildingFundEnabled(db, bid, enabled);
+    });
+  },
+
+  async getFundBalance(buildingId?: string): Promise<number> {
+    await ensureMigrated();
+    const bid = buildingId ?? await this.getActiveId();
+    return withSqlite((db) => fundBalance(db, bid));
+  },
+
+  async listFundEntries(buildingId?: string): Promise<FundEntryRow[]> {
+    await ensureMigrated();
+    const bid = buildingId ?? await this.getActiveId();
+    return withSqlite((db) => readFundEntries(db, bid));
+  },
+
+  async addFundWithdraw(amount: number, note: string | null, buildingId?: string): Promise<void> {
+    await ensureMigrated();
+    const bid = buildingId ?? await this.getActiveId();
+    await withSqliteWrite((db) => {
+      if (!getBuildingFundEnabled(db, bid)) throw new Error('fund disabled');
+      const bal = fundBalance(db, bid);
+      if (amount > bal) throw new Error('insufficient fund balance');
+      addFundEntry(db, { buildingId: bid, kind: 'withdraw', amount, reason: 'expense', note });
+    });
+  },
+
+  async addFundDepositManual(amount: number, note: string | null, buildingId?: string): Promise<void> {
+    await ensureMigrated();
+    const bid = buildingId ?? await this.getActiveId();
+    await withSqliteWrite((db) => {
+      if (!getBuildingFundEnabled(db, bid)) throw new Error('fund disabled');
+      addFundEntry(db, { buildingId: bid, kind: 'deposit', amount, reason: 'manual', note });
+    });
+  },
+
+  async listManagementPeriods(buildingId?: string): Promise<ManagementPeriodRow[]> {
+    await ensureMigrated();
+    const bid = buildingId ?? await this.getActiveId();
+    return withSqlite((db) => listManagementPeriods(db, bid));
+  },
+
+  async addManagementPeriod(input: {
+    managerLabel: string;
+    startDate: string;
+    endDate: string;
+    notes?: string | null;
+    endPreviousEarly?: boolean;
+  }, buildingId?: string): Promise<string> {
+    await ensureMigrated();
+    const bid = buildingId ?? await this.getActiveId();
+    return withSqliteWrite((db) => {
+      if (input.endPreviousEarly) {
+        for (const p of listManagementPeriods(db, bid)) {
+          if (!p.endedEarlyAt) endManagementPeriodEarly(db, p.id);
+        }
+      }
+      return insertManagementPeriod(db, {
+        buildingId: bid,
+        managerLabel: input.managerLabel,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        notes: input.notes ?? null,
+      });
+    });
+  },
+
+  async endManagementEarly(periodId: string): Promise<void> {
+    await ensureMigrated();
+    await withSqliteWrite((db) => { endManagementPeriodEarly(db, periodId); });
+  },
+
+  async removeManagementPeriod(periodId: string): Promise<void> {
+    await ensureMigrated();
+    await withSqliteWrite((db) => { deleteManagementPeriod(db, periodId); });
+  },
+
+  onActiveChange(listener: () => void): () => void {
+    return activeBuildingStore.onChange(listener);
+  },
 };
+

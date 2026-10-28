@@ -20,6 +20,7 @@ import {
   upsertBillRow,
 } from './sqlite/domain';
 import { DEFAULT_BUILDING_ID } from './sqlite/schema';
+import { activeBuildingStore } from './activeBuildingStore';
 
 export { SCHEMA_VERSION };
 
@@ -105,6 +106,15 @@ function buildingIdFor(s: Store, billId: string, bill?: Bill): string {
     ?? DEFAULT_BUILDING_ID;
 }
 
+async function resolveActiveBuildingId(): Promise<string> {
+  try { return await activeBuildingStore.getActiveId(); }
+  catch { return DEFAULT_BUILDING_ID; }
+}
+
+function billsForActive(s: Store, active: string, bills: Bill[]): Bill[] {
+  return bills.filter((b) => (s.buildingByBill.get(b.id) ?? DEFAULT_BUILDING_ID) === active);
+}
+
 async function persistRowLevel(
   next: Store,
   touchedBills: Bill[],
@@ -151,24 +161,28 @@ function mapBills(s: Store, bills: Bill[]): BillWithUnits[] {
 export const billRepository = {
   async getAll(): Promise<BillWithUnits[]> {
     const s = await load();
-    return mapBills(s, s.bills.filter((b) => !isBillDeleted(b)));
+    const active = await resolveActiveBuildingId();
+    return mapBills(s, billsForActive(s, active, s.bills).filter((b) => !isBillDeleted(b)));
   },
 
   async getAllWithDeleted(): Promise<BillWithUnits[]> {
     const s = await load();
-    return mapBills(s, s.bills);
+    const active = await resolveActiveBuildingId();
+    return mapBills(s, billsForActive(s, active, s.bills));
   },
 
   async getByYear(year: number, opts?: { includeDeleted?: boolean }): Promise<BillWithUnits[]> {
     const s = await load();
-    const bills = s.bills.filter((b) => b.year === year && (opts?.includeDeleted || !isBillDeleted(b)));
+    const active = await resolveActiveBuildingId();
+    const bills = billsForActive(s, active, s.bills).filter((b) => b.year === year && (opts?.includeDeleted || !isBillDeleted(b)));
     return mapBills(s, bills).sort((a, b) => b.bill.createdAt.localeCompare(a.bill.createdAt));
   },
 
   async getYears(opts?: { includeDeleted?: boolean }): Promise<number[]> {
     const s = await load();
+    const active = await resolveActiveBuildingId();
     const set = new Set<number>();
-    for (const b of s.bills) {
+    for (const b of billsForActive(s, active, s.bills)) {
       if (!opts?.includeDeleted && isBillDeleted(b)) continue;
       set.add(b.year);
     }
@@ -184,9 +198,10 @@ export const billRepository = {
 
   async findByYearMonth(year: number, month: number): Promise<BillWithUnits[]> {
     const s = await load();
+    const active = await resolveActiveBuildingId();
     return mapBills(
       s,
-      s.bills.filter((b) => !isBillDeleted(b) && b.year === year && b.month === month),
+      billsForActive(s, active, s.bills).filter((b) => !isBillDeleted(b) && b.year === year && b.month === month),
     ).sort((a, b) => b.bill.createdAt.localeCompare(a.bill.createdAt));
   },
 
@@ -199,7 +214,8 @@ export const billRepository = {
     const next = makeStore(bills, nextUnits, new Map(s.buildingByBill));
     if (!next.buildingByBill.has(bill.id)) {
       const existing = await withSqlite((db) => getBillBuildingId(db, bill.id));
-      next.buildingByBill.set(bill.id, existing ?? DEFAULT_BUILDING_ID);
+      const active = await resolveActiveBuildingId();
+      next.buildingByBill.set(bill.id, existing ?? bill.buildingId ?? active);
     }
     await persistRowLevel(next, [migrated], nextUnits, true, 'upsert');
   },
@@ -213,8 +229,11 @@ export const billRepository = {
     const units = s.units.filter((u) => !ids.has(u.billId))
       .concat(migratedItems.flatMap((i) => i.units.map((u) => ({ ...u, billId: i.bill.id }))));
     const next = makeStore(bills, units, new Map(s.buildingByBill));
+    const active = await resolveActiveBuildingId();
     for (const i of migratedItems) {
-      if (!next.buildingByBill.has(i.bill.id)) next.buildingByBill.set(i.bill.id, DEFAULT_BUILDING_ID);
+      if (!next.buildingByBill.has(i.bill.id)) {
+        next.buildingByBill.set(i.bill.id, i.bill.buildingId ?? active);
+      }
     }
     await persistRowLevel(next, migratedItems.map((i) => i.bill), units, true, 'upsert');
   },

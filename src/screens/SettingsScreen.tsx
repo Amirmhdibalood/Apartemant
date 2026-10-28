@@ -7,6 +7,11 @@ import { useFeedback } from '../context/FeedbackContext';
 import { YearPicker } from '../components/YearPicker';
 import { BackupSection } from '../components/BackupSection';
 import { BuildingSection } from '../components/BuildingSection';
+import { MultiBuildingBar } from '../components/MultiBuildingBar';
+import { FundSection } from '../components/FundSection';
+import { ManagementSection } from '../components/ManagementSection';
+import { ShareAppSection } from '../components/ShareAppSection';
+import { buildingRepository } from '../storage/buildingRepository';
 import { useEffect, useState } from 'react';
 import { ACCORDION_TOPIC } from '../logic/help';
 import { selectableYears, toggleYear } from '../logic/years';
@@ -44,6 +49,15 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
   const { prefs: reportPrefs, setReportOn } = useReportPrefs();
   const years = selectableYears();
   const [restoreKey, setRestoreKey] = useState(0);
+  const [buildingKey, setBuildingKey] = useState(0);
+  const [multiEnabled, setMultiEnabled] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    buildingRepository.isMultiEnabled().then((v) => { if (alive) setMultiEnabled(v); }).catch(() => undefined);
+    return () => { alive = false; };
+  }, [restoreKey, buildingKey]);
+
   const help = (id: string) => {
     const topic = ACCORDION_TOPIC[id];
     return onOpenTopic && topic ? () => onOpenTopic(topic) : undefined;
@@ -75,8 +89,40 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
           <YearPicker years={years} active={settings.activeYears} onToggle={onYear} />
         </Accordion>
 
-        <Accordion id="building" onTopic={help('building')} title="ساختمان">
-          <BuildingSection reloadKey={restoreKey} />
+        <Accordion
+          id="building"
+          onTopic={help('building')}
+          title="ساختمان‌ها"
+          titleHint="با روشن کردن، مدیریت چند ساختمان جدا (واحد، قبض، صندوق و دورهٔ مدیریت هرکدام) فعال می‌شود."
+          trailing={(
+            <Switch
+              id="sw-multi-building"
+              label="چند ساختمان"
+              checked={multiEnabled}
+              onChange={(v) => {
+                void (async () => {
+                  await buildingRepository.setMultiEnabled(v);
+                  setMultiEnabled(v);
+                  setBuildingKey((k) => k + 1);
+                })();
+              }}
+            />
+          )}
+        >
+          <MultiBuildingBar reloadKey={restoreKey + buildingKey} onBuildingChange={() => setBuildingKey((k) => k + 1)} />
+          <BuildingSection reloadKey={restoreKey + buildingKey} />
+        </Accordion>
+
+        <Accordion id="fund" onTopic={help('fund')} title="صندوق ساختمان">
+          <FundSection reloadKey={restoreKey + buildingKey} />
+        </Accordion>
+
+        <Accordion id="management" onTopic={help('management')} title="دورهٔ مدیریت">
+          <ManagementSection reloadKey={restoreKey + buildingKey} />
+        </Accordion>
+
+        <Accordion id="share-app" title="اشتراک‌گذاری نرم‌افزار">
+          <ShareAppSection />
         </Accordion>
 
         <Accordion id="entry-prefs" onTopic={help('entry-prefs')} title="انواع قبض و روش‌های محاسبه" className="entry-prefs">

@@ -380,3 +380,190 @@ export function listFundEntries(db: Database, buildingId: string): Array<Record<
   stmt.free();
   return out;
 }
+
+/* ─── Buildings (multi) ─── */
+
+export interface BuildingRow {
+  id: string;
+  name: string;
+  fundEnabled: boolean;
+  createdAt: string;
+  archivedAt: string | null;
+}
+
+export function listBuildings(db: Database, opts?: { includeArchived?: boolean }): BuildingRow[] {
+  ensureDefaultBuilding(db);
+  const sql = opts?.includeArchived
+    ? 'SELECT * FROM buildings ORDER BY created_at'
+    : 'SELECT * FROM buildings WHERE archived_at IS NULL ORDER BY created_at';
+  const stmt = db.prepare(sql);
+  const out: BuildingRow[] = [];
+  while (stmt.step()) {
+    const r = stmt.getAsObject() as Record<string, unknown>;
+    out.push({
+      id: String(r.id),
+      name: String(r.name),
+      fundEnabled: Number(r.fund_enabled) === 1,
+      createdAt: String(r.created_at),
+      archivedAt: (r.archived_at as string | null) ?? null,
+    });
+  }
+  stmt.free();
+  return out;
+}
+
+export function renameBuilding(db: Database, id: string, name: string): void {
+  const clean = name.replace(/\s+/g, ' ').trim().slice(0, 80) || 'ساختمان';
+  db.run('UPDATE buildings SET name = ? WHERE id = ?', [clean, id]);
+}
+
+export function createBuilding(db: Database, name: string, templates?: BuildingSettings): string {
+  ensureDefaultBuilding(db);
+  const id = newId();
+  const clean = name.replace(/\s+/g, ' ').trim().slice(0, 80) || 'ساختمان جدید';
+  db.run(
+    'INSERT INTO buildings(id, name, fund_enabled, created_at, archived_at) VALUES (?, ?, 0, ?, NULL)',
+    [id, clean, new Date().toISOString()],
+  );
+  const units = templates ?? { units: [{ alias: null, defaultPersons: 1 }] };
+  replaceUnitTemplates(db, id, units);
+  return id;
+}
+
+export function archiveBuilding(db: Database, id: string): void {
+  if (id === DEFAULT_BUILDING_ID) throw new Error('cannot archive default building');
+  db.run('UPDATE buildings SET archived_at = ? WHERE id = ?', [new Date().toISOString(), id]);
+}
+
+export function getBuildingName(db: Database, id: string): string | null {
+  const stmt = db.prepare('SELECT name FROM buildings WHERE id = ?');
+  stmt.bind([id]);
+  let name: string | null = null;
+  if (stmt.step()) name = String(stmt.getAsObject().name);
+  stmt.free();
+  return name;
+}
+
+/* ─── Fund ledger writes ─── */
+
+export function addFundEntry(
+  db: Database,
+  entry: {
+    buildingId: string;
+    kind: 'deposit' | 'withdraw';
+    amount: number;
+    reason: string;
+    relatedBillId?: string | null;
+    relatedPaymentId?: string | null;
+    note?: string | null;
+    createdAt?: string;
+  },
+): string {
+  if (!Number.isSafeInteger(entry.amount) || entry.amount <= 0) throw new Error('invalid fund amount');
+  const id = newId();
+  db.run(
+    `INSERT INTO fund_entries(id, building_id, kind, amount, reason, related_bill_id, related_payment_id, note, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?)`,
+    [
+      id,
+      entry.buildingId,
+      entry.kind,
+      entry.amount,
+      entry.reason,
+      entry.relatedBillId ?? null,
+      entry.relatedPaymentId ?? null,
+      entry.note ?? null,
+      entry.createdAt ?? new Date().toISOString(),
+    ],
+  );
+  return id;
+}
+
+export type FundEntryRow = {
+  id: string;
+  buildingId: string;
+  kind: 'deposit' | 'withdraw';
+  amount: number;
+  reason: string;
+  relatedBillId: string | null;
+  relatedPaymentId: string | null;
+  note: string | null;
+  createdAt: string;
+};
+
+export function readFundEntries(db: Database, buildingId: string): FundEntryRow[] {
+  return listFundEntries(db, buildingId).map((r) => ({
+    id: String(r.id),
+    buildingId: String(r.building_id),
+    kind: (r.kind === 'withdraw' ? 'withdraw' : 'deposit') as 'deposit' | 'withdraw',
+    amount: Number(r.amount),
+    reason: String(r.reason),
+    relatedBillId: (r.related_bill_id as string | null) ?? null,
+    relatedPaymentId: (r.related_payment_id as string | null) ?? null,
+    note: (r.note as string | null) ?? null,
+    createdAt: String(r.created_at),
+  }));
+}
+
+/* ─── Management periods ─── */
+
+export type ManagementPeriodRow = {
+  id: string;
+  buildingId: string;
+  managerLabel: string;
+  startDate: string;
+  endDate: string;
+  endedEarlyAt: string | null;
+  notes: string | null;
+};
+
+export function listManagementPeriods(db: Database, buildingId: string): ManagementPeriodRow[] {
+  const stmt = db.prepare(
+    'SELECT * FROM management_periods WHERE building_id = ? ORDER BY start_date DESC, id DESC',
+  );
+  stmt.bind([buildingId]);
+  const out: ManagementPeriodRow[] = [];
+  while (stmt.step()) {
+    const r = stmt.getAsObject() as Record<string, unknown>;
+    out.push({
+      id: String(r.id),
+      buildingId: String(r.building_id),
+      managerLabel: String(r.manager_label),
+      startDate: String(r.start_date),
+      endDate: String(r.end_date),
+      endedEarlyAt: (r.ended_early_at as string | null) ?? null,
+      notes: (r.notes as string | null) ?? null,
+    });
+  }
+  stmt.free();
+  return out;
+}
+
+export function insertManagementPeriod(
+  db: Database,
+  row: Omit<ManagementPeriodRow, 'id' | 'endedEarlyAt'> & { endedEarlyAt?: string | null },
+): string {
+  const id = newId();
+  db.run(
+    `INSERT INTO management_periods(id, building_id, manager_label, start_date, end_date, ended_early_at, notes)
+     VALUES (?,?,?,?,?,?,?)`,
+    [
+      id,
+      row.buildingId,
+      row.managerLabel.replace(/\s+/g, ' ').trim().slice(0, 80) || 'مدیر',
+      row.startDate,
+      row.endDate,
+      row.endedEarlyAt ?? null,
+      row.notes ?? null,
+    ],
+  );
+  return id;
+}
+
+export function endManagementPeriodEarly(db: Database, id: string, atIso: string = new Date().toISOString()): void {
+  db.run('UPDATE management_periods SET ended_early_at = ? WHERE id = ?', [atIso, id]);
+}
+
+export function deleteManagementPeriod(db: Database, id: string): void {
+  db.run('DELETE FROM management_periods WHERE id = ?', [id]);
+}

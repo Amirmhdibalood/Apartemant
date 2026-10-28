@@ -69,6 +69,9 @@ export function helpTopicForRoute(route: Route): string | undefined {
 export const ACCORDION_TOPIC: Record<string, string> = {
   years: 'years',
   building: 'building',
+  fund: 'fund',
+  management: 'management',
+  'share-app': 'shareapp',
   'entry-prefs': 'prefs',
   'report-prefs': 'prefs',
   appearance: 'theme',
