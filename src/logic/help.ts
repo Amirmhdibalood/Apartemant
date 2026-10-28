@@ -71,6 +71,7 @@ export const ACCORDION_TOPIC: Record<string, string> = {
   building: 'buildings',
   fund: 'fund',
   management: 'management',
+  meetings: 'meetings',
   'share-app': 'shareapp',
   'entry-prefs': 'prefs',
   'report-prefs': 'prefs',

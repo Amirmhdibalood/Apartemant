@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   addJalaliDays, dayNumberToJalali, formatJalaliKey, isJalaliLeapYear, isValidJalali, jalaliDiffDays,
-  jalaliMonthLength, jalaliToDayNumber, parseJalaliKey,
+  jalaliMonthLength, jalaliToDayNumber, jalaliWeekdayFa, parseJalaliKey,
 } from '../src/logic/jalali';
 import { jalaliDateTime } from '../src/logic/date';
 
@@ -40,3 +40,10 @@ describe('تقویم شمسی (مهلت پرداخت)', () => {
     for (const bad of ['1405-7-5', '1405-12-30', '1405/07/05', '', null, 14050705]) expect(parseJalaliKey(bad)).toBeNull();
   });
 });
+
+describe('روز هفته شمسی', () => {
+  it('۱ فروردین ۱۴۰۰ یکشنبه است', () => {
+    expect(jalaliWeekdayFa({ year: 1400, month: 1, day: 1 })).toBe('یکشنبه');
+  });
+});
+

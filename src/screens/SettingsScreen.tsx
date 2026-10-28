@@ -10,6 +10,7 @@ import { BuildingSection } from '../components/BuildingSection';
 import { MultiBuildingBar } from '../components/MultiBuildingBar';
 import { FundSection } from '../components/FundSection';
 import { ManagementSection } from '../components/ManagementSection';
+import { MeetingsSection } from '../components/MeetingsSection';
 import { ShareAppSection } from '../components/ShareAppSection';
 import { buildingRepository } from '../storage/buildingRepository';
 import { useEffect, useState } from 'react';
@@ -119,6 +120,10 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
 
         <Accordion id="management" onTopic={help('management')} title="دورهٔ مدیریت">
           <ManagementSection reloadKey={restoreKey + buildingKey} />
+        </Accordion>
+
+        <Accordion id="meetings" onTopic={help('meetings')} title="جلسه">
+          <MeetingsSection reloadKey={restoreKey + buildingKey} />
         </Accordion>
 
         <Accordion id="share-app" onTopic={help('share-app')} title="اشتراک‌گذاری نرم‌افزار">

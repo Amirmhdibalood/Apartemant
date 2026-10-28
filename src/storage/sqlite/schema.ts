@@ -1,5 +1,5 @@
-/** SQLite DDL for Apartemant domain DB (schema version 3 = first SQLite). */
-export const SQLITE_SCHEMA_VERSION = 3;
+/** SQLite DDL for Apartemant domain DB (schema version 5 = meetings + unit phone). */
+export const SQLITE_SCHEMA_VERSION = 5;
 
 export const DEFAULT_BUILDING_ID = 'building-default';
 
@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS building_unit_templates (
   default_persons INTEGER NOT NULL DEFAULT 1,
   vacant INTEGER NOT NULL DEFAULT 0,
   area REAL,
+  phone TEXT,
   UNIQUE(building_id, unit_number)
 );
 
@@ -103,4 +104,27 @@ CREATE TABLE IF NOT EXISTS management_periods (
   notes TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_mgmt_building ON management_periods(building_id);
+
+CREATE TABLE IF NOT EXISTS meetings (
+  id TEXT PRIMARY KEY NOT NULL,
+  building_id TEXT NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+  meeting_date TEXT NOT NULL,
+  weekday TEXT NOT NULL,
+  hour INTEGER NOT NULL,
+  minute INTEGER NOT NULL,
+  place TEXT,
+  summary TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_meetings_building ON meetings(building_id, meeting_date DESC);
+
+CREATE TABLE IF NOT EXISTS meeting_attendance (
+  id TEXT PRIMARY KEY NOT NULL,
+  meeting_id TEXT NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
+  unit_number INTEGER NOT NULL,
+  unit_alias TEXT,
+  status TEXT NOT NULL,
+  UNIQUE(meeting_id, unit_number)
+);
+CREATE INDEX IF NOT EXISTS idx_meet_att_meeting ON meeting_attendance(meeting_id);
 `;

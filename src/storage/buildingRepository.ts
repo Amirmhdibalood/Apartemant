@@ -23,10 +23,16 @@ import {
   renameBuilding,
   replaceUnitTemplates,
   setBuildingFundEnabled,
-  deleteManagementPeriod,
+  listMeetings,
+  getMeeting,
+  insertMeeting,
+  deleteMeeting,
   type BuildingRow,
   type FundEntryRow,
   type ManagementPeriodRow,
+  type MeetingRow,
+  type MeetingAttendanceRow,
+  type MeetingAttendanceStatus,
 } from './sqlite/domain';
 import { DEFAULT_BUILDING_ID } from './sqlite/schema';
 import { ensureMigrated } from './migration';
@@ -42,7 +48,7 @@ async function prefsKeyFor(buildingId: string): Promise<string> {
   return PREFS_PREFIX + buildingId;
 }
 
-export type { BuildingRow, FundEntryRow, ManagementPeriodRow };
+export type { BuildingRow, FundEntryRow, ManagementPeriodRow, MeetingRow, MeetingAttendanceRow, MeetingAttendanceStatus };
 
 export const buildingRepository = {
   async getActiveId(): Promise<string> {
@@ -247,9 +253,48 @@ export const buildingRepository = {
     await withSqliteWrite((db) => { endManagementPeriodEarly(db, periodId); });
   },
 
-  async removeManagementPeriod(periodId: string): Promise<void> {
+  async removeManagementPeriod(_periodId: string): Promise<void> {
+    // تاریخچهٔ مدیر حذف‌شدنی نیست (تصمیم مالک)
+    throw new Error('management period delete is not allowed');
+  },
+
+  async listMeetings(buildingId?: string): Promise<MeetingRow[]> {
     await ensureMigrated();
-    await withSqliteWrite((db) => { deleteManagementPeriod(db, periodId); });
+    const bid = buildingId ?? await this.getActiveId();
+    return withSqlite((db) => listMeetings(db, bid));
+  },
+
+  async getMeeting(id: string): Promise<MeetingRow | null> {
+    await ensureMigrated();
+    return withSqlite((db) => getMeeting(db, id));
+  },
+
+  async addMeeting(input: {
+    meetingDate: string;
+    weekday: string;
+    hour: number;
+    minute: number;
+    place?: string | null;
+    summary?: string | null;
+    attendance: MeetingAttendanceRow[];
+  }, buildingId?: string): Promise<string> {
+    await ensureMigrated();
+    const bid = buildingId ?? await this.getActiveId();
+    return withSqliteWrite((db) => insertMeeting(db, {
+      buildingId: bid,
+      meetingDate: input.meetingDate,
+      weekday: input.weekday,
+      hour: input.hour,
+      minute: input.minute,
+      place: input.place ?? null,
+      summary: input.summary ?? null,
+      attendance: input.attendance,
+    }));
+  },
+
+  async removeMeeting(id: string): Promise<void> {
+    await ensureMigrated();
+    await withSqliteWrite((db) => { deleteMeeting(db, id); });
   },
 
   onActiveChange(listener: () => void): () => void {

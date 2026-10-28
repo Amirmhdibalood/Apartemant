@@ -133,6 +133,12 @@ function idbTxDone(tx: IDBTransaction): Promise<void> {
 
 function applySchema(database: Database): void {
   database.run(SCHEMA_SQL);
+  // ستون‌های افزوده بعد از ایجاد اولیه (IF NOT EXISTS روی CREATE جدول کافی نیست)
+  try {
+    database.run('ALTER TABLE building_unit_templates ADD COLUMN phone TEXT');
+  } catch {
+    /* already exists */
+  }
   const ver = getMeta(database, 'schemaVersion');
   if (ver !== String(SQLITE_SCHEMA_VERSION)) {
     setMeta(database, 'schemaVersion', String(SQLITE_SCHEMA_VERSION));

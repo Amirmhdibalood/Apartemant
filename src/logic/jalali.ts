@@ -142,3 +142,15 @@ export function parseJalaliKey(s: unknown): JalaliDate | null {
 export function formatJalaliSlash(d: JalaliDate): string {
   return `${d.year}/${pad2(d.month)}/${pad2(d.day)}`;
 }
+
+/** نام روز هفته شمسی (شنبه…جمعه) از تاریخ جلالی */
+export const JALALI_WEEKDAYS_FA = ['شنبه', 'یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه'] as const;
+
+export function jalaliWeekdayFa(d: JalaliDate): string {
+  const g = jalaliToGregorian(d);
+  // JS: 0=یکشنبه … 6=شنبه → تبدیل به شنبه=۰
+  const js = new Date(g.year, g.month - 1, g.day).getDay();
+  const idx = (js + 1) % 7;
+  return JALALI_WEEKDAYS_FA[idx];
+}
+

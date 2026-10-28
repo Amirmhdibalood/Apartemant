@@ -106,7 +106,27 @@
 | ended_early_at | text null | اگر قبل از پایان عوض شد |
 | notes | text null | |
 
-تاریخچهٔ مدیران = ردیف‌های همین جدول.
+تاریخچهٔ مدیران = ردیف‌های همین جدول. **حذف ردیف دوره مجاز نیست** (فقط بستن زودهنگام / ثبت دورهٔ جدید).
+
+### `meetings` / `meeting_attendance` — جلسهٔ مدیر (آفلاین)
+
+| فیلد meetings | نوع | توضیح |
+|---|---|---|
+| id | text PK | |
+| building_id | text FK | |
+| meeting_date | text | کلید شمسی `YYYY-MM-DD` |
+| weekday | text | نام روز هفته |
+| hour / minute | int | ساعت محلی |
+| place | text null | محل/یادداشت |
+| summary | text null | خلاصه |
+| created_at | text ISO | |
+
+| فیلد attendance | نوع | توضیح |
+|---|---|---|
+| meeting_id | text FK | |
+| unit_number | int | |
+| unit_alias | text null | |
+| status | text | `present` / `absent` / `empty` |
 
 ### `app_meta` / تنظیمات دامنه
 
@@ -121,6 +141,7 @@ buildings 1──< building_unit_templates
 buildings 1──< bills 1──< bill_units 1──< payments
 buildings 1──< fund_entries
 buildings 1──< management_periods
+buildings 1──< meetings 1──< meeting_attendance
 ```
 
 ## مهاجرت از دادهٔ فعلی

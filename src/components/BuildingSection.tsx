@@ -7,7 +7,7 @@ import { useIconPrefs } from '../context/IconPrefsContext';
 import { Checkbox } from './Checkbox';
 import { useFeedback } from '../context/FeedbackContext';
 import { buildingRepository } from '../storage/buildingRepository';
-import { MAX_ALIAS_LENGTH, MAX_BUILDING_UNITS, resizeBuilding, sanitizeAlias, unitLabel } from '../logic/building';
+import { MAX_ALIAS_LENGTH, MAX_BUILDING_UNITS, resizeBuilding, sanitizeAlias, sanitizePhone, unitLabel } from '../logic/building';
 import { sanitizePersonCount, toPersianDigits } from '../logic/formatting';
 import { Errors } from '../logic/errors';
 import { confirmUnitReduction } from './confirmUnitReduction';
@@ -15,9 +15,9 @@ import { AreaInput } from './AreaInput';
 import { useAreaMode } from '../context/AreaModeContext';
 import { areaToInput, DEFAULT_AREA, parseArea } from '../logic/area';
 
-interface Row { alias: string; persons: string; vacant: boolean; area: string }
+interface Row { alias: string; persons: string; vacant: boolean; area: string; phone: string }
 
-const toRows = (b: BuildingSettings): Row[] => b.units.map((u) => ({ alias: u.alias ?? '', persons: String(u.defaultPersons), vacant: u.vacant === true, area: areaToInput(u.area ?? DEFAULT_AREA) }));
+const toRows = (b: BuildingSettings): Row[] => b.units.map((u) => ({ alias: u.alias ?? '', persons: String(u.defaultPersons), vacant: u.vacant === true, area: areaToInput(u.area ?? DEFAULT_AREA), phone: u.phone ?? '' }));
 const fromRows = (rows: Row[], prev: BuildingSettings | null): BuildingSettings => ({
   units: rows.map((r, i) => {
     // نفرات خالی یا ۰ (در حال تایپ) = مقدار قبلی ذخیره‌شده، وگرنه ۱
@@ -25,6 +25,8 @@ const fromRows = (rows: Row[], prev: BuildingSettings | null): BuildingSettings 
     const unit: BuildingUnit = { alias: sanitizeAlias(r.alias), defaultPersons: typed >= 1 ? typed : prev?.units[i]?.defaultPersons || 1 };
     if (r.vacant) unit.vacant = true;
     unit.area = parseArea(r.area) ?? DEFAULT_AREA; // خالی/نامعتبر ← پیش‌فرض ۱
+    const ph = sanitizePhone(r.phone);
+    if (ph) unit.phone = ph;
     return unit;
   }),
 });
@@ -194,10 +196,28 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
                 <span className="area-unit">مترمربع</span>
               </span>
             )}
+            <span className="building-unit__phone-line">
+              <label htmlFor={`bu-phone-${i}`}>تلفن</label>
+              <input
+                id={`bu-phone-${i}`}
+                className="input building-unit__phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                dir="ltr"
+                maxLength={15}
+                placeholder="۰۹۱۲…"
+                aria-label={`تلفن واحد ${toPersianDigits(i + 1)}`}
+                value={r.phone}
+                onChange={(e) => update(rows.map((x, j) => (j === i ? { ...x, phone: e.target.value.replace(/[^\d+\s-]/g, '').slice(0, 18) } : x)))}
+                onBlur={() => update(rows, true)}
+              />
+            </span>
           </div>
         ))}
       </div>
       <p className="building-note-small">متراژ (اعشار مجاز مثل ۷۵٫۵؛ پیش‌فرض هر واحد ۱) فقط برای تقسیم «بر اساس متراژ» به‌کار می‌رود و در فرم قبض پیش‌فرض می‌شود؛ ظاهر آن را در «نحوه نمایش متراژ» پایین‌تر انتخاب کنید.</p>
+      <p className="building-note-small">شماره تلفن اختیاری است؛ برای تماس و پیامک از بخش «جلسه» به‌کار می‌رود.</p>
       <p className="building-note-small">واحد «خالی» در قبض‌های جدید از محاسبه کنار گذاشته می‌شود (در هیچ‌کدام از سه روش تقسیم سهمی ندارد و در بدهکاران نمی‌آید)؛ در فرم قبض می‌توانید برای همان قبض تغییرش دهید. نام واحد بدون اسم مستعار: «واحد ۱»، «واحد ۲»، ...</p>
     </div>
   );

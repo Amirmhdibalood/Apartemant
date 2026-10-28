@@ -47,13 +47,29 @@ export function newBuildingUnit(): BuildingUnit {
  * واحد تنظیمات با نفرات و پرچم «خالی». مقدار قدیمی «۰ نفر» (نسخه‌های ۱.۶.۰ تا ۱.۶.۲) به «خالی» با ۱ نفر پیش‌فرض
  * تبدیل می‌شود؛ `vacant` فقط وقتی true است ذخیره می‌شود.
  */
-function makeUnit(alias: string | null, persons: number, vacant: boolean, area?: unknown): BuildingUnit {
+/** فقط ارقام؛ حداکثر ۱۵؛ خالی = null */
+export function sanitizePhone(input: unknown): string | null {
+  if (input == null) return null;
+  if (typeof input !== 'string' && typeof input !== 'number') return null;
+  const digits = String(input).replace(/[^\d]/g, '').slice(0, 15);
+  return digits.length >= 3 ? digits : null;
+}
+
+function makeUnit(
+  alias: string | null,
+  persons: number,
+  vacant: boolean,
+  area?: unknown,
+  phone?: unknown,
+): BuildingUnit {
   const isVacant = vacant || persons === 0;
   const unit: BuildingUnit = { alias, defaultPersons: persons === 0 ? DEFAULT_UNIT_PERSONS : persons };
   if (isVacant) unit.vacant = true;
   // تنظیمات/پشتیبان قدیمی بدون متراژ دست‌نخورده می‌ماند (مهاجرت بی‌خطر)؛ پیش‌فرض ۱ هنگام نمایش/ساخت فرم اعمال می‌شود
   const a = parseArea(area ?? null);
   if (a !== null) unit.area = a;
+  const ph = sanitizePhone(phone);
+  if (ph) unit.phone = ph;
   return unit;
 }
 
@@ -81,7 +97,9 @@ export function sanitizeBuilding(input: unknown): BuildingSettings | null {
     const v = (u as BuildingUnit).vacant;
     if (v != null && typeof v !== 'boolean') return null;
     // متراژ (از ۱.۶.۵): نامعتبر/نبودن = وارد نشده (فایل‌های قدیمی بدون متراژ)
-    units.push(makeUnit(sanitizeAlias(a), persons, v === true, (u as BuildingUnit).area));
+    const phone = (u as BuildingUnit).phone;
+    if (phone != null && typeof phone !== 'string' && typeof phone !== 'number') return null;
+    units.push(makeUnit(sanitizeAlias(a), persons, v === true, (u as BuildingUnit).area, phone));
   }
   return { units };
 }

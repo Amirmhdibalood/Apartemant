@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=390, initial-scale=1"/>
+<title>موکاپ جلسه — آپارتمانت ۱.۸</title>
+<style>
+@font-face{font-family:Vazirmatn;src:local('Vazirmatn'),local('Tahoma')}
+:root{--bg:#f4f7fc;--card:#fff;--text:#1c2440;--muted:#7a8398;--border:#e4e9f2;--primary:#2f74f0;--primary-soft:#eaf1fe;--success:#25a865;--success-soft:#e8f7ef;--danger:#ef4444;--soft:#eef2f8;--radius:14px;--shadow:0 4px 18px rgba(33,56,102,.07)}
+*{box-sizing:border-box}body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:#dde3ee;color:var(--text);font-size:15px;line-height:1.6}
+.phone{width:390px;margin:16px auto;background:var(--bg);border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.12)}
+.header{background:rgba(244,247,252,.98);padding:14px 16px;text-align:center;font-weight:800;border-bottom:1px solid var(--border)}
+.screen{padding:10px 16px 24px}
+.card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:14px;margin-bottom:14px;border:1px solid #eef1f7}
+.card__title{font-weight:800;font-size:15px;margin:0 0 8px}
+.card__hint{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.setting-row__label{font-weight:700;font-size:14.5px}
+.badge{display:inline-block;background:var(--primary-soft);color:var(--primary);font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-bottom:8px}
+.btn{border:0;border-radius:12px;padding:10px 14px;font-weight:700;font-family:inherit}
+.btn--primary{background:var(--primary);color:#fff}
+.btn--ghost{background:var(--soft);color:var(--text)}
+.btn--sm{padding:6px 10px;font-size:12.5px}
+.btn--success{background:var(--success);color:#fff}
+.field{display:block;margin:8px 0}.field__label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px}
+.input{border:1px solid var(--border);border-radius:12px;padding:10px 12px;background:#fff;width:100%}
+.row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:var(--soft);border:1px solid var(--border);font-size:12.5px;font-weight:700}
+.pill.is-on{background:var(--primary-soft);border-color:var(--primary);color:var(--primary)}
+.meta{font-size:12px;color:var(--muted)}
+.req{list-style:none;margin:0;padding:0}
+.req li{display:flex;justify-content:space-between;gap:8px;padding:10px 0;border-bottom:1px dashed var(--border)}
+.status{font-size:12px;font-weight:800;color:var(--primary)}
+.status.ok{color:var(--success)}
+.status.wait{color:#b45309}
+.note{background:var(--soft);border-radius:12px;padding:10px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.seg{display:flex;gap:8px;margin:0 0 12px}
+.seg span{flex:1;text-align:center;padding:8px;border-radius:12px;background:var(--soft);font-weight:700;font-size:13px}
+.seg .on{background:var(--primary-soft);color:var(--primary)}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="header">تنظیمات · جلسه</div>
+  <div class="screen">
+    <div class="card">
+      <div class="badge">موکاپ برای تأیید — آفلاین تک‌دستگاه</div>
+      <h2 class="card__title">جلسهٔ ساختمان</h2>
+      <p class="card__hint">برای ساختمان فعال. درخواست اعضا جمع می‌شود؛ مدیر تاریخ و ساعت می‌گذارد و خلاصه بعد از جلسه ثبت می‌شود.</p>
+      <div class="seg"><span class="on">درخواست‌ها</span><span>زمان‌بندی‌شده</span><span>آرشیو</span></div>
+      <div class="setting-row" style="margin-bottom:4px">
+        <span class="setting-row__label">درخواست‌های باز</span>
+        <strong style="color:var(--primary)">۳ نفر</strong>
+      </div>
+      <ul class="req">
+        <li><div><b>واحد ۳ — آقای رضایی</b><div class="meta">دیروز · موضوع: آسانسور</div></div><span class="status wait">در انتظار</span></li>
+        <li><div><b>واحد ۷ — خانم کریمی</b><div class="meta">۲ روز پیش · موضوع: نظافت</div></div><span class="status wait">در انتظار</span></li>
+        <li><div><b>واحد ۱ — مدیر</b><div class="meta">امروز · موضوع: بودجه</div></div><span class="status wait">در انتظار</span></li>
+      </ul>
+      <button class="btn btn--primary" style="width:100%;margin-top:12px">تأیید و تعیین زمان جلسه</button>
+      <div class="note">اعلان آفلاین: روی همین گوشی در مرکز اعلان اپ دیده می‌شود (بدون حساب چندکاربره).</div>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="header">تعیین زمان جلسه</div>
+  <div class="screen">
+    <div class="card">
+      <div class="badge">گام مدیر</div>
+      <h2 class="card__title">زمان جلسه</h2>
+      <p class="card__hint">۳ درخواست‌دهنده انتخاب می‌شوند و یک زمان برای همه ثبت می‌شود.</p>
+      <div class="row" style="margin-bottom:8px">
+        <span class="pill is-on">واحد ۳</span>
+        <span class="pill is-on">واحد ۷</span>
+        <span class="pill is-on">واحد ۱</span>
+      </div>
+      <label class="field"><span class="field__label">تاریخ</span><input class="input" value="۱۴۰۴/۰۸/۱۵" dir="ltr"/></label>
+      <label class="field"><span class="field__label">ساعت</span><input class="input" value="۱۸:۳۰" dir="ltr"/></label>
+      <label class="field"><span class="field__label">محل / یادداشت (اختیاری)</span><input class="input" value="لابی ساختمان"/></label>
+      <div class="row">
+        <button class="btn btn--ghost" style="flex:1">انصراف</button>
+        <button class="btn btn--success" style="flex:1">ثبت زمان</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="header">جلسه · زمان‌بندی‌شده</div>
+  <div class="screen">
+    <div class="card">
+      <div class="badge">بعد از تأیید</div>
+      <h2 class="card__title">جلسهٔ ۱۵ آبان · ۱۸:۳۰</h2>
+      <p class="meta">لابی ساختمان · ۳ عضو</p>
+      <ul class="req">
+        <li><div><b>واحد ۳ — آقای رضایی</b></div><span class="status ok">دعوت</span></li>
+        <li><div><b>واحد ۷ — خانم کریمی</b></div><span class="status ok">دعوت</span></li>
+        <li><div><b>واحد ۱ — مدیر</b></div><span class="status ok">دعوت</span></li>
+      </ul>
+      <label class="field" style="margin-top:12px"><span class="field__label">خلاصه بعد از جلسه</span>
+        <textarea class="input" rows="3" placeholder="مصوبات و تصمیم‌ها…">تعمیر آسانسور از صندوق؛ نظافت هفته‌ای دوبار.</textarea>
+      </label>
+      <button class="btn btn--primary" style="width:100%">ذخیرهٔ خلاصه و بستن جلسه</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

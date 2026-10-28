@@ -265,6 +265,9 @@
 :root[data-theme="dark"] .pv-page { box-shadow: 0 4px 18px rgba(0,0,0,0.5); }
 :root[data-theme="dark"] .pv-th.is-on { border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 30%, transparent); }
 :root[data-theme="dark"] .pv-th i { color: #f4f6fa; }
+:root[data-theme="dark"] .meet-att__btn.is-present { background: var(--success-soft); border-color: var(--success); color: var(--success); }
+:root[data-theme="dark"] .meet-att__btn.is-absent { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+:root[data-theme="dark"] .meet-att__btn.is-empty { background: var(--soft-panel); border-color: var(--warning); color: var(--text); }
 :root[data-theme="dark"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #2a3858; --sw-off-ring: #7a89ad; --sw-thumb: #aab4cf; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #7a89ad; --cb-on-border: #64df9e; --warn-border: #6b2f33; --warn-color: #ffb4ad; --warn-bg: #3a1f26; --ppm-border: #2c4a86; --badge-area-bg: #17423f; --badge-area-color: #7de3d3; }
 
 /* ---- پالت charcoal: زغالی خنثی (فقط تفاوت‌ها با سرمه‌ای) ---- */
@@ -476,6 +479,9 @@
 :root[data-theme="dark"][data-palette="charcoal"] .rt-sub b.is-ok { color: var(--success); }
 :root[data-theme="dark"][data-palette="charcoal"] .pv-seg button.is-on { background: var(--card); color: var(--primary); box-shadow: 0 1px 5px rgba(0,0,0,0.42); }
 :root[data-theme="dark"][data-palette="charcoal"] .pv-th.is-on { border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 30%, transparent); }
+:root[data-theme="dark"][data-palette="charcoal"] .meet-att__btn.is-present { background: var(--success-soft); border-color: var(--success); color: var(--success); }
+:root[data-theme="dark"][data-palette="charcoal"] .meet-att__btn.is-absent { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+:root[data-theme="dark"][data-palette="charcoal"] .meet-att__btn.is-empty { background: var(--soft-panel); border-color: var(--warning); color: var(--text); }
 :root[data-theme="dark"][data-palette="charcoal"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #2e3033; --sw-off-ring: #868a91; --sw-thumb: #b3b7bd; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #868a91; --cb-on-border: #64df9e; --warn-border: #6b3434; --warn-color: #ffb4ad; --warn-bg: #321f1f; --ppm-border: #33518f; --badge-area-bg: #17423f; --badge-area-color: #7de3d3; }
 
 /* ---- پالت amoled: مشکی AMOLED (فقط تفاوت‌ها با سرمه‌ای) ---- */
@@ -687,6 +693,9 @@
 :root[data-theme="dark"][data-palette="amoled"] .rt-sub b.is-ok { color: var(--success); }
 :root[data-theme="dark"][data-palette="amoled"] .pv-seg button.is-on { background: var(--card); color: var(--primary); box-shadow: 0 1px 5px rgba(0,0,0,0.42); }
 :root[data-theme="dark"][data-palette="amoled"] .pv-th.is-on { border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 30%, transparent); }
+:root[data-theme="dark"][data-palette="amoled"] .meet-att__btn.is-present { background: var(--success-soft); border-color: var(--success); color: var(--success); }
+:root[data-theme="dark"][data-palette="amoled"] .meet-att__btn.is-absent { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+:root[data-theme="dark"][data-palette="amoled"] .meet-att__btn.is-empty { background: var(--soft-panel); border-color: var(--warning); color: var(--text); }
 :root[data-theme="dark"][data-palette="amoled"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #26272a; --sw-off-ring: #8a8d92; --sw-thumb: #b6b9be; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #8a8d92; --cb-on-border: #64df9e; --warn-border: #6b3434; --warn-color: #ffb4ad; --warn-bg: #2a1517; --ppm-border: #33518f; --badge-area-bg: #10312f; --badge-area-color: #7de3d3; }
 
 /* ---- پالت warm: قهوه‌ای گرم (فقط تفاوت‌ها با سرمه‌ای) ---- */
@@ -922,4 +931,7 @@
 :root[data-theme="dark"][data-palette="warm"] .rt-sub b.is-ok { color: var(--success); }
 :root[data-theme="dark"][data-palette="warm"] .pv-seg button.is-on { background: var(--card); color: var(--primary); box-shadow: 0 1px 5px rgba(0,0,0,0.42); }
 :root[data-theme="dark"][data-palette="warm"] .pv-th.is-on { border-color: var(--primary); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 30%, transparent); }
+:root[data-theme="dark"][data-palette="warm"] .meet-att__btn.is-present { background: var(--success-soft); border-color: var(--success); color: var(--success); }
+:root[data-theme="dark"][data-palette="warm"] .meet-att__btn.is-absent { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
+:root[data-theme="dark"][data-palette="warm"] .meet-att__btn.is-empty { background: var(--soft-panel); border-color: var(--warning); color: var(--text); }
 :root[data-theme="dark"][data-palette="warm"] { --primary-fill: #12806f; --primary-fill-press: #0f6b5d; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #3a332c; --sw-off-ring: #9b8f82; --sw-thumb: #c4b9ab; --sw-on-bg: #26b5a0; --sw-on-ring: #6fd6c4; --cb-ring: #9b8f82; --cb-on-border: #64df9e; --warn-border: #703a30; --warn-color: #ffb4ad; --warn-bg: #3a2420; --ppm-border: #2b6a60; --badge-area-bg: #143e38; --badge-area-color: #7de3d3; }

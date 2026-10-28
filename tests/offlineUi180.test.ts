@@ -82,3 +82,68 @@ describe('۱.۸.۰ — ظاهر انتخاب ساختمان', () => {
     expect(picker).toContain('IconCheck');
   });
 });
+
+describe('۱.۸.۰ — جلسه و دوره مدیریت', () => {
+  it('ثبت جلسه با حضور و تاریخچه', async () => {
+    await buildingRepository.save({
+      units: [
+        { alias: 'آقای الف', defaultPersons: 2 },
+        { alias: null, defaultPersons: 1 },
+      ],
+    });
+    const id = await buildingRepository.addMeeting({
+      meetingDate: '1404-08-15',
+      weekday: 'پنجشنبه',
+      hour: 18,
+      minute: 30,
+      place: 'لابی',
+      summary: 'تعمیر آسانسور',
+      attendance: [
+        { unitNumber: 1, unitAlias: 'آقای الف', status: 'present' },
+        { unitNumber: 2, unitAlias: null, status: 'absent' },
+      ],
+    });
+    const rows = await buildingRepository.listMeetings();
+    expect(rows[0]?.id).toBe(id);
+    expect(rows[0]?.weekday).toBe('پنجشنبه');
+    expect(rows[0]?.attendance).toHaveLength(2);
+    const one = await buildingRepository.getMeeting(id);
+    expect(one?.summary).toBe('تعمیر آسانسور');
+    expect(one?.attendance.find((a) => a.unitNumber === 1)?.status).toBe('present');
+  });
+
+  it('حذف دوره مدیریت مجاز نیست', async () => {
+    const id = await buildingRepository.addManagementPeriod({
+      managerLabel: 'مدیر تست',
+      startDate: '1404-01-01',
+      endDate: '1404-12-29',
+    });
+    await expect(buildingRepository.removeManagementPeriod(id)).rejects.toThrow(/not allowed/);
+    const rows = await buildingRepository.listManagementPeriods();
+    expect(rows.some((r) => r.id === id)).toBe(true);
+  });
+
+  it('MeetingsSection از JalaliDateField و OptionPicker استفاده می‌کند', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync('src/components/MeetingsSection.tsx', 'utf8');
+    expect(src).toContain('JalaliDateField');
+    expect(src).toContain('OptionPicker');
+    expect(src).toContain('تاریخچه جلسات');
+    expect(src).toContain('ثبت جلسهٔ جدید');
+    expect(src).toContain('ارسال پیامک');
+    expect(src).toContain('callUnit');
+    const mgmt = readFileSync('src/components/ManagementSection.tsx', 'utf8');
+    expect(mgmt).not.toContain('removeManagementPeriod');
+    expect(mgmt).not.toMatch(/void remove\(/);
+    expect(mgmt).not.toMatch(/onClick=\{.*?remove/);
+    expect(mgmt).not.toMatch(/>حذف</);
+  });
+
+  it('تلفن واحد در SQLite و پشتیبان ساختمان می‌ماند', async () => {
+    await buildingRepository.save({
+      units: [{ alias: 'الف', defaultPersons: 2, phone: '09121234567' }],
+    });
+    const b = await buildingRepository.get();
+    expect(b.units[0]?.phone).toBe('09121234567');
+  });
+});

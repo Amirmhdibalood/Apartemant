@@ -46,8 +46,8 @@ export function replaceUnitTemplates(db: Database, buildingId: string, settings:
   db.run('DELETE FROM building_unit_templates WHERE building_id = ?', [buildingId]);
   settings.units.forEach((u, i) => {
     db.run(
-      `INSERT INTO building_unit_templates(id, building_id, unit_number, alias, default_persons, vacant, area)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO building_unit_templates(id, building_id, unit_number, alias, default_persons, vacant, area, phone)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         newId(),
         buildingId,
@@ -56,6 +56,7 @@ export function replaceUnitTemplates(db: Database, buildingId: string, settings:
         u.defaultPersons,
         boolInt(!!u.vacant),
         u.area ?? null,
+        u.phone ?? null,
       ],
     );
   });
@@ -63,7 +64,7 @@ export function replaceUnitTemplates(db: Database, buildingId: string, settings:
 
 export function readUnitTemplates(db: Database, buildingId: string): BuildingSettings | null {
   const stmt = db.prepare(
-    'SELECT unit_number, alias, default_persons, vacant, area FROM building_unit_templates WHERE building_id = ? ORDER BY unit_number',
+    'SELECT unit_number, alias, default_persons, vacant, area, phone FROM building_unit_templates WHERE building_id = ? ORDER BY unit_number',
   );
   stmt.bind([buildingId]);
   const units: BuildingUnit[] = [];
@@ -75,6 +76,7 @@ export function readUnitTemplates(db: Database, buildingId: string): BuildingSet
     };
     if (Number(r.vacant) === 1) u.vacant = true;
     if (r.area != null && Number.isFinite(Number(r.area))) u.area = Number(r.area);
+    if (typeof r.phone === 'string' && r.phone.trim()) u.phone = r.phone.trim();
     units.push(u);
   }
   stmt.free();
@@ -564,6 +566,145 @@ export function endManagementPeriodEarly(db: Database, id: string, atIso: string
   db.run('UPDATE management_periods SET ended_early_at = ? WHERE id = ?', [atIso, id]);
 }
 
-export function deleteManagementPeriod(db: Database, id: string): void {
-  db.run('DELETE FROM management_periods WHERE id = ?', [id]);
+export function deleteManagementPeriod(_db: Database, _id: string): void {
+  throw new Error('management period delete is not allowed');
 }
+
+/* ─── Meetings (manager-only log) ─── */
+
+export type MeetingAttendanceStatus = 'present' | 'absent' | 'empty';
+
+export type MeetingAttendanceRow = {
+  unitNumber: number;
+  unitAlias: string | null;
+  status: MeetingAttendanceStatus;
+};
+
+export type MeetingRow = {
+  id: string;
+  buildingId: string;
+  meetingDate: string;
+  weekday: string;
+  hour: number;
+  minute: number;
+  place: string | null;
+  summary: string | null;
+  createdAt: string;
+  attendance: MeetingAttendanceRow[];
+};
+
+function parseAttendanceStatus(s: unknown): MeetingAttendanceStatus | null {
+  if (s === 'present' || s === 'absent' || s === 'empty') return s;
+  return null;
+}
+
+export function listMeetings(db: Database, buildingId: string): MeetingRow[] {
+  const stmt = db.prepare(
+    'SELECT * FROM meetings WHERE building_id = ? ORDER BY meeting_date DESC, hour DESC, minute DESC, created_at DESC',
+  );
+  stmt.bind([buildingId]);
+  const heads: Omit<MeetingRow, 'attendance'>[] = [];
+  while (stmt.step()) {
+    const r = stmt.getAsObject() as Record<string, unknown>;
+    heads.push({
+      id: String(r.id),
+      buildingId: String(r.building_id),
+      meetingDate: String(r.meeting_date),
+      weekday: String(r.weekday),
+      hour: Number(r.hour),
+      minute: Number(r.minute),
+      place: (r.place as string | null) ?? null,
+      summary: (r.summary as string | null) ?? null,
+      createdAt: String(r.created_at),
+    });
+  }
+  stmt.free();
+  return heads.map((h) => ({ ...h, attendance: readMeetingAttendance(db, h.id) }));
+}
+
+export function getMeeting(db: Database, id: string): MeetingRow | null {
+  const stmt = db.prepare('SELECT * FROM meetings WHERE id = ?');
+  stmt.bind([id]);
+  if (!stmt.step()) { stmt.free(); return null; }
+  const r = stmt.getAsObject() as Record<string, unknown>;
+  stmt.free();
+  const mid = String(r.id);
+  return {
+    id: mid,
+    buildingId: String(r.building_id),
+    meetingDate: String(r.meeting_date),
+    weekday: String(r.weekday),
+    hour: Number(r.hour),
+    minute: Number(r.minute),
+    place: (r.place as string | null) ?? null,
+    summary: (r.summary as string | null) ?? null,
+    createdAt: String(r.created_at),
+    attendance: readMeetingAttendance(db, mid),
+  };
+}
+
+function readMeetingAttendance(db: Database, meetingId: string): MeetingAttendanceRow[] {
+  const stmt = db.prepare(
+    'SELECT unit_number, unit_alias, status FROM meeting_attendance WHERE meeting_id = ? ORDER BY unit_number',
+  );
+  stmt.bind([meetingId]);
+  const out: MeetingAttendanceRow[] = [];
+  while (stmt.step()) {
+    const r = stmt.getAsObject() as Record<string, unknown>;
+    const status = parseAttendanceStatus(r.status);
+    if (!status) continue;
+    out.push({
+      unitNumber: Number(r.unit_number),
+      unitAlias: (r.unit_alias as string | null) ?? null,
+      status,
+    });
+  }
+  stmt.free();
+  return out;
+}
+
+export function insertMeeting(
+  db: Database,
+  row: {
+    buildingId: string;
+    meetingDate: string;
+    weekday: string;
+    hour: number;
+    minute: number;
+    place?: string | null;
+    summary?: string | null;
+    attendance: MeetingAttendanceRow[];
+  },
+): string {
+  if (!Number.isInteger(row.hour) || row.hour < 0 || row.hour > 23) throw new Error('invalid meeting hour');
+  if (!Number.isInteger(row.minute) || row.minute < 0 || row.minute > 59) throw new Error('invalid meeting minute');
+  const id = newId();
+  db.run(
+    `INSERT INTO meetings(id, building_id, meeting_date, weekday, hour, minute, place, summary, created_at)
+     VALUES (?,?,?,?,?,?,?,?,?)`,
+    [
+      id,
+      row.buildingId,
+      row.meetingDate,
+      row.weekday.slice(0, 20),
+      row.hour,
+      row.minute,
+      row.place?.trim().slice(0, 120) || null,
+      row.summary?.trim().slice(0, 4000) || null,
+      new Date().toISOString(),
+    ],
+  );
+  for (const a of row.attendance) {
+    if (!parseAttendanceStatus(a.status)) continue;
+    db.run(
+      `INSERT INTO meeting_attendance(id, meeting_id, unit_number, unit_alias, status) VALUES (?,?,?,?,?)`,
+      [newId(), id, a.unitNumber, a.unitAlias?.trim().slice(0, 80) || null, a.status],
+    );
+  }
+  return id;
+}
+
+export function deleteMeeting(db: Database, id: string): void {
+  db.run('DELETE FROM meetings WHERE id = ?', [id]);
+}
+

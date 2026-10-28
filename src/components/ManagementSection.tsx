@@ -57,20 +57,11 @@ export function ManagementSection({ reloadKey = 0 }: { reloadKey?: number }) {
     await reload();
   };
 
-  const remove = async (id: string) => {
-    if (!(await confirmDanger({
-      title: 'حذف دوره',
-      text: 'این دوره از تاریخچه حذف می‌شود.',
-      confirmLabel: 'حذف',
-    }))) return;
-    await buildingRepository.removeManagementPeriod(id);
-    await reload();
-  };
 
   return (
     <div className="mgmt-card">
       <p className="card__hint">
-        دورهٔ مدیریت و تاریخچهٔ مدیران این ساختمان. می‌توانید مدیر را قبل از پایان دوره عوض کنید.
+        دورهٔ مدیریت و تاریخچهٔ مدیران این ساختمان. می‌توانید مدیر را قبل از پایان دوره عوض کنید؛ تاریخچه حذف نمی‌شود.
       </p>
 
       <label className="field">
@@ -99,7 +90,6 @@ export function ManagementSection({ reloadKey = 0 }: { reloadKey?: number }) {
                 {!r.endedEarlyAt && (
                   <button type="button" className="btn btn--ghost btn--sm" onClick={() => void endEarly(r.id)}>بستن زودهنگام</button>
                 )}
-                <button type="button" className="btn btn--ghost btn--sm" onClick={() => void remove(r.id)}>حذف</button>
               </div>
             </li>
           ))}

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=390, initial-scale=1"/>
+<title>موکاپ جلسه v2 — آپارتمانت</title>
+<style>
+@font-face{font-family:Vazirmatn;src:local('Vazirmatn'),local('Tahoma')}
+:root{--bg:#f4f7fc;--card:#fff;--text:#1c2440;--muted:#7a8398;--border:#e4e9f2;--primary:#2f74f0;--primary-soft:#eaf1fe;--success:#25a865;--success-soft:#e8f7ef;--danger:#ef4444;--danger-soft:#fdecec;--soft:#eef2f8;--warn:#b45309;--warn-soft:#fff7ed}
+*{box-sizing:border-box}body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:#dde3ee;color:var(--text);font-size:15px;line-height:1.55}
+.phone{width:390px;margin:16px auto;background:var(--bg);border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.12)}
+.header{background:rgba(244,247,252,.98);padding:14px 16px;text-align:center;font-weight:800;border-bottom:1px solid var(--border)}
+.screen{padding:10px 16px 24px}
+.card{background:var(--card);border-radius:18px;box-shadow:0 4px 18px rgba(33,56,102,.07);padding:14px;margin-bottom:14px;border:1px solid #eef1f7}
+.card__title{font-weight:800;font-size:15px;margin:0 0 6px}
+.card__hint{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+.badge{display:inline-block;background:var(--primary-soft);color:var(--primary);font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-bottom:8px}
+.btn{border:0;border-radius:12px;padding:10px 14px;font-weight:700;font-family:inherit}
+.btn--primary{background:var(--primary);color:#fff;width:100%}
+.btn--soft{background:var(--soft);color:var(--text);width:100%}
+.btn--ghost{background:var(--soft);color:var(--text)}
+.row{display:flex;gap:8px;margin-top:10px}
+.field__label{display:block;font-size:12.5px;color:var(--muted);margin:8px 0 4px}
+.picker{background:var(--soft);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:8px}
+.picker small{color:var(--muted);font-weight:600}
+.weekday{margin:4px 0 10px;font-size:13px;font-weight:700;color:var(--primary)}
+.seg3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.seg3 button{border:1px solid var(--border);background:var(--soft);border-radius:10px;padding:8px 4px;font-family:inherit;font-weight:700;font-size:12px}
+.seg3 button.on-p{background:var(--success-soft);border-color:var(--success);color:var(--success)}
+.seg3 button.on-a{background:var(--danger-soft);border-color:var(--danger);color:var(--danger)}
+.seg3 button.on-e{background:var(--warn-soft);border-color:#fdba74;color:var(--warn)}
+.unit{padding:12px 0;border-bottom:1px dashed var(--border)}
+.unit:last-child{border-bottom:0}
+.unit__name{font-weight:800;margin-bottom:8px}
+.meta{font-size:12px;color:var(--muted)}
+.log{list-style:none;margin:0;padding:0}
+.log li{padding:12px 0;border-bottom:1px solid var(--border)}
+.log li:last-child{border-bottom:0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--soft)}
+.chip.p{background:var(--success-soft);color:var(--success)}
+.chip.a{background:var(--danger-soft);color:var(--danger)}
+.chip.e{background:var(--warn-soft);color:var(--warn)}
+textarea{width:100%;border:1px solid var(--border);border-radius:12px;padding:10px;font-family:inherit;min-height:88px;resize:vertical}
+.note{background:var(--soft);border-radius:12px;padding:10px;font-size:12.5px;color:var(--muted);margin-top:10px}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="header">تنظیمات · جلسه</div>
+  <div class="screen">
+    <div class="card">
+      <div class="badge">موکاپ v2 — فقط مدیر، بدون درخواست واحد</div>
+      <h2 class="card__title">جلسهٔ ساختمان</h2>
+      <p class="card__hint">برای ساختمان فعال. تاریخ و ساعت را ثبت کنید، حضور واحدها را مشخص کنید، بعد خلاصه بنویسید. همه در لاگ می‌ماند.</p>
+      <button class="btn btn--primary">ثبت جلسهٔ جدید</button>
+      <div class="note">درخواست جلسه از طرف واحدها فعلاً نیست؛ چون فقط مدیر اپ را دارد.</div>
+    </div>
+    <div class="card">
+      <h2 class="card__title">لاگ جلسه‌ها</h2>
+      <ul class="log">
+        <li>
+          <b>۱۵ آبان ۱۴۰۴ · ۱۸:۳۰</b>
+          <div class="meta">پنجشنبه · لابی</div>
+          <div class="chips"><span class="chip p">حاضر ۳</span><span class="chip a">غایب ۱</span><span class="chip e">خالی ۱</span></div>
+          <div class="meta" style="margin-top:6px">خلاصه: تعمیر آسانسور از صندوق…</div>
+        </li>
+        <li>
+          <b>۱ مهر ۱۴۰۴ · ۱۷:۰۰</b>
+          <div class="meta">سه‌شنبه</div>
+          <div class="chips"><span class="chip p">حاضر ۵</span><span class="chip a">غایب ۰</span><span class="chip e">خالی ۰</span></div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="header">ثبت جلسهٔ جدید</div>
+  <div class="screen">
+    <div class="card">
+      <div class="badge">تاریخ و ساعت — UI مثل برنامه</div>
+      <span class="field__label">تاریخ جلسه (شمسی)</span>
+      <div class="picker"><span>روز <b>۱۵</b></span><small>▼</small></div>
+      <div class="picker"><span>ماه <b>آبان</b></span><small>▼</small></div>
+      <div class="picker"><span>سال <b>۱۴۰۴</b></span><small>▼</small></div>
+      <div class="weekday">روز هفته: پنجشنبه</div>
+      <span class="field__label">ساعت</span>
+      <div class="row" style="margin-top:0">
+        <div class="picker" style="flex:1;margin:0"><span><b>۱۸</b></span><small>ساعت</small></div>
+        <div class="picker" style="flex:1;margin:0"><span><b>۳۰</b></span><small>دقیقه</small></div>
+      </div>
+      <span class="field__label">محل / یادداشت (اختیاری)</span>
+      <div class="picker"><span style="font-weight:600;color:var(--muted)">لابی ساختمان</span></div>
+      <button class="btn btn--primary" style="margin-top:14px">ادامه — حضور و غیاب</button>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="header">حضور و غیاب</div>
+  <div class="screen">
+    <div class="card">
+      <div class="badge">جلوی هر واحد یکی را بزن</div>
+      <h2 class="card__title">۱۵ آبان · پنجشنبه · ۱۸:۳۰</h2>
+      <p class="card__hint">اگر چیزی نزنید، وضعیت نامشخص می‌ماند تا یکی از سه حالت را انتخاب کنید.</p>
+      <div class="unit">
+        <div class="unit__name">واحد ۱ — آقای رضایی</div>
+        <div class="seg3">
+          <button class="on-p">حاضر</button>
+          <button>غایب</button>
+          <button>خالی</button>
+        </div>
+      </div>
+      <div class="unit">
+        <div class="unit__name">واحد ۲ — خانم کریمی</div>
+        <div class="seg3">
+          <button>حاضر</button>
+          <button class="on-a">غایب</button>
+          <button>خالی</button>
+        </div>
+      </div>
+      <div class="unit">
+        <div class="unit__name">واحد ۳</div>
+        <div class="seg3">
+          <button>حاضر</button>
+          <button>غایب</button>
+          <button class="on-e">خالی</button>
+        </div>
+      </div>
+      <div class="unit">
+        <div class="unit__name">واحد ۴ — آقای نوری</div>
+        <div class="seg3">
+          <button>حاضر</button>
+          <button>غایب</button>
+          <button>خالی</button>
+        </div>
+        <div class="meta" style="margin-top:6px">هنوز انتخاب نشده</div>
+      </div>
+      <button class="btn btn--primary" style="margin-top:8px">ادامه — خلاصه جلسه</button>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="header">خلاصه جلسه</div>
+  <div class="screen">
+    <div class="card">
+      <div class="badge">بعد از اتمام</div>
+      <h2 class="card__title">ثبت خلاصه</h2>
+      <div class="chips" style="margin-bottom:10px"><span class="chip p">حاضر ۱</span><span class="chip a">غایب ۱</span><span class="chip e">خالی ۱</span><span class="chip">نامشخص ۱</span></div>
+      <span class="field__label">شرح جلسه / مصوبات</span>
+      <textarea>تعمیر آسانسور از صندوق؛ نظافت هفته‌ای دوبار؛ جلسه بعدی اول آذر.</textarea>
+      <button class="btn btn--primary" style="margin-top:12px">ذخیره در لاگ</button>
+      <div class="note">در لاگ: تاریخ، روز هفته، ساعت، وضعیت هر واحد، و متن خلاصه نگه داشته می‌شود.</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
