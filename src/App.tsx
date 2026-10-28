@@ -28,9 +28,13 @@ import { useNotif } from './context/NotifContext';
 import { NotificationsLayer } from './components/NotificationsLayer';
 import { onboardingRepository } from './storage/onboardingRepository';
 import { billRepository } from './storage/billRepository';
+import { useFeedback } from './context/FeedbackContext';
+import { formatJalaliKey, todayJalali } from './logic/jalali';
+import { newBillBlockers } from './logic/billGate';
 
 export default function App() {
   const { settings, loaded } = useSettings();
+  const { showErrors } = useFeedback();
   const [stack, setStack] = useState<Route[]>([{ name: 'home' }]);
   const [draft, setDraft] = useState<BillDraft | null>(null);
   const [showIntro, setShowIntro] = useState(true);
@@ -88,6 +92,19 @@ export default function App() {
 
   const startNewBill = async () => {
     const now = currentJalali();
+    const today = todayJalali();
+    const todayKey = formatJalaliKey(today);
+    const periods = await buildingRepository.listManagementPeriods().catch(() => []);
+    const blockers = newBillBlockers({
+      activeYears: settings.activeYears,
+      currentYear: now.year,
+      periods,
+      todayKey,
+    });
+    if (blockers.length) {
+      showErrors(blockers);
+      return;
+    }
     // واحدها (تعداد، اسم مستعار و نفرات پیش‌فرض) از تنظیمات «ساختمان» وارد می‌شوند
     const building = await buildingRepository.get().catch(() => null);
     setDraft(emptyDraft(pickDefaultYear(settings.activeYears, now.year), now.month, building));
