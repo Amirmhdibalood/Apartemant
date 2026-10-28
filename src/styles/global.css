@@ -1010,7 +1010,6 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
 .mgmt-list { list-style: none; margin: 0; padding: 0; }
 .mgmt-list__row { background: var(--soft-panel); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
 .mgmt-list__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.share-app-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 
 .acc__head {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 56px;
@@ -1388,3 +1387,49 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
 }
 .meet-log__btn:active { opacity: 0.85; }
 .meet-log__sum { margin-top: 4px; }
+
+/* اشتراک‌گذاری فروشگاه */
+.share-app-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.share-app-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--soft-panel);
+}
+.share-app-row__name {
+  font-weight: 800;
+  font-size: 14.5px;
+}
+.share-app-row__meta {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.btn--soon {
+  background: #eef0f4;
+  color: #9aa2b3;
+  border: 1px solid #e3e6ec;
+  box-shadow: none;
+  cursor: default;
+  opacity: 1;
+  pointer-events: none;
+}
+:root[data-theme="dark"] .btn--soon {
+  background: #1c2845;
+  color: #9098ab;
+  border-color: #212f51;
+}
+:root[data-theme="dark"] .share-app-row {
+  background: var(--soft-panel);
+}

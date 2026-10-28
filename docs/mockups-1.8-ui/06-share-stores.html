@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=390, initial-scale=1"/>
+<title>نمونه — اشتراک‌گذاری فروشگاه</title>
+<style>
+@font-face{font-family:Vazirmatn;src:local('Vazirmatn'),local('Tahoma')}
+:root{--bg:#f4f7fc;--card:#fff;--text:#1c2440;--muted:#7a8398;--border:#e4e9f2;--primary:#2f74f0;--primary-soft:#eaf1fe;--soft:#eef2f8;--radius:14px;--shadow:0 4px 18px rgba(33,56,102,.07)}
+*{box-sizing:border-box}body{margin:0;font-family:Vazirmatn,Tahoma,sans-serif;background:#dde3ee;color:var(--text);font-size:15px;line-height:1.6}
+.phone{width:390px;margin:16px auto;background:var(--bg);border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.12)}
+.header{background:rgba(244,247,252,.98);padding:14px 16px;text-align:center;font-weight:800;border-bottom:1px solid var(--border)}
+.screen{padding:10px 16px 28px}
+.card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:14px;margin-bottom:14px;border:1px solid #eef1f7}
+.badge{display:inline-block;background:var(--primary-soft);color:var(--primary);font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;margin-bottom:8px}
+.card__title{font-weight:800;font-size:15px;margin:0 0 8px}
+.card__hint{font-size:12.5px;color:var(--muted);margin:0 0 12px;line-height:1.9}
+.share-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.share-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 12px;border-radius:14px;border:1px solid var(--border);background:#fafbfe}
+.share-row__name{font-weight:800;font-size:14.5px}
+.share-row__meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+.btn{border:0;border-radius:12px;padding:10px 14px;font-weight:700;font-family:inherit;font-size:13.5px}
+.btn--primary{background:var(--primary);color:#fff;box-shadow:0 6px 16px rgba(47,116,240,.22)}
+.btn--soon{background:#eef0f4;color:#9aa2b3;border:1px solid #e3e6ec;cursor:default}
+.note{margin-top:14px;font-size:12px;color:var(--muted);line-height:1.8}
+.phone.dark{background:#12161f;color:#e8ecf5}
+.phone.dark .header{background:#161b27;color:#e8ecf5;border-color:#2a3142}
+.phone.dark .card{background:#1a2030;border-color:#2a3142}
+.phone.dark .share-row{background:#151b28;border-color:#2a3142}
+.phone.dark .card__hint,.phone.dark .share-row__meta,.phone.dark .note{color:#9aa3b8}
+.phone.dark .btn--soon{background:#222836;color:#7a8398;border-color:#2a3142}
+.label{text-align:center;font-size:12px;color:#5d6780;margin:8px auto 0;width:390px}
+</style>
+</head>
+<body>
+<p class="label">نمونه UI برای تأیید — اشتراک‌گذاری نرم‌افزار</p>
+<div class="phone">
+  <div class="header">تنظیمات</div>
+  <div class="screen">
+    <div class="card">
+      <div class="badge">پیشنهاد طراحی</div>
+      <h2 class="card__title">اشتراک‌گذاری نرم‌افزار</h2>
+      <p class="card__hint">لینک دانلود برنامه را برای همسایه‌ها بفرستید. این بخش برای دعوت عضو به ساختمان نیست؛ فقط نصب خودِ اپ است.</p>
+      <ul class="share-list">
+        <li class="share-row">
+          <div>
+            <div class="share-row__name">مایکت</div>
+            <div class="share-row__meta">لینک آمادهٔ اشتراک</div>
+          </div>
+          <button type="button" class="btn btn--primary">اشتراک لینک</button>
+        </li>
+        <li class="share-row">
+          <div>
+            <div class="share-row__name">کافه‌بازار</div>
+            <div class="share-row__meta">هنوز منتشر نشده</div>
+          </div>
+          <button type="button" class="btn btn--soon" disabled>به‌زودی</button>
+        </li>
+      </ul>
+      <p class="note">با زدن «اشتراک لینک» مایکت، شیت اشتراک سیستم باز می‌شود (یا لینک کپی می‌شود).</p>
+    </div>
+  </div>
+</div>
+<p class="label">حالت تیره</p>
+<div class="phone dark">
+  <div class="header">تنظیمات</div>
+  <div class="screen">
+    <div class="card">
+      <h2 class="card__title">اشتراک‌گذاری نرم‌افزار</h2>
+      <p class="card__hint">لینک دانلود برنامه را برای همسایه‌ها بفرستید.</p>
+      <ul class="share-list">
+        <li class="share-row">
+          <div>
+            <div class="share-row__name">مایکت</div>
+            <div class="share-row__meta">لینک آمادهٔ اشتراک</div>
+          </div>
+          <button type="button" class="btn btn--primary">اشتراک لینک</button>
+        </li>
+        <li class="share-row">
+          <div>
+            <div class="share-row__name">کافه‌بازار</div>
+            <div class="share-row__meta">هنوز منتشر نشده</div>
+          </div>
+          <button type="button" class="btn btn--soon" disabled>به‌زودی</button>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+</body>
+</html>
