@@ -18,7 +18,9 @@
     "android:brand": "node scripts/apply-android-branding.mjs",
     "branding:generate": "node resources/branding/generate.mjs",
     "android:sign": "node scripts/sign-release.mjs",
-    "test:stress": "vitest run --config vitest.stress.config.ts"
+    "test:stress": "vitest run --config vitest.stress.config.ts",
+    "test:scenario": "vitest run --config vitest.stress.config.ts tests/stress/scenario.stress.ts",
+    "test:full": "node scripts/full-check.mjs"
   },
   "engines": {
     "node": ">=22.12.0"

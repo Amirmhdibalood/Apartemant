@@ -173,3 +173,47 @@ export async function dumpPrefs() {
     active: await activeBuildingStore.getActiveId(),
   };
 }
+
+/**
+ * Order-independent digest of every user table (row count + sum of 32-bit FNV-1a row hashes per table).
+ * Streams rows — used instead of dumpAllTables() at 10k bills × 100 units where a full sorted dump would be GBs.
+ */
+export async function digestAllTables(): Promise<Record<string, string>> {
+  return withSqlite((db) => {
+    const out: Record<string, string> = {};
+    for (const t of listSqliteTables(db)) {
+      if (t === 'app_meta') continue;
+      const stmt = db.prepare(`SELECT * FROM ${t}`);
+      let cols: string[] | null = null;
+      let drop = new Set<number>();
+      let n = 0;
+      let sumA = 0;
+      let sumB = 0;
+      while (stmt.step()) {
+        if (!cols) {
+          cols = stmt.getColumnNames();
+          drop = new Set((REGENERATED[t] ?? []).map((c) => cols!.indexOf(c)));
+        }
+        const vals = stmt.get();
+        let h1 = 0x811c9dc5;
+        let h2 = 0x01000193;
+        for (let i = 0; i < vals.length; i++) {
+          if (drop.has(i)) continue;
+          const s = vals[i] === null ? '\u0000' : `${typeof vals[i]}:${String(vals[i])}`;
+          for (let k = 0; k < s.length; k++) {
+            const c = s.charCodeAt(k);
+            h1 = Math.imul(h1 ^ c, 0x01000193) >>> 0;
+            h2 = Math.imul(h2 ^ c, 0x5bd1e995) >>> 0;
+          }
+          h1 = Math.imul(h1 ^ 0xff, 0x01000193) >>> 0;
+        }
+        sumA = (sumA + h1) % 4294967296;
+        sumB = (sumB + h2) % 4294967296;
+        n++;
+      }
+      stmt.free();
+      out[t] = `${n}:${sumA.toString(16)}:${sumB.toString(16)}`;
+    }
+    return out;
+  });
+}
