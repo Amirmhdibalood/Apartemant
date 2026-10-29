@@ -209,6 +209,7 @@ export async function withSqliteWrite<T>(fn: (database: Database) => T | Promise
 export async function resetSqliteForTests(): Promise<void> {
   useMemoryOnly = true;
   memoryBytes = null;
+  auxMem.clear();
   if (db) {
     try { db.close(); } catch { /* ignore */ }
   }
@@ -233,6 +234,148 @@ export function setSqliteMemoryOnly(on: boolean): void {
 export function getSqliteExportBytes(): Uint8Array | null {
   if (!db) return memoryBytes ? new Uint8Array(memoryBytes) : null;
   return db.export();
+}
+
+/* ─── Auxiliary files (safety backup etc.) — same storage location as the DB, never Preferences ─── */
+
+const AUX_DIR = 'aux';
+const auxMem = new Map<string, Uint8Array | string>();
+
+async function auxNative() {
+  const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
+  return { Filesystem, Directory, Encoding };
+}
+
+async function idbPut(key: string, value: unknown): Promise<void> {
+  const idb = await openFileIdb();
+  const tx = idb.transaction(IDB_STORE, 'readwrite');
+  tx.objectStore(IDB_STORE).put(value, key);
+  await idbTxDone(tx);
+  idb.close();
+}
+
+async function idbGet(key: string): Promise<unknown> {
+  const idb = await openFileIdb();
+  const tx = idb.transaction(IDB_STORE, 'readonly');
+  const v = await idbReq(tx.objectStore(IDB_STORE).get(key));
+  idb.close();
+  return v;
+}
+
+async function idbDel(key: string): Promise<void> {
+  const idb = await openFileIdb();
+  const tx = idb.transaction(IDB_STORE, 'readwrite');
+  tx.objectStore(IDB_STORE).delete(key);
+  await idbTxDone(tx);
+  idb.close();
+}
+
+const auxBackend = (): 'memory' | 'native' | 'idb' =>
+  useMemoryOnly ? 'memory' : Capacitor.isNativePlatform() ? 'native' : typeof indexedDB === 'undefined' ? 'memory' : 'idb';
+
+/** Write a text aux file (UTF-8, no base64). Native: tmp file + rename so a crash never leaves a half file. */
+export async function writeAuxText(name: string, text: string): Promise<void> {
+  const where = auxBackend();
+  if (where === 'memory') { auxMem.set(name, text); return; }
+  if (where === 'idb') { await idbPut(`aux:${name}`, text); return; }
+  const { Filesystem, Directory, Encoding } = await auxNative();
+  const path = `${AUX_DIR}/${name}`;
+  await Filesystem.writeFile({ path: `${path}.tmp`, data: text, directory: Directory.Data, encoding: Encoding.UTF8, recursive: true });
+  await Filesystem.rename({ from: `${path}.tmp`, to: path, directory: Directory.Data, toDirectory: Directory.Data });
+}
+
+export async function readAuxText(name: string): Promise<string | null> {
+  const where = auxBackend();
+  if (where === 'memory') { const v = auxMem.get(name); return typeof v === 'string' ? v : null; }
+  try {
+    if (where === 'idb') { const v = await idbGet(`aux:${name}`); return typeof v === 'string' ? v : null; }
+    const { Filesystem, Directory, Encoding } = await auxNative();
+    const { data } = await Filesystem.readFile({ path: `${AUX_DIR}/${name}`, directory: Directory.Data, encoding: Encoding.UTF8 });
+    return typeof data === 'string' ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Write binary aux file (e.g. a SQLite copy). */
+export async function writeAuxBytes(name: string, bytes: Uint8Array): Promise<void> {
+  const where = auxBackend();
+  if (where === 'memory') { auxMem.set(name, new Uint8Array(bytes)); return; }
+  if (where === 'idb') { await idbPut(`aux:${name}`, bytes); return; }
+  await writeNativeBinaryAtomic(`${AUX_DIR}/${name}`, bytes);
+}
+
+export async function readAuxBytes(name: string): Promise<Uint8Array | null> {
+  const where = auxBackend();
+  if (where === 'memory') { const v = auxMem.get(name); return v instanceof Uint8Array ? new Uint8Array(v) : null; }
+  try {
+    if (where === 'idb') {
+      const v = await idbGet(`aux:${name}`);
+      if (v instanceof Uint8Array) return v;
+      if ((v as { buffer?: unknown })?.buffer instanceof ArrayBuffer) return new Uint8Array((v as Uint8Array).buffer);
+      return null;
+    }
+    const { Filesystem, Directory } = await auxNative();
+    const { data } = await Filesystem.readFile({ path: `${AUX_DIR}/${name}`, directory: Directory.Data });
+    return typeof data === 'string' && data.length > 0 ? base64ToUint8(data) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function deleteAux(name: string): Promise<void> {
+  const where = auxBackend();
+  if (where === 'memory') { auxMem.delete(name); return; }
+  try {
+    if (where === 'idb') { await idbDel(`aux:${name}`); return; }
+    const { Filesystem, Directory } = await auxNative();
+    await Filesystem.deleteFile({ path: `${AUX_DIR}/${name}`, directory: Directory.Data });
+  } catch { /* already gone */ }
+}
+
+/** Write bytes to `path` via `path.tmp` + rename (native). Base64 is written in chunks to avoid one huge string. */
+async function writeNativeBinaryAtomic(path: string, bytes: Uint8Array): Promise<void> {
+  const { Filesystem, Directory } = await auxNative();
+  const tmp = `${path}.tmp`;
+  const CHUNK = 3 * 1024 * 1024; // multiple of 3 → each base64 piece is independent (no inner padding)
+  if (bytes.length === 0) {
+    await Filesystem.writeFile({ path: tmp, data: '', directory: Directory.Data, recursive: true });
+  }
+  for (let off = 0; off < bytes.length; off += CHUNK) {
+    const piece = uint8ToBase64(bytes.subarray(off, Math.min(off + CHUNK, bytes.length)));
+    if (off === 0) await Filesystem.writeFile({ path: tmp, data: piece, directory: Directory.Data, recursive: true });
+    else await Filesystem.appendFile({ path: tmp, data: piece, directory: Directory.Data });
+  }
+  const st = await Filesystem.stat({ path: tmp, directory: Directory.Data });
+  if (!st || Number(st.size) !== bytes.length) throw new Error('sqlite file write verify failed');
+  await Filesystem.rename({ from: tmp, to: path, directory: Directory.Data, toDirectory: Directory.Data });
+}
+
+/** Open an independent in-memory DB from SQLite bytes (e.g. the safety copy). Caller must close() it. */
+export async function openDetachedDatabase(bytes: Uint8Array): Promise<Database> {
+  const sql = await loadSqlJs();
+  const d = new sql.Database(bytes);
+  applySchema(d);
+  return d;
+}
+
+/** Full current DB image (for rollback snapshots / safety copies). Waits for pending persists first. */
+export async function exportCurrentBytes(): Promise<Uint8Array> {
+  const database = await openSqlite();
+  await persistChain.catch(() => undefined);
+  return database.export();
+}
+
+/** Replace the open DB with `bytes` (rollback) and persist it. */
+export async function replaceDatabaseWithBytes(bytes: Uint8Array): Promise<void> {
+  const sql = await loadSqlJs();
+  await persistChain.catch(() => undefined);
+  const next = new sql.Database(bytes);
+  applySchema(next);
+  const prev = db;
+  db = next;
+  if (prev && prev !== next) { try { prev.close(); } catch { /* ignore */ } }
+  await persistSqlite();
 }
 
 /** Tests / stress: close the open DB but keep the last persisted bytes (simulates a cold app restart). */

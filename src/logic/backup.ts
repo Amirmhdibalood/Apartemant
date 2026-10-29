@@ -14,6 +14,9 @@ import { isBillDeleted, migrateBill, normalizePaidDate } from './billPaid';
 import { parseJalaliKey } from './jalali';
 import { parseArea } from './area';
 
+/** شناسهٔ ساختمان پیش‌فرض (هم‌ارز storage/sqlite/schema؛ اینجا تکرار شده تا منطق خالص به لایهٔ ذخیره وابسته نباشد) */
+export const DEFAULT_BUILDING_ID = 'building-default';
+
 export const BACKUP_APP_ID = 'apartemant';
 /**
  * نسخه قالب فایل پشتیبان (با تغییر ساختار داده افزایش می‌یابد).
@@ -31,12 +34,22 @@ export const BACKUP_APP_ID = 'apartemant';
  *    (مهاجرت: همه متراژها خالی). «نحوه نمایش متراژ» یک ترجیح ظاهری است و داخل پشتیبان نیست.
  * ۸: نسخه ۱٫۸ برنامه (+ `buildingId` اختیاری روی قبض؛ موتور ذخیرهٔ دامنه = SQLite؛ پرداخت‌ها همچنان داخل `units[].payments` در JSON می‌آیند و هنگام بازیابی به جدول payments باز می‌شوند).
  *    قالب‌های ۱ تا ۷ بدون buildingId = ساختمان پیش‌فرض.
+ * ۹: نسخه ۱.۸ (پشتیبان کامل): همهٔ ساختمان‌ها `buildings` (نام، صندوق، بایگانی، تنظیمات واحدها و تلفن‌ها)، `buildingId` اجباری
+ *    روی هر قبض، دفتر صندوق `fundEntries`، دوره‌های مدیریت `managementPeriods`، جلسه‌ها با حضور و غیاب `meetings`
+ *    و حالت چندساختمانی `multiBuilding`. بازیابی قالب ۹ همه‌چیز را دقیقاً سر جای خودش برمی‌گرداند.
+ *    قالب‌های ۱ تا ۸ مثل قبل بازیابی می‌شوند (همه در ساختمان پیش‌فرض؛ صندوق/دوره/جلسه ندارند).
  * همه قالب‌های قدیمی‌تر (۱ تا ۷) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
  * بدون dueDate = بدون مهلت پرداخت، بدون deletedAt = حذف‌نشده).
  */
-export const BACKUP_VERSION = 8;
-/** حداکثر حجم قابل قبول فایل پشتیبان */
-export const MAX_BACKUP_BYTES = 64 * 1024 * 1024;
+export const BACKUP_VERSION = 9;
+/**
+ * حداکثر حجم قابل قبول فایل پشتیبان. باید از بزرگ‌ترین پشتیبانی که خود برنامه می‌سازد بزرگ‌تر باشد
+ * (۱۰ هزار قبض × ۱۰۰ واحد ≈ ۱۷۰ MB)؛ اگر خروجی از این سقف بگذرد، هنگام گرفتن پشتیبان هشدار داده می‌شود.
+ */
+export const MAX_BACKUP_BYTES = 384 * 1024 * 1024;
+/** سقف تعداد ردیف‌های بخش‌های جدید قالب ۹ (ضد فایل دستکاری‌شدهٔ بی‌انتها) */
+export const MAX_BACKUP_BUILDINGS = 1000;
+export const MAX_BACKUP_SECTION_ROWS = 1_000_000;
 /** حداکثر طول متن‌های آزاد قبض (شماره قبض/توضیحات) که بازیابی می‌پذیرد؛ فرم قبض هم بیشتر از این نمی‌گیرد */
 export const MAX_BACKUP_TEXT_LENGTH = 5000;
 /** سقف ورودی فرم قبض (کمتر از سقف بازیابی تا هر قبض ذخیره‌شده قابل بازیابی بماند) */
@@ -54,6 +67,76 @@ export interface BackupData {
   building?: BuildingSettings;
   /** آخرین نحوه تقسیم هر نوع هزینه (از قالب ۳) */
   splitDefaults?: SplitDefaults;
+  /** از قالب ۹: همهٔ ساختمان‌ها با تنظیمات واحدها (وجودش = پشتیبان کامل؛ بازیابی همه‌چیز را جایگزین می‌کند) */
+  buildings?: BackupBuilding[];
+  /** از قالب ۹: دفتر صندوق همهٔ ساختمان‌ها */
+  fundEntries?: BackupFundEntry[];
+  /** از قالب ۹: دوره‌های مدیریت */
+  managementPeriods?: BackupManagementPeriod[];
+  /** از قالب ۹: جلسه‌ها (با حضور و غیاب و خلاصه) */
+  meetings?: BackupMeeting[];
+  /** از قالب ۹: حالت چندساختمانی و ساختمان انتخاب‌شده */
+  multiBuilding?: BackupMultiBuilding;
+}
+
+export interface BackupBuilding {
+  id: string;
+  name: string;
+  fundEnabled: boolean;
+  createdAt: string;
+  archivedAt: string | null;
+  units: BuildingSettings['units'];
+}
+
+export interface BackupFundEntry {
+  id: string;
+  buildingId: string;
+  kind: 'deposit' | 'withdraw';
+  amount: number;
+  reason: string;
+  relatedBillId: string | null;
+  relatedPaymentId: string | null;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface BackupManagementPeriod {
+  id: string;
+  buildingId: string;
+  managerLabel: string;
+  startDate: string;
+  endDate: string;
+  endedEarlyAt: string | null;
+  notes: string | null;
+}
+
+export interface BackupMeetingAttendance {
+  unitNumber: number;
+  unitAlias: string | null;
+  status: 'present' | 'absent' | 'empty';
+}
+
+export interface BackupMeeting {
+  id: string;
+  buildingId: string;
+  meetingDate: string;
+  weekday: string;
+  hour: number;
+  minute: number;
+  place: string | null;
+  summary: string | null;
+  createdAt: string;
+  attendance: BackupMeetingAttendance[];
+}
+
+export interface BackupMultiBuilding {
+  enabled: boolean;
+  activeBuildingId: string;
+}
+
+/** آیا این داده پشتیبان کامل (قالب ۹) است؟ */
+export function isFullBackupData(d: BackupData): d is BackupData & Required<Pick<BackupData, 'buildings' | 'fundEntries' | 'managementPeriods' | 'meetings'>> {
+  return Array.isArray(d.buildings) && Array.isArray(d.fundEntries) && Array.isArray(d.managementPeriods) && Array.isArray(d.meetings);
 }
 
 export interface BackupFile {
@@ -73,6 +156,11 @@ export interface BackupSummary {
   deletedBills: number;
   /** سال‌هایی که قبض دارند */
   years: number[];
+  /** از قالب ۹ (در قالب‌های قدیمی ۱ = ساختمان پیش‌فرض) */
+  buildings: number;
+  fundEntries: number;
+  managementPeriods: number;
+  meetings: number;
   createdAt: string;
   /** مثل «۱۴۰۵/۰۷/۰۴ ساعت ۱۴:۳۰» */
   createdAtFa: string;
@@ -111,6 +199,13 @@ export function createBackup(data: BackupData, appVersion: string, now: Date = n
       settings: sanitizeSettings(data.settings),
       ...withBuilding(data.building),
       ...withSplitDefaults(data.splitDefaults),
+      ...(isFullBackupData(data) ? {
+        buildings: data.buildings.map((b) => ({ ...b, units: b.units.map((u) => ({ ...u })) })),
+        fundEntries: data.fundEntries.map((f) => ({ ...f })),
+        managementPeriods: data.managementPeriods.map((p) => ({ ...p })),
+        meetings: data.meetings.map((m) => ({ ...m, attendance: m.attendance.map((a) => ({ ...a })) })),
+        multiBuilding: data.multiBuilding ? { ...data.multiBuilding } : { enabled: false, activeBuildingId: DEFAULT_BUILDING_ID },
+      } : {}),
     },
   };
 }
@@ -130,6 +225,28 @@ function withTemplate(raw: unknown): { unitTemplate?: number[] } {
   return t ? { unitTemplate: t } : {};
 }
 
+/** حجم UTF-8 یک متن (بدون ساختن کپی) */
+export function utf8ByteLength(text: string): number {
+  let n = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c < 0x80) n += 1;
+    else if (c < 0x800) n += 2;
+    else if (c >= 0xd800 && c <= 0xdbff) { n += 4; i++; }
+    else n += 3;
+  }
+  return n;
+}
+
+/** اگر فایل پشتیبان از سقف بازیابی بزرگ‌تر شود، متن هشدار؛ وگرنه null (خود برنامه همیشه باید بتواند آن را بازیابی کند) */
+export function backupTooLargeWarning(json: string, max = MAX_BACKUP_BYTES): string | null {
+  if (json.length * 3 <= max) return null; // قطعاً زیر سقف (هر نویسه حداکثر ۳ بایت)
+  const bytes = utf8ByteLength(json);
+  if (bytes <= max) return null;
+  const mb = (b: number) => toPersianDigits(Math.ceil(b / 1024 / 1024));
+  return `حجم این نسخهٔ پشتیبان ${mb(bytes)} مگابایت است و از سقف بازیابی (${mb(max)} مگابایت) بیشتر است؛ ممکن است بعداً بازیابی نشود. قبض‌های حذف‌شدهٔ قدیمی را پاک کنید و دوباره پشتیبان بگیرید.`;
+}
+
 /** فشرده (بدون فاصله) — از ۱.۷.۹؛ parseBackup همچنان پشتیبان‌های pretty قدیمی را می‌پذیرد. */
 export function serializeBackup(backup: BackupFile): string {
   return JSON.stringify(backup);
@@ -143,6 +260,10 @@ export function summarizeBackup(backup: BackupFile): BackupSummary {
     settledBills: bills.filter((b) => b.isFullySettled).length,
     deletedBills: bills.filter((b) => isBillDeleted(b)).length,
     years: Array.from(new Set(bills.map((b) => b.year))).sort((a, b) => a - b),
+    buildings: backup.data.buildings?.length ?? 1,
+    fundEntries: backup.data.fundEntries?.length ?? 0,
+    managementPeriods: backup.data.managementPeriods?.length ?? 0,
+    meetings: backup.data.meetings?.length ?? 0,
     createdAt: backup.createdAt,
     createdAtFa: formatJalaliDateTimeFa(new Date(backup.createdAt)),
     appVersion: backup.appVersion,
@@ -202,13 +323,17 @@ function parseBills(raw: unknown): Bill[] {
 }
 
 /** پرداخت‌های واحد (از قالب ۲، اختیاری). وضعیت تسویه از روی مانده دوباره محاسبه می‌شود. */
-function parsePayments(raw: unknown, share: number, i: number): { payments?: Payment[]; isSettled?: boolean } {
+function parsePayments(raw: unknown, share: number, i: number, seen?: Set<string>): { payments?: Payment[]; isSettled?: boolean } {
   if (raw == null) return {};
   if (!Array.isArray(raw) || raw.length > 1000) return bad(`پرداخت‌های واحد ${nth(i)} نامعتبر است.`);
   const payments = raw.map((p) => {
     if (!isObj(p) || !isId(p.id) || !isInt(p.amount, 1) || !(p.paidAt === null || validDate(p.paidAt))
       || !(p.batchId === undefined || p.batchId === null || isId(p.batchId))) {
       return bad(`پرداخت‌های واحد ${nth(i)} نامعتبر است.`);
+    }
+    if (seen) {
+      if (seen.has(p.id as string)) return bad(`شناسه پرداخت واحد ${nth(i)} تکراری است.`);
+      seen.add(p.id as string);
     }
     // batchId (از ۱.۷.۳، اختیاری) حفظ می‌شود تا «لغو پرداخت» بعد از بازیابی هم کار کند؛ پشتیبان‌های قدیمی بدون آن‌اند
     return {
@@ -225,6 +350,7 @@ function parseUnits(raw: unknown, bills: Bill[]): Unit[] {
   if (!Array.isArray(raw)) bad('فهرست واحدها پیدا نشد.');
   const billIds = new Set(bills.map((b) => b.id));
   const ids = new Set<string>();
+  const paymentIds = new Set<string>();
   return (raw as unknown[]).map((u, i) => {
     if (!isObj(u)) return bad(`اطلاعات واحد ${nth(i)} نامعتبر است.`);
     const ok = isId(u.id) && isId(u.billId) && isInt(u.unitNumber, 1, 100000) && isInt(u.personCount, 0, 1000000)
@@ -246,9 +372,127 @@ function parseUnits(raw: unknown, bills: Bill[]): Unit[] {
       ...(u.area != null ? { area: parseArea(u.area) } : {}),
       shareAmount: u.shareAmount as number,
       isSettled: u.isSettled as boolean,
-      ...parsePayments(u.payments, u.shareAmount as number, i),
+      ...parsePayments(u.payments, u.shareAmount as number, i, paymentIds),
     };
   });
+}
+
+/* ---------- قالب ۹: بخش‌های پشتیبان کامل ---------- */
+
+const MAX_SHORT_TEXT = 200;
+const reqText = (v: unknown, max = MAX_SHORT_TEXT): v is string => typeof v === 'string' && v.length > 0 && v.length <= max;
+const nullText = (v: unknown, max = MAX_BACKUP_TEXT_LENGTH): v is string | null => v === null || (typeof v === 'string' && v.length <= max);
+const nullDate = (v: unknown): v is string | null => v === null || validDate(v);
+
+function arrayOf(raw: unknown, label: string, max: number): unknown[] {
+  if (!Array.isArray(raw)) return bad(`بخش ${label} پیدا نشد.`);
+  if (raw.length > max) return bad(`تعداد ردیف‌های ${label} بیش از حد مجاز است.`);
+  return raw;
+}
+
+function parseBuildings(raw: unknown): BackupBuilding[] {
+  const list = arrayOf(raw, 'ساختمان‌ها', MAX_BACKUP_BUILDINGS);
+  if (list.length === 0) bad('هیچ ساختمانی در فایل نیست.');
+  const ids = new Set<string>();
+  return list.map((b, i) => {
+    if (!isObj(b)) return bad(`اطلاعات ساختمان ${nth(i)} نامعتبر است.`);
+    const ok = isId(b.id) && reqText(b.name) && typeof b.fundEnabled === 'boolean' && validDate(b.createdAt)
+      && nullDate(b.archivedAt ?? null) && Array.isArray(b.units);
+    if (!ok) bad(`اطلاعات ساختمان ${nth(i)} نامعتبر است.`);
+    if (ids.has(b.id as string)) bad(`شناسه ساختمان ${nth(i)} تکراری است.`);
+    ids.add(b.id as string);
+    const rawUnits = b.units as unknown[];
+    let units: BuildingSettings['units'] = [];
+    if (rawUnits.length > 0) {
+      const clean = sanitizeBuilding({ units: rawUnits });
+      if (!clean) bad(`تنظیمات واحدهای ساختمان ${nth(i)} نامعتبر است.`);
+      units = clean!.units;
+    }
+    return {
+      id: b.id as string, name: b.name as string, fundEnabled: b.fundEnabled as boolean,
+      createdAt: b.createdAt as string, archivedAt: (b.archivedAt as string | null | undefined) ?? null, units,
+    };
+  });
+}
+
+function parseFundEntries(raw: unknown, buildingIds: Set<string>): BackupFundEntry[] {
+  const list = arrayOf(raw, 'صندوق', MAX_BACKUP_SECTION_ROWS);
+  const ids = new Set<string>();
+  return list.map((f, i) => {
+    if (!isObj(f)) return bad(`ردیف ${nth(i)} صندوق نامعتبر است.`);
+    const ok = isId(f.id) && isId(f.buildingId) && (f.kind === 'deposit' || f.kind === 'withdraw')
+      && isInt(f.amount, 1) && reqText(f.reason, 40)
+      && (f.relatedBillId == null || isId(f.relatedBillId)) && (f.relatedPaymentId == null || isId(f.relatedPaymentId))
+      && nullText(f.note ?? null) && validDate(f.createdAt);
+    if (!ok) bad(`ردیف ${nth(i)} صندوق نامعتبر است.`);
+    if (!buildingIds.has(f.buildingId as string)) bad(`ردیف ${nth(i)} صندوق به هیچ ساختمانی تعلق ندارد.`);
+    if (ids.has(f.id as string)) bad(`شناسه ردیف ${nth(i)} صندوق تکراری است.`);
+    ids.add(f.id as string);
+    return {
+      id: f.id as string, buildingId: f.buildingId as string, kind: f.kind as 'deposit' | 'withdraw',
+      amount: f.amount as number, reason: f.reason as string,
+      relatedBillId: (f.relatedBillId as string | null | undefined) ?? null,
+      relatedPaymentId: (f.relatedPaymentId as string | null | undefined) ?? null,
+      note: (f.note as string | null | undefined) ?? null, createdAt: f.createdAt as string,
+    };
+  });
+}
+
+function parseManagementPeriods(raw: unknown, buildingIds: Set<string>): BackupManagementPeriod[] {
+  const list = arrayOf(raw, 'دوره‌های مدیریت', MAX_BACKUP_SECTION_ROWS);
+  const ids = new Set<string>();
+  return list.map((p, i) => {
+    if (!isObj(p)) return bad(`دوره مدیریت ${nth(i)} نامعتبر است.`);
+    const ok = isId(p.id) && isId(p.buildingId) && reqText(p.managerLabel) && reqText(p.startDate, 40) && reqText(p.endDate, 40)
+      && nullDate(p.endedEarlyAt ?? null) && nullText(p.notes ?? null);
+    if (!ok) bad(`دوره مدیریت ${nth(i)} نامعتبر است.`);
+    if (!buildingIds.has(p.buildingId as string)) bad(`دوره مدیریت ${nth(i)} به هیچ ساختمانی تعلق ندارد.`);
+    if (ids.has(p.id as string)) bad(`شناسه دوره مدیریت ${nth(i)} تکراری است.`);
+    ids.add(p.id as string);
+    return {
+      id: p.id as string, buildingId: p.buildingId as string, managerLabel: p.managerLabel as string,
+      startDate: p.startDate as string, endDate: p.endDate as string,
+      endedEarlyAt: (p.endedEarlyAt as string | null | undefined) ?? null, notes: (p.notes as string | null | undefined) ?? null,
+    };
+  });
+}
+
+function parseMeetings(raw: unknown, buildingIds: Set<string>): BackupMeeting[] {
+  const list = arrayOf(raw, 'جلسه‌ها', MAX_BACKUP_SECTION_ROWS);
+  const ids = new Set<string>();
+  return list.map((m, i) => {
+    if (!isObj(m)) return bad(`جلسه ${nth(i)} نامعتبر است.`);
+    const ok = isId(m.id) && isId(m.buildingId) && reqText(m.meetingDate, 40) && typeof m.weekday === 'string' && m.weekday.length <= 40
+      && isInt(m.hour, 0, 23) && isInt(m.minute, 0, 59)
+      && nullText(m.place ?? null, MAX_SHORT_TEXT) && nullText(m.summary ?? null) && validDate(m.createdAt)
+      && Array.isArray(m.attendance) && (m.attendance as unknown[]).length <= 100000;
+    if (!ok) bad(`جلسه ${nth(i)} نامعتبر است.`);
+    if (!buildingIds.has(m.buildingId as string)) bad(`جلسه ${nth(i)} به هیچ ساختمانی تعلق ندارد.`);
+    if (ids.has(m.id as string)) bad(`شناسه جلسه ${nth(i)} تکراری است.`);
+    ids.add(m.id as string);
+    const units = new Set<number>();
+    const attendance = (m.attendance as unknown[]).map((a) => {
+      if (!isObj(a) || !isInt(a.unitNumber, 1, 100000) || !(a.status === 'present' || a.status === 'absent' || a.status === 'empty')
+        || !nullText(a.unitAlias ?? null, MAX_SHORT_TEXT)) {
+        return bad(`حضور و غیاب جلسه ${nth(i)} نامعتبر است.`);
+      }
+      if (units.has(a.unitNumber as number)) bad(`حضور و غیاب جلسه ${nth(i)} واحد تکراری دارد.`);
+      units.add(a.unitNumber as number);
+      return { unitNumber: a.unitNumber as number, unitAlias: (a.unitAlias as string | null | undefined) ?? null, status: a.status as BackupMeetingAttendance['status'] };
+    });
+    return {
+      id: m.id as string, buildingId: m.buildingId as string, meetingDate: m.meetingDate as string, weekday: m.weekday as string,
+      hour: m.hour as number, minute: m.minute as number, place: (m.place as string | null | undefined) ?? null,
+      summary: (m.summary as string | null | undefined) ?? null, createdAt: m.createdAt as string, attendance,
+    };
+  });
+}
+
+function parseMultiBuilding(raw: unknown, buildingIds: Set<string>): BackupMultiBuilding {
+  if (raw == null) return { enabled: false, activeBuildingId: DEFAULT_BUILDING_ID };
+  if (!isObj(raw) || typeof raw.enabled !== 'boolean' || !isId(raw.activeBuildingId)) return bad('حالت چندساختمانی نامعتبر است.');
+  const active = buildingIds.has(raw.activeBuildingId as string) ? raw.activeBuildingId as string : DEFAULT_BUILDING_ID;
+  return { enabled: raw.enabled as boolean, activeBuildingId: active };
 }
 
 /** واحدها به تفکیک قبض، با حفظ ترتیب اصلی (هم‌ارز units.filter(u => u.billId === id) برای هر قبض) */
@@ -305,12 +549,35 @@ export function parseBackup(text: string): ParseBackupResult {
     if (data.building != null && !sanitizeBuilding(data.building)) bad('تنظیمات ساختمان نامعتبر است.');
     const building = sanitizeBuilding(data.building)
       ?? buildingFromBills(bills.map((bill) => ({ bill, units: ownUnits(bill.id) })), data.unitTemplate);
+    // قالب ۹: پشتیبان کامل (همهٔ ساختمان‌ها، صندوق، دوره‌ها، جلسه‌ها)
+    let full: Partial<BackupData> = {};
+    // همهٔ بخش‌های کامل با هم می‌آیند یا هیچ‌کدام (فایل بدون آن‌ها مثل قالب‌های قدیمی در ساختمان پیش‌فرض بازیابی می‌شود)
+    const fullKeys = ['buildings', 'fundEntries', 'managementPeriods', 'meetings'] as const;
+    const present = fullKeys.filter((k) => data[k] !== undefined).length;
+    if ((json.backupVersion as number) >= 9 && present > 0 && present < fullKeys.length) bad('بخشی از اطلاعات پشتیبان کامل پیدا نشد.');
+    if ((json.backupVersion as number) >= 9 && present === fullKeys.length) {
+      const buildings = parseBuildings(data.buildings);
+      const buildingIds = new Set(buildings.map((b) => b.id));
+      if (!buildingIds.has(DEFAULT_BUILDING_ID)) bad('ساختمان اصلی در فایل نیست.');
+      for (let i = 0; i < bills.length; i++) {
+        const bid = bills[i].buildingId;
+        if (!bid) bad(`ساختمانِ قبض ${nth(i)} مشخص نیست.`);
+        if (!buildingIds.has(bid!)) bad(`قبض ${nth(i)} به هیچ ساختمانی تعلق ندارد.`);
+      }
+      full = {
+        buildings,
+        fundEntries: parseFundEntries(data.fundEntries, buildingIds),
+        managementPeriods: parseManagementPeriods(data.managementPeriods, buildingIds),
+        meetings: parseMeetings(data.meetings, buildingIds),
+        multiBuilding: parseMultiBuilding(data.multiBuilding, buildingIds),
+      };
+    }
     const backup: BackupFile = {
       app: BACKUP_APP_ID,
       backupVersion: json.backupVersion as number,
       appVersion: typeof json.appVersion === 'string' ? json.appVersion : '',
       createdAt: json.createdAt as string,
-      data: { bills, units, settings, ...withTemplate(data.unitTemplate), building, ...withSplitDefaults(data.splitDefaults) },
+      data: { bills, units, settings, ...withTemplate(data.unitTemplate), building, ...withSplitDefaults(data.splitDefaults), ...full },
     };
     return { ok: true, backup, summary: summarizeBackup(backup) };
   } catch (e) {

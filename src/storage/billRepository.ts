@@ -282,6 +282,29 @@ export const billRepository = {
     await persistRowLevel(next, next.bills, next.units, true, 'replaceAll');
   },
 
+  /** Wait until every queued bill write has reached SQLite (and its persist). */
+  async flush(): Promise<void> {
+    await writeChain.catch(() => undefined);
+  },
+
+  /**
+   * Run `fn` exclusively after all queued bill writes (used by full restore / rollback).
+   * The in-memory cache is dropped afterwards (success or failure) so the next read hydrates from SQLite.
+   */
+  async exclusive<T>(fn: () => Promise<T>): Promise<T> {
+    let out!: T;
+    const run = writeChain.catch(() => undefined).then(async () => { out = await fn(); });
+    writeChain = run.catch(() => undefined);
+    try {
+      await run;
+      return out;
+    } finally {
+      store = null;
+      loadPromise = null;
+      notify();
+    }
+  },
+
   onChange(listener: Listener): () => void {
     listeners.add(listener);
     return () => { listeners.delete(listener); };

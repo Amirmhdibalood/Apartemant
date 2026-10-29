@@ -182,7 +182,18 @@ export function readAllUnits(db: Database): Unit[] {
   const rows: Array<Record<string, unknown>> = [];
   forEachRowObject(stmt, (r) => rows.push(r));
   stmt.free();
-  const payMap = readPaymentsForUnits(db, rows.map((r) => String(r.id)));
+  // One pass over payments (was ~N/200 chunked IN queries — dominated cold start / backup at 1M unit rows)
+  const payMap = new Map<string, Payment[]>();
+  const pstmt = db.prepare('SELECT id, bill_unit_id, amount, paid_at, batch_id FROM payments ORDER BY paid_at ASC, rowid ASC');
+  forEachRowObject(pstmt, (r) => {
+    const uid = String(r.bill_unit_id);
+    const p: Payment = { id: String(r.id), amount: Number(r.amount), paidAt: (r.paid_at as string | null) ?? null };
+    if (r.batch_id) p.batchId = String(r.batch_id);
+    const list = payMap.get(uid);
+    if (list) list.push(p);
+    else payMap.set(uid, [p]);
+  });
+  pstmt.free();
   return rows.map((r) => {
     const u: Unit = {
       id: String(r.id),

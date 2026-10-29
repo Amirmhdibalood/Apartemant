@@ -9,6 +9,7 @@ import { formatJalaliDateTimeFa } from '../logic/date';
 import {
   MAX_BACKUP_BYTES,
   BackupErrors,
+  backupTooLargeWarning,
   backupFileName,
   createBackup,
   parseBackup,
@@ -17,7 +18,7 @@ import {
   type BackupFile,
   type BackupSummary,
 } from '../logic/backup';
-import { backupRepository } from '../storage/backupRepository';
+import { backupRepository, type SafetyInfo } from '../storage/backupRepository';
 import { legacyPrefsNearQuota } from '../storage/migration';
 import { exportBackupFile, readPickedFile } from '../services/backupFile';
 import { exportFailureError } from '../logic/backupExport';
@@ -42,15 +43,15 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
   const [pending, setPending] = useState<Pending | null>(null);
   const [currentBills, setCurrentBills] = useState(0);
   const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
-  const [safety, setSafety] = useState<BackupFile | null>(null);
+  const [safety, setSafety] = useState<SafetyInfo | null>(null);
 
   const refresh = useCallback(async () => {
-    const [data, last, safe] = await Promise.all([
-      backupRepository.collect(),
+    const [count, last, safe] = await Promise.all([
+      backupRepository.countBills(),
       backupRepository.getLastBackupAt(),
-      backupRepository.getSafetyBackup(),
+      backupRepository.getSafetyInfo(),
     ]);
-    setCurrentBills(data.bills.length);
+    setCurrentBills(count);
     setLastBackupAt(last);
     setSafety(safe);
   }, []);
@@ -66,7 +67,9 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
     try {
       const now = new Date();
       const backup = createBackup(await backupRepository.collect(), APP_VERSION, now);
-      const res = await exportBackupFile(backupFileName(now), serializeBackup(backup));
+      const json = serializeBackup(backup);
+      const tooLarge = backupTooLargeWarning(json);
+      const res = await exportBackupFile(backupFileName(now), json);
       if (!res.ok) {
         // لغو پنجره اشتراک‌گذاری، ذخیره‌نشدن فایل یا خطا: پیام ناموفق با دلیل؛ «آخرین پشتیبان» تغییر نمی‌کند
         showErrors([exportFailureError(res)]);
@@ -76,6 +79,7 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
       await refresh();
       const n = toPersianDigits(backup.data.bills.length);
       toast(`نسخه پشتیبان (${n} قبض) به اشتراک گذاشته شد${res.savedPath ? ` و یک نسخه در ${res.savedPath} ذخیره شد` : ''}.`);
+      if (tooLarge) showErrors([{ code: 'BACKUP_TOO_LARGE', title: 'حجم پشتیبان زیاد است', message: tooLarge }]);
     } catch (e) {
       showErrors([exportFailureError({ ok: false, reason: 'error', detail: String((e as Error)?.message ?? '') || 'خطای ناشناخته', savedPath: null })]);
     } finally {
@@ -108,9 +112,18 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
   };
 
   const onUndo = async () => {
-    if (!safety) return;
-    await refresh();
-    setPending({ backup: safety, summary: summarizeBackup(safety), kind: 'undo' });
+    if (!safety || busy) return;
+    setBusy(true);
+    try {
+      const full = await backupRepository.getSafetyBackup();
+      if (!full) { showErrors(Errors.restoreFailed()); return; }
+      await refresh();
+      setPending({ backup: full, summary: summarizeBackup(full), kind: 'undo' });
+    } catch {
+      showErrors(Errors.restoreFailed());
+    } finally {
+      setBusy(false);
+    }
   };
 
   const onConfirm = async (ok: boolean) => {
@@ -120,7 +133,7 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
     setBusy(true);
     try {
       // نسخه ایمنی از اطلاعات فعلی قبل از جایگزینی (اگر قبضی در گوشی ثبت شده باشد)
-      if ((await backupRepository.collect()).bills.length > 0) await backupRepository.saveSafetyBackup(APP_VERSION);
+      if (await backupRepository.hasUserData()) await backupRepository.saveSafetyBackup(APP_VERSION);
       await backupRepository.replaceAll(p.backup.data);
       await reloadSettings();
       await refresh();
@@ -144,7 +157,7 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
       )}
       <p className="card__hint">
         برای اینکه با خرابی یا تعویض گوشی اطلاعاتتان از بین نرود، هر چند وقت یک‌بار نسخه پشتیبان بگیرید و فایل را در جایی بیرون از گوشی
-        (تلگرام، Google Drive، ایمیل یا کامپیوتر) نگه دارید. روی گوشی جدید با «بازیابی از فایل پشتیبان» همه قبض‌ها و تنظیمات برمی‌گردند.
+        (تلگرام، Google Drive، ایمیل یا کامپیوتر) نگه دارید. روی گوشی جدید با «بازیابی از فایل پشتیبان» همهٔ ساختمان‌ها، قبض‌ها، صندوق، دوره‌های مدیریت، جلسه‌ها و تنظیمات برمی‌گردند.
       </p>
       <div className="backup-actions">
         <button type="button" className="btn btn--primary btn--block" onClick={onBackup} disabled={busy}>
@@ -166,7 +179,7 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
           <span className="backup-undo__text">
             <span>برگرداندن اطلاعات قبل از آخرین بازیابی</span>
             <small>
-              نسخه ایمنی {formatJalaliDateTimeFa(new Date(safety.createdAt))} — {toPersianDigits(safety.data.bills.length)} قبض
+              نسخه ایمنی {formatJalaliDateTimeFa(new Date(safety.createdAt))} — {toPersianDigits(safety.bills)} قبض
             </small>
           </span>
         </button>

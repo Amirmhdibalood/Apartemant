@@ -1,0 +1,22 @@
+{
+  "app": "apartemant",
+  "backupVersion": 4,
+  "appVersion": "1.5.0",
+  "createdAt": "2025-10-01T10:00:00.000Z",
+  "data": {
+    "bills": [
+      {"id":"f1","year":1405,"month":1,"expenseType":"gas","billNumber":null,"description":null,"totalAmount":1200000,"createdAt":"2025-03-25T08:00:00.000Z","isFullySettled":false,"splitMethod":"perUnit","billPaid":true,"billPaidDate":"1405-01-20","dueDate":"1405-01-15","deletedAt":null},
+      {"id":"f2","year":1405,"month":2,"expenseType":"electricity","billNumber":"E-9","description":"برق","totalAmount":600000,"createdAt":"2025-04-25T08:00:00.000Z","isFullySettled":true,"billPaid":false,"billPaidDate":null,"dueDate":null,"deletedAt":"2025-05-01T08:00:00.000Z"}
+    ],
+    "units": [
+      {"id":"f1u1","billId":"f1","unitNumber":1,"personCount":3,"shareAmount":400000,"isSettled":false,"payments":[{"id":"f1u1p1","amount":100000,"paidAt":"2025-04-01T08:00:00.000Z"}]},
+      {"id":"f1u2","billId":"f1","unitNumber":2,"personCount":1,"shareAmount":400000,"isSettled":true,"payments":[{"id":"f1u2p1","amount":400000,"paidAt":"2025-04-02T08:00:00.000Z"}]},
+      {"id":"f1u3","billId":"f1","unitNumber":3,"personCount":2,"shareAmount":400000,"isSettled":false,"payments":[]},
+      {"id":"f2u1","billId":"f2","unitNumber":1,"personCount":3,"shareAmount":300000,"isSettled":true,"payments":[{"id":"f2u1p1","amount":300000,"paidAt":null}]},
+      {"id":"f2u2","billId":"f2","unitNumber":2,"personCount":3,"shareAmount":300000,"isSettled":true,"payments":[{"id":"f2u2p1","amount":300000,"paidAt":null}]}
+    ],
+    "settings": {"showSaveWarning": false, "activeYears": [1405], "dismissedWarnings": ["roundingAdjust"]},
+    "unitTemplate": [3, 1, 2],
+    "splitDefaults": {"gas": "perUnit"}
+  }
+}

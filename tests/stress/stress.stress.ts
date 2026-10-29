@@ -16,7 +16,7 @@ import { monthlyTotals, monthsWithBills } from '../../src/logic/monthlyTotals';
 import { debtorsReport, paymentHistory } from '../../src/logic/debts';
 import { chartSeries, typeShares } from '../../src/logic/chartReport';
 import { filterBills, summarizeBills } from '../../src/logic/billFilter';
-import { createBackup, parseBackup, serializeBackup } from '../../src/logic/backup';
+import { MAX_BACKUP_BYTES, createBackup, parseBackup, serializeBackup } from '../../src/logic/backup';
 import { resetIdbForTests } from '../../src/storage/idb';
 import { closeSqliteKeepBytesForTests, getSqliteExportBytes, resetSqliteForTests } from '../../src/storage/sqlite/db';
 import { billRepository } from '../../src/storage/billRepository';
@@ -154,8 +154,9 @@ describe.each(SIZES)('stress: %i bills × ' + UNITS + ' units', (nBills) => {
     const [parsed, tParse] = await time(() => parseBackup(text));
     m.backupParseValidateMs = tParse;
     m.backupParseOk = parsed.ok ? 'yes' : `NO: ${parsed.error}`;
-    if (Buffer.byteLength(text) <= 64 * 1024 * 1024) expect(parsed.ok).toBe(true);
-    // over the 64 MB import cap the file is rejected; still time a restore of the same data
+    // a backup the app itself exports must always be importable again
+    expect(Buffer.byteLength(text)).toBeLessThan(MAX_BACKUP_BYTES);
+    expect(parsed.ok).toBe(true);
     [, m.backupRestoreMs] = await time(() => backupRepository.replaceAll(parsed.ok ? parsed.backup.data : data));
     const after = await billRepository.getAllWithDeleted();
     expect(after.length).toBe(nBills + 1);

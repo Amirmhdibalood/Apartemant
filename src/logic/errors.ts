@@ -21,6 +21,7 @@ export type AppErrorCode =
   | 'BACKUP_INVALID'
   | 'ALL_VACANT'
   | 'BACKUP_FAILED'
+  | 'BACKUP_TOO_LARGE'
   | 'RESTORE_FAILED';
 
 export interface AppError {
