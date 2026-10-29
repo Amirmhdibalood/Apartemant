@@ -25,6 +25,7 @@ import type { BuildingSettings } from '../models/types';
 import { buildingFromDraftUnits, draftMatchesBuilding, draftUnitsFromBuilding } from '../logic/building';
 import { buildingRepository } from '../storage/buildingRepository';
 import { confirmUnitReduction } from '../components/confirmUnitReduction';
+import { MAX_BILL_NUMBER_LENGTH, MAX_DESCRIPTION_LENGTH } from '../logic/backup';
 
 interface Props {
   draft: BillDraft;
@@ -154,6 +155,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
             type="text"
             autoComplete="off"
             value={draft.billNumber}
+            maxLength={MAX_BILL_NUMBER_LENGTH}
             placeholder="مثال: ۱۲۳۴۵۶۷۸"
             onChange={(e) => set({ billNumber: e.target.value })}
           />
@@ -168,6 +170,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
             className="input textarea"
             rows={1}
             value={draft.description}
+            maxLength={MAX_DESCRIPTION_LENGTH}
             placeholder="در صورت نیاز توضیحات را وارد کنید..."
             onChange={(e) => set({ description: e.target.value })}
           />

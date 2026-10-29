@@ -4,7 +4,7 @@
  * وضعیت «همه» (پیش‌فرض) = پرداخت‌شده + پرداخت‌نشده، بدون حذف‌شده‌ها؛ حذف‌شده‌ها فقط با انتخاب صریح «حذف‌شده».
  */
 import type { BillWithUnits, ExpenseType } from '../models/types';
-import { EXPENSE_TYPES, EXPENSE_TYPE_ORDER, MONTHS } from '../models/constants';
+import { EXPENSE_TYPES, EXPENSE_TYPE_ORDER, MONTHS, isExpenseType } from '../models/constants';
 import { isBillDeleted, isBillPaid } from './billPaid';
 
 export type StatusFilter = 'all' | 'paid' | 'unpaid' | 'deleted';
@@ -35,7 +35,7 @@ export function normalizeMonth(v: unknown): number | null {
 
 /** تبدیل مقدار خام به نوع هزینه معتبر یا null (= همه) */
 export function normalizeType(v: unknown): ExpenseType | null {
-  return typeof v === 'string' && v in EXPENSE_TYPES ? (v as ExpenseType) : null;
+  return isExpenseType(v) ? v : null;
 }
 
 export function normalizeStatus(v: unknown): StatusFilter {

@@ -36,6 +36,14 @@ export const EXPENSE_TYPES: Record<ExpenseType, ExpenseTypeInfo> = {
 };
 
 /** ترتیب نمایش در لیست‌ها و گزارش */
+/**
+ * آیا مقدار، یکی از ۸ نوع هزینه است؟ (فقط کلیدهای خودِ EXPENSE_TYPES؛ برخلاف `in`، کلیدهای ارثی
+ * مثل "constructor" / "toString" / "__proto__" از فایل پشتیبان دستکاری‌شده پذیرفته نمی‌شوند)
+ */
+export function isExpenseType(v: unknown): v is ExpenseType {
+  return typeof v === 'string' && Object.prototype.hasOwnProperty.call(EXPENSE_TYPES, v);
+}
+
 export const EXPENSE_TYPE_ORDER: ExpenseType[] = [
   'water', 'electricity', 'gas', 'building', 'cleaning', 'repairs', 'beautification', 'misc',
 ];

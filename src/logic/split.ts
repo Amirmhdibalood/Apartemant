@@ -3,7 +3,7 @@
  * در «بر اساس واحد» وزن هر واحد ۱ است؛ تعداد نفرات واقعی واحدها دست‌نخورده ذخیره می‌شود.
  */
 import type { Bill, ExpenseType, SplitMethod } from '../models/types';
-import { DEFAULT_SPLIT_METHOD, EXPENSE_TYPES } from '../models/constants';
+import { DEFAULT_SPLIT_METHOD, isExpenseType } from '../models/constants';
 import { calculateShares, type CalculationResult } from './calculation';
 import { areaToMilli, parseArea, AREA_SCALE } from './area';
 
@@ -70,7 +70,7 @@ export function sanitizeSplitDefaults(input: unknown): SplitDefaults {
   const out: SplitDefaults = {};
   if (typeof input !== 'object' || input === null || Array.isArray(input)) return out;
   for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
-    if (k in EXPENSE_TYPES && isSplitMethod(v)) out[k as ExpenseType] = v;
+    if (isExpenseType(k) && isSplitMethod(v)) out[k as ExpenseType] = v;
   }
   return out;
 }

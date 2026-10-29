@@ -3,7 +3,7 @@
  * ساخت فایل پشتیبان JSON، نام‌گذاری، اعتبارسنجی کامل فایل ورودی و خلاصه محتوای آن.
  */
 import type { AppSettings, Bill, BuildingSettings, ExpenseType, Payment, Unit } from '../models/types';
-import { EXPENSE_TYPES } from '../models/constants';
+import { EXPENSE_TYPES, isExpenseType } from '../models/constants';
 import { sanitizeSettings } from './settings';
 import { formatJalaliDateTimeFa, jalaliIsoDate } from './date';
 import { toPersianDigits } from './formatting';
@@ -37,6 +37,11 @@ export const BACKUP_APP_ID = 'apartemant';
 export const BACKUP_VERSION = 8;
 /** حداکثر حجم قابل قبول فایل پشتیبان */
 export const MAX_BACKUP_BYTES = 64 * 1024 * 1024;
+/** حداکثر طول متن‌های آزاد قبض (شماره قبض/توضیحات) که بازیابی می‌پذیرد؛ فرم قبض هم بیشتر از این نمی‌گیرد */
+export const MAX_BACKUP_TEXT_LENGTH = 5000;
+/** سقف ورودی فرم قبض (کمتر از سقف بازیابی تا هر قبض ذخیره‌شده قابل بازیابی بماند) */
+export const MAX_BILL_NUMBER_LENGTH = 100;
+export const MAX_DESCRIPTION_LENGTH = MAX_BACKUP_TEXT_LENGTH;
 
 export interface BackupData {
   bills: Bill[];
@@ -151,7 +156,7 @@ const isObj = (v: unknown): v is Obj => typeof v === 'object' && v !== null && !
 const isInt = (v: unknown, min: number, max = Number.MAX_SAFE_INTEGER): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= min && v <= max;
 const isId = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length <= 200;
-const optText = (v: unknown): v is string | null | undefined => v == null || (typeof v === 'string' && v.length <= 5000);
+const optText = (v: unknown): v is string | null | undefined => v == null || (typeof v === 'string' && v.length <= MAX_BACKUP_TEXT_LENGTH);
 const validDate = (v: unknown): v is string => typeof v === 'string' && !Number.isNaN(Date.parse(v));
 
 class BackupFormatError extends Error {}
@@ -164,7 +169,7 @@ function parseBills(raw: unknown): Bill[] {
   return (raw as unknown[]).map((b, i) => {
     if (!isObj(b)) return bad(`اطلاعات قبض ${nth(i)} نامعتبر است.`);
     const ok = isId(b.id) && isInt(b.year, 1300, 1700) && isInt(b.month, 1, 12)
-      && typeof b.expenseType === 'string' && b.expenseType in EXPENSE_TYPES
+      && isExpenseType(b.expenseType)
       && optText(b.billNumber) && optText(b.description)
       && isInt(b.totalAmount, 1) && validDate(b.createdAt) && typeof b.isFullySettled === 'boolean'
       && (b.splitMethod == null || isSplitMethod(b.splitMethod)) // نحوه تقسیم (از قالب ۳، اختیاری)
