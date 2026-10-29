@@ -1328,6 +1328,12 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
 .sp-tx em { font-style: normal; font-size: 11.5px; color: var(--primary); font-weight: 700; }
 .sp-cp { flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--soft-panel); color: var(--text-2); display: flex; align-items: center; justify-content: center; }
 .sp-note { font-size: 12px; color: var(--muted); line-height: 1.9; margin-top: 8px; }
+.sp-link--top { margin: 0 0 12px; line-height: 1.9; }
+.sp-link--top svg { flex: none; }
+.sp-title { font-size: 13.5px; font-weight: 800; color: var(--text); margin: 2px 2px 4px; }
+.sp-ic--brand { background: transparent; overflow: hidden; border-radius: 50%; }
+.sp-soon-line { margin: 10px 0 0; padding-top: 10px; border-top: 1px dashed var(--border); font-size: 12.5px; color: var(--muted); text-align: center; font-weight: 700; line-height: 1.9; }
+.sp-note--center { text-align: center; margin: 10px 6px 0; }
 .sp-soon { text-align: center; padding: 28px 18px; }
 .sp-soon .sp-ic { width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 12px; }
 .sp-soon b { display: block; font-size: 16px; font-weight: 800; margin-bottom: 6px; }
@@ -1424,12 +1430,4 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
   cursor: default;
   opacity: 1;
   pointer-events: none;
-}
-:root[data-theme="dark"] .btn--soon {
-  background: #1c2845;
-  color: #9098ab;
-  border-color: #212f51;
-}
-:root[data-theme="dark"] .share-app-row {
-  background: var(--soft-panel);
 }

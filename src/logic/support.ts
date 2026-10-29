@@ -65,7 +65,7 @@ export function buildSupportItems(cfg: SupportConfig = SUPPORT, version: string 
   const bale = cleanHandle(cfg.bale);
   if (bale) out.push({ id: 'bale', label: 'بله', display: `@${bale}`, copy: `@${bale}`, href: `https://ble.ir/${bale}`, hint: 'باز کردن در بله' });
   const tg = cleanHandle(cfg.telegram);
-  if (tg) out.push({ id: 'telegram', label: 'تلگرام', display: `@${tg}`, copy: `@${tg}`, href: `https://t.me/${tg}`, hint: 'باز کردن در تلگرام' });
+  if (tg) out.push({ id: 'telegram', label: 'ربات تلگرام', display: `@${tg}`, copy: `@${tg}`, href: `https://t.me/${tg}`, hint: 'باز کردن در تلگرام' });
   return out;
 }
 

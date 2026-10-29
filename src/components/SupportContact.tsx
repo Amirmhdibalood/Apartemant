@@ -1,11 +1,13 @@
 import { useRef } from 'react';
-import { IconChat, IconCopy, IconMail, IconPhone, IconSend } from './Icons';
+import { IconChat, IconCopy, IconMail, IconPhone, IconTelegramLogo } from './Icons';
 import { useFeedback } from '../context/FeedbackContext';
 import { copyText } from '../services/clipboard';
 import { buildSupportItems, type SupportId, type SupportItem } from '../logic/support';
 import { SUPPORT, type SupportConfig } from '../config/support';
 
-const ICONS: Record<SupportId, typeof IconMail> = { email: IconMail, phone: IconPhone, bale: IconChat, telegram: IconSend };
+const ICONS: Record<SupportId, typeof IconMail> = { email: IconMail, phone: IconPhone, bale: IconChat, telegram: IconTelegramLogo };
+/** آیکون‌های برند (رنگ و پس‌زمینهٔ خودشان را دارند) */
+const BRAND: Partial<Record<SupportId, boolean>> = { telegram: true };
 const LONG_PRESS_MS = 550;
 
 /**
@@ -45,7 +47,7 @@ export function SupportContact({ cfg = SUPPORT, version }: { cfg?: SupportConfig
               onContextMenu={(e) => e.preventDefault()}
               onClick={(e) => { clear(); if (suppress.current) { e.preventDefault(); suppress.current = false; } }}
             >
-              <span className="sp-ic"><Icon size={22} /></span>
+              <span className={'sp-ic' + (BRAND[it.id] ? ' sp-ic--brand' : '')}>{BRAND[it.id] ? <Icon size={44} /> : <Icon size={22} />}</span>
               <span className="sp-tx">
                 <small>{it.label}</small>
                 <b dir="ltr">{it.display}</b>

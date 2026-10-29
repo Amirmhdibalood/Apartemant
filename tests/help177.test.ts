@@ -137,7 +137,9 @@ describe('۱.۷.۷ — جست‌وجوی آفلاین', () => {
   });
   it('سؤال‌های رایج از همان متن موضوع‌ها می‌آیند و جست‌وجو می‌شوند', () => {
     const all = faqItems();
-    expect(all.length).toBe(HELP_TOPICS.filter((t) => t.id !== 'support').flatMap((t) => t.qa ?? []).length);
+    // ۱.۸.۰: ربات تلگرام پشتیبانی پر است، پس موضوع «پشتیبانی» هم در سؤال‌های رایج پیش‌فرض هست
+    expect(all.length).toBe(HELP_TOPICS.flatMap((t) => t.qa ?? []).length);
+    expect(faqItems(NO_SUPPORT).length).toBe(HELP_TOPICS.filter((t) => t.id !== 'support').flatMap((t) => t.qa ?? []).length);
     expect(searchFaq('').length).toBe(all.length);
     const hit = searchFaq('قفل');
     expect(hit.length).toBeGreaterThan(0);

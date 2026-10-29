@@ -3,7 +3,7 @@ import { AppHeader } from '../components/AppHeader';
 import { IconChat, IconChevronLeft, IconHeadset, IconSearch } from '../components/Icons';
 import { SupportContact } from '../components/SupportContact';
 import { searchFaq } from '../logic/help';
-import { hasSupport } from '../logic/support';
+import { buildSupportItems, hasSupport } from '../logic/support';
 import { toPersianDigits } from '../logic/formatting';
 
 type Tab = 'faq' | 'contact';
@@ -14,6 +14,9 @@ export function SupportScreen({ initialTab = 'faq', onBack, onOpenTopic }: { ini
   const [q, setQ] = useState('');
   const list = useMemo(() => searchFaq(q), [q]);
   const contact = hasSupport();
+  const ids = buildSupportItems().map((x) => x.id);
+  const onlyTelegram = ids.length === 1 && ids[0] === 'telegram';
+  const allSupport = ids.length === 4;
 
   return (
     <>
@@ -48,12 +51,18 @@ export function SupportScreen({ initialTab = 'faq', onBack, onOpenTopic }: { ini
 
         {tab === 'contact' && (
           <section aria-label="تماس با ما">
+            <button type="button" className="sp-link sp-link--top" onClick={() => setTab('faq')}>
+              <span>لطفاً در صورت داشتن سؤال، قبل از تماس با پشتیبانی، قسمت «سؤال‌های رایج» و «آموزش نرم‌افزار» را مطالعه کنید.</span>
+            </button>
             {contact ? (
-              <div className="card sp-card">
-                <p className="card__hint">سؤال یا مشکلی داشتید؟ از یکی از راه‌های زیر پیام بدهید. با زدن هر ردیف، برنامهٔ مربوط باز می‌شود؛ نگه داشتن انگشت روی ردیف یا دکمهٔ کنار آن، مقدار را کپی می‌کند.</p>
-                <SupportContact />
-                <p className="sp-note">برنامه اینترنت و مجوز ندارد؛ فقط لینک را به برنامهٔ ایمیل، شماره‌گیر، بله یا تلگرام شما می‌دهد. اگر آن برنامه نصب نباشد، مقدار را کپی کنید.</p>
-              </div>
+              <>
+                <div className="card sp-card">
+                  <div className="sp-title">پشتیبانی</div>
+                  <SupportContact />
+                  {!allSupport && <p className="sp-soon-line">مسیرهای ارتباطی دیگر به‌زودی راه‌اندازی می‌شود.</p>}
+                </div>
+                <p className="sp-note sp-note--center">{onlyTelegram ? 'با زدن ردیف، تلگرام باز می‌شود؛ نگه داشتن انگشت یا دکمهٔ کنار، نشانی را کپی می‌کند.' : 'با زدن هر ردیف، برنامهٔ مربوط باز می‌شود؛ نگه داشتن انگشت یا دکمهٔ کنار، مقدار را کپی می‌کند.'}</p>
+              </>
             ) : (
               <div className="card sp-soon">
                 <span className="sp-ic"><IconHeadset size={30} /></span>
@@ -61,9 +70,6 @@ export function SupportScreen({ initialTab = 'faq', onBack, onOpenTopic }: { ini
                 <p>فعلاً می‌توانید جواب خیلی از سؤال‌ها را در «سؤال‌های رایج» و بخش «آموزش» پیدا کنید.</p>
               </div>
             )}
-            <button type="button" className="sp-link" onClick={() => setTab('faq')}>
-              <IconSearch size={20} /><span>{contact ? 'قبل از پیام دادن، «سؤال‌های رایج» را ببینید.' : 'رفتن به «سؤال‌های رایج»'}</span>
-            </button>
           </section>
         )}
       </main>

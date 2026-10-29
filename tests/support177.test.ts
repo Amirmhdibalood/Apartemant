@@ -7,16 +7,19 @@ import { APP_VERSION } from '../src/appVersion';
 const FULL = { email: 'help@mysite.ir', phone: '۰۹۱۲ ۳۴۵-۶۷۸۹', bale: '@my_bale', telegram: 'https://t.me/my_tg' };
 
 describe('۱.۷.۷ — پشتیبانی: پیکربندی مرکزی', () => {
-  it('در بستهٔ نهایی هر چهار مقدار خالی است (هیچ مقدار ساختگی نمی‌رود)', () => {
-    expect(SUPPORT).toEqual({ email: '', phone: '', bale: '', telegram: '' });
-    expect(hasSupport()).toBe(false);
-    expect(buildSupportItems()).toEqual([]);
+  it('در بستهٔ نهایی فقط ربات تلگرام واقعی پر است؛ بقیه خالی (هیچ مقدار ساختگی نمی‌رود)', () => {
+    expect(SUPPORT).toEqual({ email: '', phone: '', bale: '', telegram: 'ApartemantSupportBot' });
+    expect(hasSupport()).toBe(true);
+    const items = buildSupportItems();
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ id: 'telegram', label: 'ربات تلگرام', display: '@ApartemantSupportBot', copy: '@ApartemantSupportBot', href: 'https://t.me/ApartemantSupportBot', hint: 'باز کردن در تلگرام' });
   });
   it('فایل پیکربندی مقدار نمونه/ساختگی ندارد (حتی در رشته‌ها)', () => {
     const src = readFileSync('src/config/support.ts', 'utf8');
     const body = src.slice(src.indexOf('export const SUPPORT'));
-    expect([...body.matchAll(/'([^']*)'/g)].map((m) => m[1]).filter(Boolean)).toEqual([]);
-    expect(body).not.toMatch(/example|test|@|\d{4,}/i);
+    expect([...body.matchAll(/'([^']*)'/g)].map((m) => m[1]).filter(Boolean)).toEqual(['ApartemantSupportBot']);
+    expect(body).not.toMatch(/example|test|my_|sample|demo|@|\d{4,}/i);
+    for (const k of ['email', 'phone', 'bale'] as const) expect(SUPPORT[k], k).toBe('');
   });
   it('هیچ مقدار تماسِ ثابت در کد رابط/محتوا نیست', () => {
     for (const f of ['src/content/help.ts', 'src/screens/SupportScreen.tsx', 'src/components/SupportContact.tsx', 'src/screens/TutorialScreen.tsx']) {
@@ -86,5 +89,44 @@ describe('۱.۷.۷ — پشتیبانی: بدون مجوز و بدون افزو�
     expect(s).toContain('تماس با ما');
     expect(s).toContain('راه‌های تماس به‌زودی اضافه می‌شود');
     expect(s).toContain('hasSupport()');
+  });
+});
+
+describe('۱.۸.۰ — طرح تازهٔ «تماس با ما»', () => {
+  const s = readFileSync('src/screens/SupportScreen.tsx', 'utf8');
+  const contact = s.slice(s.indexOf("tab === 'contact' &&"));
+  it('بالای کارت: یادآوری خواندن «سؤال‌های رایج» و «آموزش نرم‌افزار» که به زبانهٔ سؤال‌ها می‌رود', () => {
+    const top = 'لطفاً در صورت داشتن سؤال، قبل از تماس با پشتیبانی، قسمت «سؤال‌های رایج» و «آموزش نرم‌افزار» را مطالعه کنید.';
+    expect(contact).toContain(top);
+    expect(contact.indexOf(top)).toBeLessThan(contact.indexOf('sp-card'));
+    expect(contact).toMatch(/sp-link sp-link--top" onClick=\{\(\) => setTab\('faq'\)\}/);
+    expect(s).not.toContain('قبل از پیام دادن');
+  });
+  it('کارت: عنوان «پشتیبانی»، یک خط «به‌زودی» و راهنمای پایین؛ متن‌های قدیمی حذف شده‌اند', () => {
+    expect(contact).toContain('<div className="sp-title">پشتیبانی</div>');
+    expect(contact).toContain('مسیرهای ارتباطی دیگر به‌زودی راه‌اندازی می‌شود.');
+    expect(contact).toContain('با زدن ردیف، تلگرام باز می‌شود؛ نگه داشتن انگشت یا دکمهٔ کنار، نشانی را کپی می‌کند.');
+    expect(contact.indexOf('مسیرهای ارتباطی دیگر')).toBeLessThan(contact.indexOf('با زدن ردیف، تلگرام'));
+    expect(s).not.toContain('برنامه اینترنت و مجوز ندارد');
+    expect(s).not.toContain('از یکی از راه‌های زیر پیام بدهید');
+  });
+  it('ردیف تلگرام لوگوی واقعی تلگرام دارد، نه آیکون عمومی هواپیما', () => {
+    const c = readFileSync('src/components/SupportContact.tsx', 'utf8');
+    expect(c).toMatch(/telegram: IconTelegramLogo/);
+    expect(c).not.toMatch(/IconSend/);
+    const icons = readFileSync('src/components/Icons.tsx', 'utf8');
+    const logo = icons.slice(icons.indexOf('export const IconTelegramLogo'));
+    expect(logo).toContain('#2AABEE');
+    expect(logo).toContain('#229ED9');
+    expect(logo).toContain('fill="#fff"');
+  });
+  it('موضوع آموزش «پشتیبانی» با وضعیت فعلی هماهنگ است', () => {
+    const h = readFileSync('src/content/help.ts', 'utf8');
+    const t = h.slice(h.indexOf("id: 'support'"), h.indexOf("related: ['privacy', 'backup', 'quick']"));
+    expect(t).toContain('ربات تلگرام');
+    expect(t).toContain('«آموزش نرم‌افزار»');
+    expect(t).toContain('مسیرهای ارتباطی دیگر به‌زودی راه‌اندازی می‌شود');
+    expect(t).not.toMatch(/سوال/);
+    expect(t).not.toMatch(/ایمیل با موضوع|شماره‌گیر/);
   });
 });
