@@ -1,6 +1,6 @@
 /** جمع‌آوری و جایگزینی کل داده‌های برنامه برای پشتیبان‌گیری/بازیابی */
 import type { BackupData, BackupFile } from '../logic/backup';
-import { createBackup, parseBackup, serializeBackup } from '../logic/backup';
+import { createBackup, groupUnitsByBill, parseBackup, serializeBackup } from '../logic/backup';
 import { billRepository } from './billRepository';
 import { settingsRepository } from './settingsRepository';
 import { buildingRepository } from './buildingRepository';
@@ -35,7 +35,10 @@ export const backupRepository = {
     await settingsRepository.save(data.settings);
     // تنظیمات ساختمان (قالب‌های ۱ تا ۴ ندارند: از جدیدترین قبض حذف‌نشده، وگرنه unitTemplate، وگرنه ۱ واحد)
     const building = data.building
-      ?? buildingFromBills(data.bills.map((bill) => ({ bill, units: data.units.filter((u) => u.billId === bill.id) })), data.unitTemplate);
+      ?? (() => {
+        const byBill = groupUnitsByBill(data.units);
+        return buildingFromBills(data.bills.map((bill) => ({ bill, units: byBill.get(bill.id) ?? [] })), data.unitTemplate);
+      })();
     await buildingRepository.replace(building);
     // پشتیبان‌های قدیمی پیش‌فرض نحوه تقسیم ندارند (همه بر اساس نفرات)
     await splitDefaultsRepository.replace(data.splitDefaults ?? {});

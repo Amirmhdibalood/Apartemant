@@ -17,7 +17,8 @@
     "capacitor:copy:after": "node scripts/apply-android-branding.mjs",
     "android:brand": "node scripts/apply-android-branding.mjs",
     "branding:generate": "node resources/branding/generate.mjs",
-    "android:sign": "node scripts/sign-release.mjs"
+    "android:sign": "node scripts/sign-release.mjs",
+    "test:stress": "vitest run --config vitest.stress.config.ts"
   },
   "engines": {
     "node": ">=22.12.0"

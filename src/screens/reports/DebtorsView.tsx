@@ -23,7 +23,8 @@ export function DebtorsView({ all, onOpenBill, onOpenUnit, onPayUnit }: Props) {
   const { unitIcon } = useIconPrefs();
   const report = useMemo(() => debtorsReport(all ?? []), [all]);
   const [open, setOpen] = useState<number | null>(null);
-  const doc = useMemo(() => (all && all.length > 0 ? debtorsDoc(report) : null), [all, report]);
+  // سند خروجی (هزاران ردیف در داده‌های بزرگ) فقط با زدن ذخیره/اشتراک/پرینت ساخته می‌شود
+  const doc = useMemo(() => (all && all.length > 0 ? () => debtorsDoc(report) : null), [all, report]);
   if (!all) return null;
   const expanded = open ?? report.units[0]?.unitNumber ?? null;
 

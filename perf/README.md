@@ -26,3 +26,15 @@ NODE_PATH=/tmp/pw/node_modules node perf/run.mjs --profile fit-500x12 --cpu 6
 Results: `perf/results/*.json` and `summary-cpuN.md`.
 
 Does not modify app code. Large `perf/data/` JSON should stay out of git (see `.gitignore` note in results).
+
+## 1.8.x stress (SQLite / sql.js)
+
+```bash
+npm run test:stress                                   # 5000 & 10000 bills × 100 units (slow, not in `npm test`)
+STRESS_BILLS=1000 STRESS_UNITS=100 STRESS_DB_OUT=1 npm run test:stress   # also dumps perf/data/stress-1000x100.db
+npm run build && npx vite preview --port 4180 --strictPort
+NODE_PATH=/tmp/pw/node_modules node perf/browser-sqlite.mjs --db perf/data/stress-1000x100.db --cpu 4
+# DBs > ~50 MB: cp the .db to dist/__seed.db and run with SEED_STATIC=1
+```
+
+Results: `perf/results/stress-<bills>x<units>.json`, `perf/results/browser-*.json`.

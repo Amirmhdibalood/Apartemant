@@ -234,3 +234,12 @@ export function getSqliteExportBytes(): Uint8Array | null {
   if (!db) return memoryBytes ? new Uint8Array(memoryBytes) : null;
   return db.export();
 }
+
+/** Tests / stress: close the open DB but keep the last persisted bytes (simulates a cold app restart). */
+export function closeSqliteKeepBytesForTests(): void {
+  if (db) {
+    try { db.close(); } catch { /* ignore */ }
+  }
+  db = null;
+  openPromise = null;
+}

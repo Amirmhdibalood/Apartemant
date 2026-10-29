@@ -22,6 +22,12 @@ describe('سه دکمه و برگهٔ پرینت', () => {
     expect(h.match(/disabled=""/g)).toBeNull();
     expect(renderToStaticMarkup(createElement(ReportActions, { doc: null })).match(/disabled=""/g)).toHaveLength(3);
   });
+  it('سند تنبل (تابع): دکمه‌ها فعال‌اند و سند تا زدن دکمه ساخته نمی‌شود (کارایی بدهکاران)', () => {
+    const build = vi.fn(() => doc);
+    const h = renderToStaticMarkup(createElement(ReportActions, { doc: build }));
+    expect(h.match(/disabled=""/g)).toBeNull();
+    expect(build).not.toHaveBeenCalled();
+  });
   it('پیش‌نمایش: بدون منبع = هیچ؛ هر سه دکمه به‌جای خروجی مستقیم، پیش‌نمایش را باز می‌کنند (۱.۷.۴)', () => {
     expect(renderToStaticMarkup(createElement(ReportPreview, { source: null, action: 'save', onClose: () => undefined }))).toBe('');
     const src = read('src/components/ReportActions.tsx');

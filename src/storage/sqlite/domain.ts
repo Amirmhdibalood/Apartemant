@@ -1,7 +1,7 @@
 /**
  * Row-level SQLite domain operations for buildings, bills, units, payments, fund.
  */
-import type { Database } from 'sql.js';
+import type { Database, Statement } from 'sql.js';
 import type { Bill, BuildingSettings, BuildingUnit, Payment, Unit } from '../../models/types';
 import { migrateBill } from '../../logic/billPaid';
 import { unitPayments } from '../../logic/payments';
@@ -11,8 +11,45 @@ import { getMeta, setMeta } from './db';
 
 export type BillRow = Bill & { buildingId: string };
 
+/**
+ * Same objects as `while (stmt.step()) stmt.getAsObject()`, but reads the column names once:
+ * getAsObject() re-fetches them for every row, which made hydrating 100k+ unit rows ~5× slower.
+ */
+function forEachRowObject(stmt: Statement, fn: (row: Record<string, unknown>) => void): void {
+  let cols: string[] | null = null;
+  while (stmt.step()) {
+    if (!cols) cols = stmt.getColumnNames();
+    const vals = stmt.get();
+    const row: Record<string, unknown> = {};
+    for (let i = 0; i < cols.length; i++) row[cols[i]] = vals[i];
+    fn(row);
+  }
+}
+
 function boolInt(v: boolean | undefined | null): number {
   return v ? 1 : 0;
+}
+
+/**
+ * Run a synchronous batch of statements atomically (SAVEPOINT works both standalone and nested).
+ * Without it every INSERT auto-commits separately, which made bulk restores ~10× slower; on error
+ * the batch is rolled back instead of leaving half-written tables.
+ * `fn` must be synchronous so no other writer can interleave inside the savepoint.
+ */
+export function inTransaction<T>(db: Database, fn: () => T): T {
+  db.run('SAVEPOINT apt_batch');
+  try {
+    const out = fn();
+    if (out instanceof Promise) throw new Error('inTransaction: fn must be synchronous');
+    db.run('RELEASE apt_batch');
+    return out;
+  } catch (e) {
+    try {
+      db.run('ROLLBACK TO apt_batch');
+      db.run('RELEASE apt_batch');
+    } catch { /* ignore */ }
+    throw e;
+  }
 }
 
 export function ensureDefaultBuilding(db: Database, name = 'ساختمان ۱'): string {
@@ -107,7 +144,7 @@ function billFromRow(r: Record<string, unknown>): BillRow {
 export function readAllBills(db: Database): BillRow[] {
   const stmt = db.prepare('SELECT * FROM bills');
   const out: BillRow[] = [];
-  while (stmt.step()) out.push(billFromRow(stmt.getAsObject() as Record<string, unknown>));
+  forEachRowObject(stmt, (r) => out.push(billFromRow(r)));
   stmt.free();
   return out;
 }
@@ -125,8 +162,7 @@ export function readPaymentsForUnits(db: Database, unitIds: string[]): Map<strin
       `SELECT * FROM payments WHERE bill_unit_id IN (${placeholders}) ORDER BY paid_at ASC`,
     );
     stmt.bind(part);
-    while (stmt.step()) {
-      const r = stmt.getAsObject() as Record<string, unknown>;
+    forEachRowObject(stmt, (r) => {
       const uid = String(r.bill_unit_id);
       const p: Payment = {
         id: String(r.id),
@@ -135,7 +171,7 @@ export function readPaymentsForUnits(db: Database, unitIds: string[]): Map<strin
       };
       if (r.batch_id) p.batchId = String(r.batch_id);
       map.get(uid)!.push(p);
-    }
+    });
     stmt.free();
   }
   return map;
@@ -144,7 +180,7 @@ export function readPaymentsForUnits(db: Database, unitIds: string[]): Map<strin
 export function readAllUnits(db: Database): Unit[] {
   const stmt = db.prepare('SELECT * FROM bill_units');
   const rows: Array<Record<string, unknown>> = [];
-  while (stmt.step()) rows.push(stmt.getAsObject() as Record<string, unknown>);
+  forEachRowObject(stmt, (r) => rows.push(r));
   stmt.free();
   const payMap = readPaymentsForUnits(db, rows.map((r) => String(r.id)));
   return rows.map((r) => {
@@ -336,6 +372,15 @@ export function isSqliteMigrationDone(db: Database): boolean {
 }
 
 export function replaceAllDomain(
+  db: Database,
+  buildingId: string,
+  bills: Bill[],
+  units: Unit[],
+): void {
+  inTransaction(db, () => replaceAllDomainInner(db, buildingId, bills, units));
+}
+
+function replaceAllDomainInner(
   db: Database,
   buildingId: string,
   bills: Bill[],

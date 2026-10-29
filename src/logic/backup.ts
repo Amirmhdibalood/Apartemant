@@ -246,6 +246,17 @@ function parseUnits(raw: unknown, bills: Bill[]): Unit[] {
   });
 }
 
+/** واحدها به تفکیک قبض، با حفظ ترتیب اصلی (هم‌ارز units.filter(u => u.billId === id) برای هر قبض) */
+export function groupUnitsByBill(units: Unit[]): Map<string, Unit[]> {
+  const map = new Map<string, Unit[]>();
+  for (const u of units) {
+    const arr = map.get(u.billId);
+    if (arr) arr.push(u);
+    else map.set(u.billId, [u]);
+  }
+  return map;
+}
+
 /** اعتبارسنجی کامل متن فایل پشتیبان و تبدیل آن به داده قابل بازیابی */
 export function parseBackup(text: string): ParseBackupResult {
   if (typeof text !== 'string' || text.trim() === '') return { ok: false, error: BackupErrors.empty };
@@ -266,8 +277,11 @@ export function parseBackup(text: string): ParseBackupResult {
     const data = json.data as Obj;
     const bills = parseBills(data.bills);
     const units = parseUnits(data.units, bills);
+    // گروه‌بندی یک‌باره واحدها بر اساس قبض (قبلاً برای هر قبض کل واحدها فیلتر می‌شد: O(قبض×واحد))
+    const unitsByBill = groupUnitsByBill(units);
+    const ownUnits = (billId: string): Unit[] => unitsByBill.get(billId) ?? [];
     for (const bill of bills) {
-      const own = units.filter((u) => u.billId === bill.id);
+      const own = ownUnits(bill.id);
       if (own.length === 0) bad(`قبض «${EXPENSE_TYPES[bill.expenseType].label} ${toPersianDigits(bill.month)}/${toPersianDigits(bill.year)}» هیچ واحدی ندارد.`);
       const sum = own.reduce((s, u) => s + u.shareAmount, 0);
       if (sum !== bill.totalAmount) bad(`جمع سهم واحدهای قبض «${EXPENSE_TYPES[bill.expenseType].label} ${toPersianDigits(bill.month)}/${toPersianDigits(bill.year)}» با مبلغ کل برابر نیست.`);
@@ -285,7 +299,7 @@ export function parseBackup(text: string): ParseBackupResult {
     // تنظیمات ساختمان (از قالب ۵)؛ در فایل‌های قدیمی از جدیدترین قبض حذف‌نشده ساخته می‌شود
     if (data.building != null && !sanitizeBuilding(data.building)) bad('تنظیمات ساختمان نامعتبر است.');
     const building = sanitizeBuilding(data.building)
-      ?? buildingFromBills(bills.map((bill) => ({ bill, units: units.filter((u) => u.billId === bill.id) })), data.unitTemplate);
+      ?? buildingFromBills(bills.map((bill) => ({ bill, units: ownUnits(bill.id) })), data.unitTemplate);
     const backup: BackupFile = {
       app: BACKUP_APP_ID,
       backupVersion: json.backupVersion as number,

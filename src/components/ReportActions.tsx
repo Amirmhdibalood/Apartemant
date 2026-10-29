@@ -5,18 +5,26 @@ import type { ReportDoc } from '../logic/reportDoc';
 import type { PreviewAction } from '../logic/reportPreview';
 
 interface Props {
-  /** سند گزارش جاری (null = چیزی برای خروجی نیست) */
-  doc: ReportDoc | null;
+  /**
+   * سند گزارش جاری (null = چیزی برای خروجی نیست). می‌تواند تابع سازنده هم باشد تا سند سنگین
+   * (مثلاً بدهکاران با هزاران ردیف) فقط وقتی کاربر یکی از دکمه‌ها را زد ساخته شود.
+   */
+  doc: ReportDoc | (() => ReportDoc) | null;
 }
 
 /** سه دکمهٔ هر گزارش: ذخیره، اشتراک‌گذاری و پرینت — هر سه (از ۱.۷.۴) ابتدا «پیش‌نمایش خروجی» را باز می‌کنند؛ تأیید نهایی از داخل پیش‌نمایش است */
 export function ReportActions({ doc }: Props) {
   const [action, setAction] = useState<PreviewAction | null>(null);
-  const source = useMemo<PreviewSource | null>(() => (doc ? {
-    title: doc.title,
-    subtitle: doc.subtitle,
-    render: async () => (await import('../services/reportImage')).renderReportCanvas(doc),
-  } : null), [doc]);
+  // سند فقط هنگام باز شدن پیش‌نمایش ساخته می‌شود (نه در هر رندر صفحهٔ گزارش)
+  const source = useMemo<PreviewSource | null>(() => {
+    if (!doc || !action) return null;
+    const d = typeof doc === 'function' ? doc() : doc;
+    return {
+      title: d.title,
+      subtitle: d.subtitle,
+      render: async () => (await import('../services/reportImage')).renderReportCanvas(d),
+    };
+  }, [doc, action]);
   const disabled = !doc;
 
   return (

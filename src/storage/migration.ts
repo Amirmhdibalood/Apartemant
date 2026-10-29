@@ -152,6 +152,18 @@ export async function ensureMigrated(): Promise<{ bills: Bill[]; units: Unit[]; 
   return { bills: source.bills.map(migrateBill), units: source.units, migratedNow: true };
 }
 
+/**
+ * Cheap readiness gate: make sure the SQLite migration has run, without reading every
+ * bill/unit/payment row when it already has (ensureMigrated() hydrates all rows — O(data)).
+ * Use when the caller does not need the returned tables (buildingRepository, etc.).
+ */
+export async function ensureMigrationDone(): Promise<void> {
+  await openSqlite();
+  const done = await withSqlite((db) => isSqliteMigrationDone(db));
+  if (done) return;
+  await ensureMigrated();
+}
+
 /** After verified SQLite migration, drop large Preferences keys. Idempotent. */
 export async function clearLegacyPrefsAfterMigration(): Promise<boolean> {
   const db = await openSqlite();

@@ -11,6 +11,7 @@ import {
   deleteBillCascade,
   ensureDefaultBuilding,
   getBillBuildingId,
+  inTransaction,
   isSqliteMigrationDone,
   markSqliteMigrationDone,
   readAllBills,
@@ -125,7 +126,7 @@ async function persistRowLevel(
 ): Promise<void> {
   store = next;
   writeChain = writeChain.catch(() => undefined).then(async () => {
-    await withSqliteWrite((db) => {
+    await withSqliteWrite((db) => inTransaction(db, () => {
       ensureDefaultBuilding(db);
       if (mode === 'replaceAll') {
         replaceAllDomain(db, DEFAULT_BUILDING_ID, next.bills, next.units);
@@ -146,7 +147,7 @@ async function persistRowLevel(
         replaceUnitsForBill(db, bill.id, bid, units);
         syncFundDepositsForBill(db, bill, bid, units);
       }
-    });
+    }));
   });
   if (doNotify) {
     void writeChain.then(() => notify(), () => undefined);

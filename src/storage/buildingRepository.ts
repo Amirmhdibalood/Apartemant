@@ -35,7 +35,7 @@ import {
   type MeetingAttendanceStatus,
 } from './sqlite/domain';
 import { DEFAULT_BUILDING_ID } from './sqlite/schema';
-import { ensureMigrated } from './migration';
+import { ensureMigrationDone } from './migration';
 import { activeBuildingStore } from './activeBuildingStore';
 
 const LEGACY_KEY = 'building';
@@ -52,7 +52,7 @@ export type { BuildingRow, FundEntryRow, ManagementPeriodRow, MeetingRow, Meetin
 
 export const buildingRepository = {
   async getActiveId(): Promise<string> {
-    await ensureMigrated().catch(() => undefined);
+    await ensureMigrationDone().catch(() => undefined);
     const id = await activeBuildingStore.getActiveId();
     const known = await withSqlite((db) => {
       ensureDefaultBuilding(db);
@@ -80,12 +80,12 @@ export const buildingRepository = {
   },
 
   async list(): Promise<BuildingRow[]> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     return withSqlite((db) => listBuildings(db));
   },
 
   async create(name: string, copyTemplatesFromActive = true): Promise<string> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const active = await this.getActiveId();
     const id = await withSqliteWrite(async (db) => {
       const templates = copyTemplatesFromActive
@@ -97,26 +97,26 @@ export const buildingRepository = {
   },
 
   async rename(id: string, name: string): Promise<void> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     await withSqliteWrite((db) => { renameBuilding(db, id, name); });
   },
 
   async archive(id: string): Promise<void> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const active = await this.getActiveId();
     await withSqliteWrite((db) => { archiveBuilding(db, id); });
     if (active === id) await this.setActiveId(DEFAULT_BUILDING_ID);
   },
 
   async getName(id?: string): Promise<string> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const bid = id ?? await this.getActiveId();
     return withSqlite((db) => getBuildingName(db, bid) ?? 'ساختمان');
   },
 
   /** Unit templates for active (or given) building */
   async get(buildingId?: string): Promise<BuildingSettings> {
-    await ensureMigrated().catch(() => undefined);
+    await ensureMigrationDone().catch(() => undefined);
     const bid = buildingId ?? await this.getActiveId();
 
     // Prefer SQLite templates
@@ -149,7 +149,7 @@ export const buildingRepository = {
     const clean = sanitizeBuilding(b);
     if (!clean) throw new Error('invalid building settings');
     const bid = buildingId ?? await this.getActiveId();
-    await ensureMigrated();
+    await ensureMigrationDone();
     await withSqliteWrite((db) => {
       ensureDefaultBuilding(db);
       replaceUnitTemplates(db, bid, clean);
@@ -168,7 +168,7 @@ export const buildingRepository = {
   },
 
   async getFundEnabled(buildingId?: string): Promise<boolean> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const bid = buildingId ?? await this.getActiveId();
     return withSqlite((db) => {
       ensureDefaultBuilding(db);
@@ -177,7 +177,7 @@ export const buildingRepository = {
   },
 
   async setFundEnabled(enabled: boolean, buildingId?: string): Promise<void> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const bid = buildingId ?? await this.getActiveId();
     await withSqliteWrite((db) => {
       ensureDefaultBuilding(db);
@@ -186,19 +186,19 @@ export const buildingRepository = {
   },
 
   async getFundBalance(buildingId?: string): Promise<number> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const bid = buildingId ?? await this.getActiveId();
     return withSqlite((db) => fundBalance(db, bid));
   },
 
   async listFundEntries(buildingId?: string): Promise<FundEntryRow[]> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const bid = buildingId ?? await this.getActiveId();
     return withSqlite((db) => readFundEntries(db, bid));
   },
 
   async addFundWithdraw(amount: number, note: string | null, buildingId?: string): Promise<void> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const bid = buildingId ?? await this.getActiveId();
     await withSqliteWrite((db) => {
       if (!getBuildingFundEnabled(db, bid)) throw new Error('fund disabled');
@@ -209,7 +209,7 @@ export const buildingRepository = {
   },
 
   async addFundDepositManual(amount: number, note: string | null, buildingId?: string): Promise<void> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const bid = buildingId ?? await this.getActiveId();
     await withSqliteWrite((db) => {
       if (!getBuildingFundEnabled(db, bid)) throw new Error('fund disabled');
@@ -218,7 +218,7 @@ export const buildingRepository = {
   },
 
   async listManagementPeriods(buildingId?: string): Promise<ManagementPeriodRow[]> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const bid = buildingId ?? await this.getActiveId();
     return withSqlite((db) => listManagementPeriods(db, bid));
   },
@@ -230,7 +230,7 @@ export const buildingRepository = {
     notes?: string | null;
     endPreviousEarly?: boolean;
   }, buildingId?: string): Promise<string> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const bid = buildingId ?? await this.getActiveId();
     return withSqliteWrite((db) => {
       if (input.endPreviousEarly) {
@@ -249,7 +249,7 @@ export const buildingRepository = {
   },
 
   async endManagementEarly(periodId: string): Promise<void> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     await withSqliteWrite((db) => { endManagementPeriodEarly(db, periodId); });
   },
 
@@ -259,13 +259,13 @@ export const buildingRepository = {
   },
 
   async listMeetings(buildingId?: string): Promise<MeetingRow[]> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const bid = buildingId ?? await this.getActiveId();
     return withSqlite((db) => listMeetings(db, bid));
   },
 
   async getMeeting(id: string): Promise<MeetingRow | null> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     return withSqlite((db) => getMeeting(db, id));
   },
 
@@ -278,7 +278,7 @@ export const buildingRepository = {
     summary?: string | null;
     attendance: MeetingAttendanceRow[];
   }, buildingId?: string): Promise<string> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     const bid = buildingId ?? await this.getActiveId();
     return withSqliteWrite((db) => insertMeeting(db, {
       buildingId: bid,
@@ -293,7 +293,7 @@ export const buildingRepository = {
   },
 
   async removeMeeting(id: string): Promise<void> {
-    await ensureMigrated();
+    await ensureMigrationDone();
     await withSqliteWrite((db) => { deleteMeeting(db, id); });
   },
 
