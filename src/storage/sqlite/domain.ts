@@ -7,7 +7,7 @@ import { migrateBill } from '../../logic/billPaid';
 import { unitPayments } from '../../logic/payments';
 import { newId } from '../../logic/id';
 import { DEFAULT_BUILDING_ID, SQLITE_SCHEMA_VERSION } from './schema';
-import { getMeta, setMeta } from './db';
+import { getMeta, requestCheckpoint, setMeta } from './db';
 
 export type BillRow = Bill & { buildingId: string };
 
@@ -388,6 +388,7 @@ export function replaceAllDomain(
   bills: Bill[],
   units: Unit[],
 ): void {
+  requestCheckpoint(); // bulk wipe + reinsert: the next persist writes a full snapshot instead of a journal
   inTransaction(db, () => replaceAllDomainInner(db, buildingId, bills, units));
 }
 

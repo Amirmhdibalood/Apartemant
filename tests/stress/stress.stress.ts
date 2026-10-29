@@ -18,7 +18,7 @@ import { chartSeries, typeShares } from '../../src/logic/chartReport';
 import { filterBills, summarizeBills } from '../../src/logic/billFilter';
 import { MAX_BACKUP_BYTES, createBackup, parseBackup, serializeBackup } from '../../src/logic/backup';
 import { resetIdbForTests } from '../../src/storage/idb';
-import { closeSqliteKeepBytesForTests, getSqliteExportBytes, resetSqliteForTests } from '../../src/storage/sqlite/db';
+import { checkpointSqlite, closeSqliteKeepBytesForTests, getPersistStats, getSqliteExportBytes, resetSqliteForTests } from '../../src/storage/sqlite/db';
 import { billRepository } from '../../src/storage/billRepository';
 import { backupRepository } from '../../src/storage/backupRepository';
 import { buildingRepository } from '../../src/storage/buildingRepository';
@@ -142,8 +142,13 @@ describe.each(SIZES)('stress: %i bills × ' + UNITS + ' units', (nBills) => {
     const [calc, tSplit] = await time(() => calculateBySplit(123_456_789, pc, 'perPerson'));
     m.split100Ms = tSplit;
     const built: BillWithUnits = buildBill({ ...draft, personCounts: pc.map(String) }, calc, null);
+    const st0 = getPersistStats();
     [, m.saveOneBillMs] = await time(() => billRepository.upsert(built.bill, built.units));
+    m.saveOneBillJournalKB = Math.round(getPersistStats().lastJournalBytes / 102.4) / 10;
     [, m.markOnePaidMs] = await time(() => billRepository.upsert({ ...built.bill, billPaid: true }, built.units));
+    m.saveCheckpointsDuringSaves = getPersistStats().checkpoints - st0.checkpoints;
+    // full snapshot (happens only when the journal passes its threshold, after restore, or after schema changes)
+    [, m.checkpointMs] = await time(() => checkpointSqlite());
 
     // 6) Backup export → serialize → parse/validate → restore
     const [data, tCollect] = await time(() => backupRepository.collect());

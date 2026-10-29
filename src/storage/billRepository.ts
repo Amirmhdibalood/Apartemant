@@ -68,6 +68,35 @@ function makeStore(bills: Bill[], units: Unit[], buildingByBill?: Map<string, st
   return { bills: cleanBills, units, unitsByBill: buildIndex(units), buildingByBill: map };
 }
 
+/**
+ * Incremental store update (no full rebuild): bills are already migrated, `unitsByBill` is a new Map that
+ * shares untouched bills' unit arrays. The flat `units` list is only built if somebody asks for it.
+ * Saving one bill into 10k bills × 100 units used to re-filter/re-sort ~1M unit rows (≈0.7 s).
+ */
+function deriveStore(bills: Bill[], unitsByBill: Map<string, Unit[]>, buildingByBill: Map<string, string>): Store {
+  let flat: Unit[] | null = null;
+  return {
+    bills,
+    get units(): Unit[] {
+      if (!flat) {
+        flat = [];
+        for (const b of bills) {
+          const arr = unitsByBill.get(b.id);
+          if (arr) for (const u of arr) flat.push(u);
+        }
+      }
+      return flat;
+    },
+    unitsByBill,
+    buildingByBill,
+  };
+}
+
+function stripBuilding(b: Bill): Bill {
+  const { buildingId: _x, ...rest } = b as Bill & { buildingId?: string };
+  return rest;
+}
+
 function withUnits(s: Store, bill: Bill): BillWithUnits {
   return { bill, units: s.unitsByBill.get(bill.id) ?? [] };
 }
@@ -208,35 +237,36 @@ export const billRepository = {
 
   async upsert(bill: Bill, units: Unit[]): Promise<void> {
     const s = await load();
-    const migrated = migrateBill(bill);
-    const bills = s.bills.filter((b) => b.id !== bill.id).concat(migrated);
-    const others = s.units.filter((u) => u.billId !== bill.id);
-    const nextUnits = others.concat(units.map((u) => ({ ...u, billId: bill.id })));
-    const next = makeStore(bills, nextUnits, new Map(s.buildingByBill));
+    const migrated = stripBuilding(migrateBill(bill));
+    const bills = s.bills.filter((b) => b.id !== bill.id);
+    bills.push(migrated);
+    const unitsByBill = new Map(s.unitsByBill);
+    unitsByBill.set(bill.id, units.map((u) => ({ ...u, billId: bill.id })).sort(byUnitNumber));
+    const next = deriveStore(bills, unitsByBill, new Map(s.buildingByBill));
     if (!next.buildingByBill.has(bill.id)) {
       const existing = await withSqlite((db) => getBillBuildingId(db, bill.id));
       const active = await resolveActiveBuildingId();
       next.buildingByBill.set(bill.id, existing ?? bill.buildingId ?? active);
     }
-    await persistRowLevel(next, [migrated], nextUnits, true, 'upsert');
+    await persistRowLevel(next, [migrated], [], true, 'upsert');
   },
 
   async upsertMany(items: { bill: Bill; units: Unit[] }[]): Promise<void> {
     if (items.length === 0) return;
     const s = await load();
     const ids = new Set(items.map((i) => i.bill.id));
-    const migratedItems = items.map((i) => ({ bill: migrateBill(i.bill), units: i.units }));
+    const migratedItems = items.map((i) => ({ bill: stripBuilding(migrateBill(i.bill)), buildingId: i.bill.buildingId, units: i.units }));
     const bills = s.bills.filter((b) => !ids.has(b.id)).concat(migratedItems.map((i) => i.bill));
-    const units = s.units.filter((u) => !ids.has(u.billId))
-      .concat(migratedItems.flatMap((i) => i.units.map((u) => ({ ...u, billId: i.bill.id }))));
-    const next = makeStore(bills, units, new Map(s.buildingByBill));
+    const unitsByBill = new Map(s.unitsByBill);
+    for (const i of migratedItems) unitsByBill.set(i.bill.id, i.units.map((u) => ({ ...u, billId: i.bill.id })).sort(byUnitNumber));
+    const next = deriveStore(bills, unitsByBill, new Map(s.buildingByBill));
     const active = await resolveActiveBuildingId();
     for (const i of migratedItems) {
       if (!next.buildingByBill.has(i.bill.id)) {
-        next.buildingByBill.set(i.bill.id, i.bill.buildingId ?? active);
+        next.buildingByBill.set(i.bill.id, i.buildingId ?? active);
       }
     }
-    await persistRowLevel(next, migratedItems.map((i) => i.bill), units, true, 'upsert');
+    await persistRowLevel(next, migratedItems.map((i) => i.bill), [], true, 'upsert');
   },
 
   async remove(billId: string, now: Date = new Date()): Promise<void> {
@@ -245,8 +275,8 @@ export const billRepository = {
     if (!bill) return;
     const deleted = softDeleteBill(bill, now);
     const bills = s.bills.map((b) => (b.id === billId ? deleted : b));
-    const next = makeStore(bills, s.units, new Map(s.buildingByBill));
-    await persistRowLevel(next, [deleted], s.units, true, 'upsert');
+    const next = deriveStore(bills, s.unitsByBill, new Map(s.buildingByBill));
+    await persistRowLevel(next, [deleted], [], true, 'upsert');
   },
 
   async restore(billId: string): Promise<void> {
@@ -254,8 +284,8 @@ export const billRepository = {
     if (!s.bills.some((b) => b.id === billId)) return;
     const restored = restoreBill(s.bills.find((b) => b.id === billId)!);
     const bills = s.bills.map((b) => (b.id === billId ? restored : b));
-    const next = makeStore(bills, s.units, new Map(s.buildingByBill));
-    await persistRowLevel(next, [restored], s.units, true, 'upsert');
+    const next = deriveStore(bills, s.unitsByBill, new Map(s.buildingByBill));
+    await persistRowLevel(next, [restored], [], true, 'upsert');
   },
 
   async purge(billId: string): Promise<void> {
@@ -263,11 +293,9 @@ export const billRepository = {
     const bill = s.bills.find((b) => b.id === billId);
     if (!bill) return;
     if (!isBillDeleted(bill)) throw new BillDeleteBlockedError(BillPaidMessages.purgeNotDeleted);
-    const next = makeStore(
-      s.bills.filter((b) => b.id !== billId),
-      s.units.filter((u) => u.billId !== billId),
-      new Map(s.buildingByBill),
-    );
+    const unitsByBill = new Map(s.unitsByBill);
+    unitsByBill.delete(billId);
+    const next = deriveStore(s.bills.filter((b) => b.id !== billId), unitsByBill, new Map(s.buildingByBill));
     next.buildingByBill.delete(billId);
     await persistRowLevel(next, [], [], true, 'purge', [billId]);
   },

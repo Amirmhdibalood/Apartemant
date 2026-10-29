@@ -242,10 +242,15 @@ export const backupRepository = {
   async hasUserData(): Promise<boolean> {
     await ensureMigrationDone();
     return withSqlite((db) => {
-      const r = db.exec(`SELECT
+      const stmt = db.prepare(`SELECT
         (SELECT COUNT(*) FROM bills) + (SELECT COUNT(*) FROM fund_entries) + (SELECT COUNT(*) FROM management_periods)
-        + (SELECT COUNT(*) FROM meetings) + (SELECT COUNT(*) FROM buildings WHERE id <> '${DEFAULT_BUILDING_ID}')`);
-      return Number(r[0]?.values[0]?.[0] ?? 0) > 0;
+        + (SELECT COUNT(*) FROM meetings) + (SELECT COUNT(*) FROM buildings WHERE id <> ?) AS n`);
+      try {
+        stmt.bind([DEFAULT_BUILDING_ID]);
+        return stmt.step() && Number(stmt.get()[0]) > 0;
+      } finally {
+        stmt.free();
+      }
     });
   },
 

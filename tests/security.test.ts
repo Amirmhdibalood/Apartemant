@@ -123,9 +123,10 @@ describe('امنیت — کد منبع', () => {
   });
 
   it('همهٔ کوئری‌های SQLite پارامتری‌اند (بدون درج مقدار در متن SQL)', () => {
-    const files = ['storage/sqlite/domain.ts', 'storage/sqlite/db.ts'].map(src).join('\n');
-    // تنها درج مجاز: placeholders «?,?,?» در IN (...)
-    const interpolated = files.match(/(prepare|run)\(\s*`[^`]*\$\{(?!placeholders\})[^`]*`/g) ?? [];
+    const files = ['storage/sqlite/domain.ts', 'storage/sqlite/db.ts', 'storage/sqlite/fullBackup.ts'].map(src).join('\n');
+    // تنها درج‌های مجاز: placeholders «?,?,?» در IN (...)، و نام جدول/ستون فقط از راه ident()/identList() که نام را اعتبارسنجی می‌کند
+    const interpolated = (files.match(/(prepare|run|exec)\(\s*`[^`]*\$\{[^`]*`/g) ?? [])
+      .filter((q) => [...q.matchAll(/\$\{([^}]*)\}/g)].some((m) => !/^(placeholders|ident\(.*\)|identList\(.*\)|qmarks\(.*\))$/.test(m[1])));
     expect(interpolated).toEqual([]);
   });
 

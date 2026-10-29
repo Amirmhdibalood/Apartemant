@@ -11,6 +11,7 @@ import { migrateBill } from '../../logic/billPaid';
 import { unitPayments } from '../../logic/payments';
 import { newId } from '../../logic/id';
 import { DEFAULT_BUILDING_ID } from './schema';
+import { ident, requestCheckpoint } from './db';
 import {
   ensureDefaultBuilding,
   inTransaction,
@@ -148,8 +149,9 @@ const b01 = (v: boolean | undefined | null) => (v ? 1 : 0);
  * Every row keeps its building; fund entries / periods / meetings are written verbatim.
  */
 export function replaceFullDomain(db: Database, full: FullDomain): void {
+  requestCheckpoint(); // bulk wipe + reinsert: persisted as one full snapshot
   inTransaction(db, () => {
-    for (const t of WIPE_ORDER) db.run(`DELETE FROM ${t}`);
+    for (const t of WIPE_ORDER) db.run(`DELETE FROM ${ident(t)}`);
 
     withStmt(db, 'INSERT INTO buildings(id, name, fund_enabled, created_at, archived_at) VALUES (?,?,?,?,?)', (s) => {
       for (const b of full.buildings) s.run([b.id, b.name, b01(b.fundEnabled), b.createdAt, b.archivedAt ?? null]);
