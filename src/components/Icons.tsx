@@ -92,6 +92,14 @@ export const IconTrash = (p: P) => (
     <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
   </S>
 );
+/** تعویض مدیر (آدم + فلش رفت‌وبرگشت) */
+export const IconUserSwap = (p: P) => (
+  <S {...p}>
+    <circle cx="9" cy="8" r="3.5" />
+    <path d="M3 20a6 6 0 0 1 12 0" />
+    <path d="M17 6h4l-1.6-1.6M21 10h-4l1.6 1.6" />
+  </S>
+);
 export const IconUser = (p: P) => (
   <S {...p}>
     <circle cx="12" cy="8" r="4" />

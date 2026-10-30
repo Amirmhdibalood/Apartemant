@@ -1010,6 +1010,18 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
 .mgmt-list { list-style: none; margin: 0; padding: 0; }
 .mgmt-list__row { background: var(--soft-panel); border-radius: 12px; padding: 12px; margin-bottom: 8px; }
 .mgmt-list__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+/* دیالوگ «این ساختمان مدیر فعال دارد» — فقط متغیرهای تم */
+.dialog__icon--swap { color: var(--warning); background: color-mix(in srgb, var(--warning) 16%, transparent); width: 60px; height: 60px; border-radius: 50%; align-items: center; margin: 0 auto 12px; }
+.mgr-swap { background: var(--soft-panel); border-radius: 14px; padding: 4px 12px; margin: 6px 0 4px; text-align: right; }
+.mgr-swap__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; font-size: 13.5px; }
+.mgr-swap__row + .mgr-swap__row { border-top: 1px dashed var(--border-2); }
+.mgr-swap__k { color: var(--muted); font-weight: 600; white-space: nowrap; }
+.mgr-swap__v { color: var(--text); font-weight: 800; text-align: left; min-width: 0; overflow-wrap: anywhere; }
+.mgr-swap__v small { display: block; font-weight: 500; color: var(--muted); font-size: 12px; }
+.mgr-swap__row.is-close .mgr-swap__v { color: var(--danger); }
+.mgr-swap__row.is-new .mgr-swap__v { color: var(--success); }
+.dialog__actions--stack { flex-direction: column; gap: 10px; }
+.dialog__actions--stack .btn { width: 100%; flex: none; height: 50px; }
 
 .acc__head {
   display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 56px;

@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { buildingRepository, type ManagementPeriodRow } from '../storage/buildingRepository';
 import { JalaliDateField } from './JalaliDateField';
 import { selectableYears } from '../logic/years';
 import { useFeedback } from '../context/FeedbackContext';
 import { Errors } from '../logic/errors';
 import { toPersianDigits } from '../logic/formatting';
-import { parseJalaliKey, todayJalali } from '../logic/jalali';
+import { formatJalaliKey, parseJalaliKey, todayJalali } from '../logic/jalali';
+import { submitNewManager, type ManagerSwapPlan } from '../logic/managerSwap';
+import { ManagerSwapDialog } from './ManagerSwapDialog';
 
 export function ManagementSection({ reloadKey = 0 }: { reloadKey?: number }) {
   const { toast, showErrors, confirmDanger } = useFeedback();
@@ -15,6 +17,8 @@ export function ManagementSection({ reloadKey = 0 }: { reloadKey?: number }) {
   const [start, setStart] = useState<string | null>(null);
   const [end, setEnd] = useState<string | null>(null);
   const years = selectableYears();
+  const [swapPlan, setSwapPlan] = useState<ManagerSwapPlan | null>(null);
+  const swapResolve = useRef<((ok: boolean) => void) | null>(null);
 
   const reload = useCallback(async () => {
     setRows(await buildingRepository.listManagementPeriods());
@@ -32,12 +36,16 @@ export function ManagementSection({ reloadKey = 0 }: { reloadKey?: number }) {
     }
     if (start > end) { showErrors(Errors.backupInvalid('تاریخ پایان نباید قبل از شروع باشد.')); return; }
     try {
-      await buildingRepository.addManagementPeriod({
-        managerLabel: name,
-        startDate: start,
-        endDate: end,
-        endPreviousEarly: true,
+      const result = await submitNewManager({ managerLabel: name, startDate: start, endDate: end }, {
+        periods: await buildingRepository.listManagementPeriods(),
+        todayKey: formatJalaliKey(todayJalali()),
+        confirm: (plan) => new Promise<boolean>((resolve) => {
+          swapResolve.current = resolve;
+          setSwapPlan(plan);
+        }),
+        save: (input) => buildingRepository.addManagementPeriod({ ...input, endPreviousEarly: true }),
       });
+      if (result === 'cancelled') return;
       setLabel('');
       toast('دورهٔ مدیریت ثبت شد.');
       await reload();
@@ -58,8 +66,15 @@ export function ManagementSection({ reloadKey = 0 }: { reloadKey?: number }) {
   };
 
 
+  const onSwapResult = (ok: boolean) => {
+    setSwapPlan(null);
+    swapResolve.current?.(ok);
+    swapResolve.current = null;
+  };
+
   return (
     <div className="mgmt-card">
+      <ManagerSwapDialog plan={swapPlan} onResult={onSwapResult} />
       <p className="card__hint">
         دورهٔ مدیریت و تاریخچهٔ مدیران این ساختمان. می‌توانید مدیر را قبل از پایان دوره عوض کنید؛ تاریخچه حذف نمی‌شود.
       </p>
