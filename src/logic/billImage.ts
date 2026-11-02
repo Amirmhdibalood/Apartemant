@@ -12,18 +12,12 @@ import { sanitizeAlias, unitShortLabel } from './building';
 import { formatArea, parseArea, sumAreas } from './area';
 import { occupantTotal, occupiedCount, VACANT_LABEL } from './vacant';
 import { typeInfo } from './billTypes';
+import { BILL_FOOTER_STORES } from '../config/storeLinks';
 
 export const APP_NAME_FA = 'آپارتمانت';
 
-/** پانویس معرفی (پیش‌فرض): همراه نماد کوچک برنامه */
-export const BILL_FOOTER_PROMO = `ساخته‌شده با اپلیکیشن ${APP_NAME_FA} · دانلود از مایکت`;
-/** پانویس ساده (وقتی «معرفی برنامه در تصویر قبض» خاموش است) */
-export const BILL_FOOTER_PLAIN = `محاسبه‌شده با برنامه «${APP_NAME_FA}» — محاسبه شارژ ساختمان`;
-
-/** متن پانویس تصویر قبض و اینکه نماد برنامه کنارش کشیده شود یا نه */
-export function billImageFooter(promo: boolean): { text: string; icon: boolean } {
-  return promo ? { text: BILL_FOOTER_PROMO, icon: true } : { text: BILL_FOOTER_PLAIN, icon: false };
-}
+/** پانویس تصویر قبض (همیشه، کنار نماد کوچک برنامه). نام فروشگاه از BILL_FOOTER_STORES می‌آید. */
+export const BILL_FOOTER_TEXT = `ساخته‌شده با اپلیکیشن ${APP_NAME_FA} · دانلود از ${BILL_FOOTER_STORES}`;
 
 export type UnitStatusKind = 'settled' | 'partial' | 'unpaid';
 

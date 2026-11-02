@@ -8,8 +8,7 @@ import { createRoot } from 'react-dom/client';
 import type { BillWithUnits } from '../models/types';
 import { billImageColors } from '../logic/billImageColors';
 import { sanitizeLightPalette, DEFAULT_LIGHT_PALETTE } from '../logic/lightPalettes';
-import { billImageFooter, buildBillImageModel, type BillImageModel } from '../logic/billImage';
-import { settingsRepository } from '../storage/settingsRepository';
+import { BILL_FOOTER_TEXT, buildBillImageModel, type BillImageModel } from '../logic/billImage';
 import { GlyphSvg } from '../components/ExpenseIcon';
 import appIconUrl from '../assets/app-icon.png';
 
@@ -95,7 +94,7 @@ export function wrapLines(ctx: CanvasRenderingContext2D, text: string, maxWidth:
   return lines;
 }
 
-interface Assets { icon: HTMLImageElement | null; glyph: HTMLImageElement | null; footer: { text: string; icon: boolean } }
+interface Assets { icon: HTMLImageElement | null; glyph: HTMLImageElement | null }
 
 /**
  * چیدمان و رسم. با draw=false فقط ارتفاع لازم محاسبه می‌شود.
@@ -294,23 +293,20 @@ function paint(ctx: CanvasRenderingContext2D, m: BillImageModel, a: Assets, draw
   if (draw) { ctx.fillStyle = C.border; ctx.fillRect(L, y, CW, 1); }
   y += 20;
   {
+    // پانویس ثابت: نماد کوچک برنامه در سمت راستِ متن (شروع خط راست‌به‌چپ)
     const ff = font(500, 11.5);
-    const withIcon = a.footer.icon && !!a.icon;
-    if (!withIcon) text(a.footer.text, W / 2, y, ff, C.muted, 'center');
-    else {
-      // نماد کوچک برنامه در سمت راستِ متن (شروع خط راست‌به‌چپ)
-      const tw = width(a.footer.text, ff), isz = 16, gap = 6;
-      const x0 = W / 2 - (tw + gap + isz) / 2;
-      if (draw) {
-        const ix = x0 + tw + gap;
-        ctx.save();
-        roundRect(ctx, ix, y - isz / 2, isz, isz, 4);
-        ctx.clip();
-        ctx.drawImage(a.icon!, ix, y - isz / 2, isz, isz);
-        ctx.restore();
-      }
-      text(a.footer.text, x0 + tw, y, ff, C.muted, 'right');
+    const tw = width(BILL_FOOTER_TEXT, ff), isz = 16, gap = 6;
+    const hasIcon = !!a.icon;
+    const x0 = W / 2 - (tw + (hasIcon ? gap + isz : 0)) / 2;
+    if (draw && a.icon) {
+      const ix = x0 + tw + gap;
+      ctx.save();
+      roundRect(ctx, ix, y - isz / 2, isz, isz, 4);
+      ctx.clip();
+      ctx.drawImage(a.icon, ix, y - isz / 2, isz, isz);
+      ctx.restore();
     }
+    text(BILL_FOOTER_TEXT, x0 + tw, y, ff, C.muted, 'right');
   }
   y += 18 + P + M - 8;
   return Math.ceil(y);
@@ -327,17 +323,11 @@ export interface RenderedBillImage {
 }
 
 /** ساخت تصویر PNG قبض (عرض ۱۰۸۰ پیکسل) */
-export async function renderBillImage(
-  data: BillWithUnits,
-  now: Date = new Date(),
-  opts: { promoFooter?: boolean } = {},
-): Promise<RenderedBillImage> {
+export async function renderBillImage(data: BillWithUnits, now: Date = new Date()): Promise<RenderedBillImage> {
   await ensureFonts();
   const model = buildBillImageModel(data, now);
-  // «معرفی برنامه در تصویر قبض» (تنظیمات ← اشتراک‌گذاری نرم‌افزار)؛ پیش‌فرض روشن
-  const promo = opts.promoFooter ?? (await settingsRepository.get().then((s) => s.shareFooterPromo !== false).catch(() => true));
   const [icon, glyph] = await Promise.all([loadImage(appIconUrl), glyphImage(model, data.bill.expenseType)]);
-  const assets: Assets = { icon, glyph, footer: billImageFooter(promo) };
+  const assets: Assets = { icon, glyph };
 
   const canvas = document.createElement('canvas');
   const measureCtx = canvas.getContext('2d');

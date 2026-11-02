@@ -115,8 +115,6 @@ export interface AppSettings {
   activeYears: number[];
   /** سایر هشدارهایی که کاربر «دیگر نمایش نده» زده است */
   dismissedWarnings: WarningId[];
-  /** پانویس تصویر قبض: نماد برنامه + «دانلود از مایکت». نبودن مقدار = روشن (پیش‌فرض)؛ false = فقط خط ساده. sanitizeSettings همیشه پرش می‌کند. */
-  shareFooterPromo?: boolean;
 }
 
 /** داده فرم ثبت/ویرایش قبض (ورودی‌های خام کاربر) */

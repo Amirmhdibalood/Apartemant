@@ -11,6 +11,12 @@ export interface StoreLink {
   comingSoon?: boolean;
 }
 
+/**
+ * نام فروشگاه(ها) در پانویس تصویر قبض: «… · دانلود از ${BILL_FOOTER_STORES}».
+ * بعد از انتشار در کافه‌بازار فقط همین را «مایکت و بازار» کنید.
+ */
+export const BILL_FOOTER_STORES = 'مایکت';
+
 export const STORE_LINKS: StoreLink[] = [
   { id: 'myket', label: 'مایکت', url: 'https://myket.ir/app/ir.buildingcharge.app' },
   { id: 'bazaar', label: 'کافه‌بازار', url: '', comingSoon: true },

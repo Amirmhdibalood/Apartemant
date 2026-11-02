@@ -18,10 +18,10 @@ const textsOf = (t: HelpTopic): string[] => [
 const ALL = HELP_TOPICS.flatMap((t) => textsOf(t).map((text) => ({ id: t.id, text })));
 
 describe('۱.۷.۷ — ساختار آموزش', () => {
-  it('شناسه‌ها یکتا، گروه‌ها معتبر و ۳۶ موضوع', () => {
+  it('شناسه‌ها یکتا، گروه‌ها معتبر و ۳۷ موضوع', () => {
     const ids = HELP_TOPICS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.length).toBe(36);
+    expect(ids.length).toBe(37);
     const groups = HELP_GROUPS.map((g) => g.id);
     for (const t of HELP_TOPICS) expect(groups).toContain(t.group);
     for (const g of HELP_GROUPS) expect(HELP_TOPICS.some((t) => t.group === g.id)).toBe(true);
