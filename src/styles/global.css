@@ -1441,6 +1441,11 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
   border: 1px solid var(--border);
   background: var(--soft-panel);
 }
+.share-footer-row {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
 .share-app-row__name {
   font-weight: 800;
   font-size: 14.5px;

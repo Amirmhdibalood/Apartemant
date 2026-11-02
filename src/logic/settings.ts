@@ -13,5 +13,6 @@ export function sanitizeSettings(s: Partial<AppSettings> | null | undefined): Ap
     dismissedWarnings: Array.isArray(s?.dismissedWarnings)
       ? Array.from(new Set(s!.dismissedWarnings.filter((w): w is WarningId => WARNING_IDS.includes(w as WarningId))))
       : [],
+    shareFooterPromo: typeof s?.shareFooterPromo === 'boolean' ? s.shareFooterPromo : DEFAULT_SETTINGS.shareFooterPromo,
   };
 }

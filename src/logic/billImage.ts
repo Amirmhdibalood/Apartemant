@@ -15,6 +15,16 @@ import { typeInfo } from './billTypes';
 
 export const APP_NAME_FA = 'آپارتمانت';
 
+/** پانویس معرفی (پیش‌فرض): همراه نماد کوچک برنامه */
+export const BILL_FOOTER_PROMO = `ساخته‌شده با اپلیکیشن ${APP_NAME_FA} · دانلود از مایکت`;
+/** پانویس ساده (وقتی «معرفی برنامه در تصویر قبض» خاموش است) */
+export const BILL_FOOTER_PLAIN = `محاسبه‌شده با برنامه «${APP_NAME_FA}» — محاسبه شارژ ساختمان`;
+
+/** متن پانویس تصویر قبض و اینکه نماد برنامه کنارش کشیده شود یا نه */
+export function billImageFooter(promo: boolean): { text: string; icon: boolean } {
+  return promo ? { text: BILL_FOOTER_PROMO, icon: true } : { text: BILL_FOOTER_PLAIN, icon: false };
+}
+
 export type UnitStatusKind = 'settled' | 'partial' | 'unpaid';
 
 export interface BillImageRow {

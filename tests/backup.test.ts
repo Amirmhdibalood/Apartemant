@@ -36,7 +36,7 @@ function sample(): BackupData {
     { id: 'u4', billId: 'b2', unitNumber: 1, personCount: 2, shareAmount: 600000, isSettled: true },
     { id: 'u5', billId: 'b2', unitNumber: 2, personCount: 1, shareAmount: 300000, isSettled: true },
   ];
-  const settings: AppSettings = { showSaveWarning: false, activeYears: [1405, 1406], dismissedWarnings: ['roundingAdjust', 'duplicateBill'] };
+  const settings: AppSettings = { showSaveWarning: false, activeYears: [1405, 1406], dismissedWarnings: ['roundingAdjust', 'duplicateBill'], shareFooterPromo: false };
   const building = { units: [{ alias: 'آقای رضایی', defaultPersons: 1 }, { alias: null, defaultPersons: 1 }, { alias: null, defaultPersons: 1, vacant: true }] };
   return { bills, units, settings, building };
 }
@@ -142,7 +142,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
 
   it('تنظیمات هنگام بازیابی مهاجرت داده می‌شوند (سال‌های قبل از ۱۴۰۵ و هشدارهای ناشناخته حذف)', () => {
     const r = parseBackup(text((o) => { o.data.settings = { activeYears: [1403, 1404], dismissedWarnings: ['saveConfirm', 'bogus'], showSaveWarning: true }; }));
-    expect(r.ok && r.backup.data.settings).toEqual({ showSaveWarning: true, activeYears: [1405], dismissedWarnings: ['saveConfirm'] });
+    expect(r.ok && r.backup.data.settings).toEqual({ showSaveWarning: true, activeYears: [1405], dismissedWarnings: ['saveConfirm'], shareFooterPromo: true });
   });
 
   it('پشتیبان قدیمی (قالب ۱، نسخه ۱٫۱ برنامه، بدون الگوی واحدها) همچنان بازیابی می‌شود', () => {
@@ -352,7 +352,7 @@ describe('مخزن پشتیبان (گرفتن و بازیابی کامل داد�
     const d = sample();
     await backupRepository.replaceAll(d);
     await backupRepository.saveSafetyBackup('1.1.0');
-    await backupRepository.replaceAll({ bills: [], units: [], settings: { showSaveWarning: true, activeYears: [1405], dismissedWarnings: [] } });
+    await backupRepository.replaceAll({ bills: [], units: [], settings: { showSaveWarning: true, activeYears: [1405], dismissedWarnings: [], shareFooterPromo: true } });
     expect((await backupRepository.collect()).bills).toHaveLength(0);
 
     const safety = await backupRepository.getSafetyBackup();

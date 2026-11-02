@@ -75,6 +75,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   showSaveWarning: true,
   activeYears: [FIRST_YEAR],
   dismissedWarnings: [],
+  shareFooterPromo: true,
 };
 
 export const CURRENCY = 'تومان';

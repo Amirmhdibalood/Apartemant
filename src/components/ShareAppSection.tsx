@@ -4,10 +4,13 @@ import { STORE_LINKS, displayStoreLinks } from '../config/storeLinks';
 import { useFeedback } from '../context/FeedbackContext';
 import { Errors } from '../logic/errors';
 import { copyText } from '../services/clipboard';
+import { useSettings } from '../context/SettingsContext';
+import { Switch } from './Switch';
 
 export function ShareAppSection() {
   const { toast, showErrors } = useFeedback();
   const rows = displayStoreLinks(STORE_LINKS);
+  const { settings, updateSettings } = useSettings();
 
   const shareUrl = async (url: string, title: string) => {
     try {
@@ -59,6 +62,20 @@ export function ShareAppSection() {
           })}
         </ul>
       )}
+      <div className="setting-row share-footer-row">
+        <label htmlFor="sw-share-footer" className="setting-row__text">
+          <span className="setting-row__label">معرفی برنامه در تصویر قبض</span>
+          <span className="setting-row__hint">
+            پایین تصویر قبض، نماد کوچک برنامه و «دانلود از مایکت» می‌آید. اگر خاموش باشد، فقط یک خط سادهٔ نام برنامه می‌ماند.
+          </span>
+        </label>
+        <Switch
+          id="sw-share-footer"
+          label="معرفی برنامه در تصویر قبض"
+          checked={settings.shareFooterPromo !== false}
+          onChange={(v) => updateSettings((s) => ({ ...s, shareFooterPromo: v }))}
+        />
+      </div>
     </div>
   );
 }
