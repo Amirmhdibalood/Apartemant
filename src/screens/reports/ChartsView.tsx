@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { BillWithUnits, ExpenseType } from '../../models/types';
-import { CURRENCY, EXPENSE_TYPES, MONTHS, monthName } from '../../models/constants';
+import { CURRENCY, MONTHS, monthName } from '../../models/constants';
 import { SelectField } from '../../components/SelectField';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
 import { IconBars, IconLine, IconPie, IconChart } from '../../components/Icons';
@@ -20,6 +20,7 @@ import { monthsWithBills } from '../../logic/monthlyTotals';
 import { chartSeries, normalizeRange, typeShares } from '../../logic/chartReport';
 import { faPercent, type ChartKind } from '../../logic/chartLayout';
 import { chartDoc } from '../../logic/reportDoc';
+import { typeInfo } from '../../logic/billTypes';
 
 const fa = toPersianDigits;
 const KINDS: { id: ChartKind; label: string; Icon: typeof IconBars }[] = [
@@ -72,7 +73,7 @@ export function ChartsView({ all }: { all: BillWithUnits[] | null }) {
       {all && !hasData && (
         <div className="empty-state">
           <IconChart size={40} />
-          <p>برای {monthName(from)} تا {monthName(to)} {fa(year)}{type && kind !== 'pie' ? ` و قبض «${EXPENSE_TYPES[type].label}»` : ''} هنوز قبضی ثبت نشده است.</p>
+          <p>برای {monthName(from)} تا {monthName(to)} {fa(year)}{type && kind !== 'pie' ? ` و قبض «${typeInfo(type).label}»` : ''} هنوز قبضی ثبت نشده است.</p>
         </div>
       )}
 
@@ -81,7 +82,7 @@ export function ChartsView({ all }: { all: BillWithUnits[] | null }) {
           <div className="card chart-card">
             <div className="chart-card__head">
               {type ? <ExpenseIcon type={type} size={30} /> : <span className="chart-card__ico"><IconChart size={20} /></span>}
-              <b>مبلغ {type ? `قبض ${EXPENSE_TYPES[type].label}` : 'همهٔ قبض‌ها'} در هر ماه</b>
+              <b>مبلغ {type ? `قبض ${typeInfo(type).label}` : 'همهٔ قبض‌ها'} در هر ماه</b>
               <span className="chart-card__unit">{CURRENCY}</span>
             </div>
             <BarLineChart series={series} kind={kind} type={type} />
@@ -123,7 +124,7 @@ export function ChartsView({ all }: { all: BillWithUnits[] | null }) {
               <div className="type-row" key={s.type}>
                 <ExpenseIcon type={s.type} size={38} />
                 <div className="type-row__body">
-                  <div className="type-row__top"><span className="type-row__label">{EXPENSE_TYPES[s.type].label}</span><span className="type-row__amount"><b className="num">{faAmount(s.total)}</b> {CURRENCY}</span></div>
+                  <div className="type-row__top"><span className="type-row__label">{typeInfo(s.type).label}</span><span className="type-row__amount"><b className="num">{faAmount(s.total)}</b> {CURRENCY}</span></div>
                   <div className="type-row__bar"><span style={{ width: `${s.percent}%`, background: typeBarColor(s.type, theme) }} /></div>
                   <div className="type-row__meta"><span><span className="num">{fa(s.count)}</span> قبض</span><span className="type-row__pct num" style={{ color: typeBarColor(s.type, theme) }}>{faPercent(s.percent)}</span></div>
                 </div>

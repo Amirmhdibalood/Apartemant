@@ -1,4 +1,4 @@
-import type { AppSettings, ExpenseType, SplitMethod } from './types';
+import type { AppSettings, BuiltinExpenseType, CustomTypeId, SplitMethod } from './types';
 
 export const MONTHS: readonly string[] = [
   'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
@@ -8,7 +8,7 @@ export const MONTHS: readonly string[] = [
 export const monthName = (month: number): string => MONTHS[month - 1] ?? '';
 
 export interface ExpenseTypeInfo {
-  id: ExpenseType;
+  id: BuiltinExpenseType;
   label: string;
   /** رنگ آیکون */
   color: string;
@@ -20,7 +20,7 @@ export interface ExpenseTypeInfo {
   dark?: { color: string; bg: string; iconBg: string };
 }
 
-export const EXPENSE_TYPES: Record<ExpenseType, ExpenseTypeInfo> = {
+export const EXPENSE_TYPES: Record<BuiltinExpenseType, ExpenseTypeInfo> = {
   // آب: سرمه‌ای عمیق (نه آبی روشن) تا در نوار خلاصهٔ آبیِ گزارش و پس‌زمینه گم نشود
   water: {
     id: 'water', label: 'آب', color: '#14307A', bg: '#E3E6EF', iconBg: '#C2C9DC',
@@ -40,11 +40,17 @@ export const EXPENSE_TYPES: Record<ExpenseType, ExpenseTypeInfo> = {
  * آیا مقدار، یکی از ۸ نوع هزینه است؟ (فقط کلیدهای خودِ EXPENSE_TYPES؛ برخلاف `in`، کلیدهای ارثی
  * مثل "constructor" / "toString" / "__proto__" از فایل پشتیبان دستکاری‌شده پذیرفته نمی‌شوند)
  */
-export function isExpenseType(v: unknown): v is ExpenseType {
+export function isExpenseType(v: unknown): v is BuiltinExpenseType {
   return typeof v === 'string' && Object.prototype.hasOwnProperty.call(EXPENSE_TYPES, v);
 }
 
-export const EXPENSE_TYPE_ORDER: ExpenseType[] = [
+/** الگوی سخت‌گیرانهٔ شناسهٔ نوع سفارشی: کلیدهای ارثی (constructor/__proto__/…) هرگز با آن جور نمی‌شوند */
+export const CUSTOM_TYPE_ID_RE = /^c_[a-z0-9]{8,24}$/;
+export function isCustomTypeId(v: unknown): v is CustomTypeId {
+  return typeof v === 'string' && CUSTOM_TYPE_ID_RE.test(v);
+}
+
+export const EXPENSE_TYPE_ORDER: BuiltinExpenseType[] = [
   'water', 'electricity', 'gas', 'building', 'cleaning', 'repairs', 'beautification', 'misc',
 ];
 
@@ -52,7 +58,7 @@ export const EXPENSE_TYPE_ORDER: ExpenseType[] = [
  * چیدمان کاشی‌های نوع هزینه در فرم (اولین مورد هر ردیف سمت راست):
  * ردیف ۱: گاز، برق، آب — ردیف ۲: شارژ ساختمان، نظافت، تعمیرات — ردیف ۳: زیبایی ساختمان، متفرقه
  */
-export const EXPENSE_TILE_ROWS: ExpenseType[][] = [
+export const EXPENSE_TILE_ROWS: BuiltinExpenseType[][] = [
   ['gas', 'electricity', 'water'],
   ['building', 'cleaning', 'repairs'],
   ['beautification', 'misc'],

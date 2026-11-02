@@ -14,6 +14,8 @@ import { activeBuildingStore } from '../../src/storage/activeBuildingStore';
 import { withSqlite } from '../../src/storage/sqlite/db';
 import { listSqliteTables } from '../../src/storage/sqlite/fullBackup';
 import { DEFAULT_BUILDING_ID } from '../../src/storage/sqlite/schema';
+import { billTypeRepository } from '../../src/storage/billTypeRepository';
+import type { CustomColorId, CustomIconId } from '../../src/logic/billTypes';
 
 export interface BuildingSpec {
   name: string;
@@ -25,6 +27,8 @@ export interface BuildingSpec {
   archived?: boolean;
   periods?: number;
   meetings?: number;
+  /** نوع‌های قبض سفارشی همین ساختمان (هر ۵ قبض یکی از این نوع‌ها می‌شود) */
+  customTypes?: { name: string; icon: CustomIconId; color: CustomColorId; hidden?: boolean }[];
 }
 
 /** Deterministic PRNG */
@@ -107,6 +111,15 @@ export async function seedScenario(specs: BuildingSpec[], seed = 7): Promise<str
     if (sp.fundTypes) await buildingRepository.setFundTypes(sp.fundTypes, id);
     // building-charge bills (fund sync) need expenseType 'building' — makeBills cycles all types
     const items = makeBills(id, `s${i}`, sp.bills, sp.units, seed * 31 + i);
+    if (sp.customTypes?.length) {
+      const created: ExpenseType[] = [];
+      for (const ct of sp.customTypes) {
+        const t = await billTypeRepository.add(id, ct);
+        if (ct.hidden) await billTypeRepository.setHidden(t.id, true);
+        created.push(t.id);
+      }
+      items.forEach((it, k) => { if (k % 5 === 1) it.bill.expenseType = created[k % created.length]; });
+    }
     if (items.length) await billRepository.upsertMany(items);
     if (sp.fund) {
       await buildingRepository.addFundDepositManual(5_000_000 + i, `واریز دستی ${sp.name}`, id);

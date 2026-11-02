@@ -1,7 +1,7 @@
 import { occupiedCount } from '../logic/vacant';
 import { useEffect, useMemo, useState } from 'react';
 import type { BillWithUnits, ExpenseType } from '../models/types';
-import { CURRENCY, EXPENSE_TYPES, monthName } from '../models/constants';
+import { CURRENCY, monthName } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
 import { SelectField } from '../components/SelectField';
 import { ExpenseIcon } from '../components/ExpenseIcon';
@@ -21,6 +21,7 @@ import {
 } from '../logic/billFilter';
 import { TONE_LEGEND, billTone, dueText, toneLabel } from '../logic/billStatus';
 import { todayJalali } from '../logic/jalali';
+import { typeInfo } from '../logic/billTypes';
 
 interface Props {
   year?: number;
@@ -150,7 +151,7 @@ export function RecordsScreen({ year: yearProp, month: monthProp, type: typeProp
               estimateHeight={108}
               keyOf={(row) => row.bill.id}
               renderItem={({ bill, units }) => {
-                const info = EXPENSE_TYPES[bill.expenseType];
+                const info = typeInfo(bill.expenseType);
                 const settled = settledCount(units);
                 const tone = billTone(bill, today);
                 const due = tone === 'unpaid' || tone === 'due' ? dueText(bill, today) : null;

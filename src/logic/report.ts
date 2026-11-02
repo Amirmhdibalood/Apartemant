@@ -5,6 +5,7 @@
 import type { BillWithUnits, ExpenseType } from '../models/types';
 import { EXPENSE_TYPE_ORDER } from '../models/constants';
 import { paidAmount } from './payments';
+import { typeOrderIndex } from './billTypes';
 
 export interface TypeTotal {
   type: ExpenseType;
@@ -46,7 +47,7 @@ export function percentOf(part: number, whole: number): number {
   return Math.round((part / whole) * 1000) / 10;
 }
 
-export function yearlyReport(bills: BillWithUnits[], year: number, types: ExpenseType[] = EXPENSE_TYPE_ORDER): YearlyReport {
+export function yearlyReport(bills: BillWithUnits[], year: number, types: readonly ExpenseType[] = EXPENSE_TYPE_ORDER): YearlyReport {
   const own = bills.filter((b) => b.bill.year === year);
   const totals = new Map<ExpenseType, { total: number; count: number }>(
     types.map((t) => [t, { total: 0, count: 0 }]),
@@ -70,7 +71,7 @@ export function yearlyReport(bills: BillWithUnits[], year: number, types: Expens
     settledTotal += units.reduce((s, u) => s + paidAmount(u), 0);
   }
 
-  const order = (type: ExpenseType) => EXPENSE_TYPE_ORDER.indexOf(type);
+  const order = (type: ExpenseType) => typeOrderIndex(type);
   const byType: TypeTotal[] = [...totals.entries()]
     .map(([type, v]) => ({ type, total: v.total, count: v.count, percent: percentOf(v.total, grandTotal) }))
     .sort((a, b) => b.total - a.total || order(a.type) - order(b.type));

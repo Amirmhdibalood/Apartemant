@@ -3,7 +3,7 @@
  * رسم روی canvas در services/reportImage.tsx انجام می‌شود. همهٔ متن‌ها فارسی و با ارقام فارسی‌اند.
  */
 import type { BillWithUnits, ExpenseType } from '../models/types';
-import { CURRENCY, EXPENSE_TYPES, MONTHS, monthName } from '../models/constants';
+import { CURRENCY, MONTHS, monthName } from '../models/constants';
 import { faAmount, APP_NAME_FA } from './billImage';
 import { toPersianDigits } from './formatting';
 import { unitLabel } from './building';
@@ -17,6 +17,7 @@ import type { ChartKind } from './chartLayout';
 import { faPercent } from './chartLayout';
 import type { ChartSeries, TypeShare } from './chartReport';
 import type { ReportId } from './reportCatalog';
+import { typeInfo } from './billTypes';
 
 const fa = (n: number | string) => toPersianDigits(n);
 
@@ -61,7 +62,7 @@ export function yearlyDoc(r: YearlyReport): ReportDoc {
     { k: 'summary', label: `جمع کل هزینه‌های سال ${fa(r.year)}`, value: faAmount(r.grandTotal), unit: CURRENCY, meta: [`${fa(r.billCount)} قبض`, `${fa(withCost.length)} نوع هزینه`],
       lines: [{ label: 'پرداخت‌شده', value: faAmount(r.settledTotal) }, { label: 'مانده', value: faAmount(r.unsettledTotal) }] },
     { k: 'heading', text: 'به تفکیک نوع هزینه' },
-    { k: 'rows', rows: withCost.map((t) => ({ label: EXPENSE_TYPES[t.type].label, sub: `${fa(t.count)} قبض • ${faPercent(t.percent)}`, value: money(t.total), type: t.type })), footer: { label: 'جمع کل', value: money(r.grandTotal) } },
+    { k: 'rows', rows: withCost.map((t) => ({ label: typeInfo(t.type).label, sub: `${fa(t.count)} قبض • ${faPercent(t.percent)}`, value: money(t.total), type: t.type })), footer: { label: 'جمع کل', value: money(r.grandTotal) } },
     { k: 'heading', text: 'ماه‌به‌ماه' },
     { k: 'rows', rows: r.byMonth.filter((m) => m.count > 0).map((m) => ({ label: MONTHS[m.month - 1], sub: `${fa(m.count)} قبض`, value: money(m.total) })) },
   ];
@@ -79,7 +80,7 @@ export function debtorsDoc(r: DebtorsReport): ReportDoc {
       blocks.push({
         k: 'rows',
         rows: d.items.map((it) => ({
-          label: EXPENSE_TYPES[it.expenseType].label, type: it.expenseType, value: faAmount(it.amount),
+          label: typeInfo(it.expenseType).label, type: it.expenseType, value: faAmount(it.amount),
           sub: `${period(it.year, it.month)} • ${fa(it.daysOutstanding)} روز از ثبت${it.daysOutstanding > PAYMENT_GRACE_DAYS ? ' (دیرکرد)' : ''}${it.paid > 0 ? ` • پرداخت جزئی ${faAmount(it.paid)} از ${faAmount(it.share)}` : ''}`,
         })),
         footer: { label: 'جمع بدهی', value: money(d.total) },
@@ -94,11 +95,11 @@ const dateText = (d: { year: number; month: number; day: number } | null) => (d 
 
 export function billPaymentsDoc(rows: BillPaymentRow[], s: BillPaymentSummary, year: number, type: ExpenseType | null): ReportDoc {
   const blocks: DocBlock[] = [
-    { k: 'summary', label: `پرداخت قبض‌ها — سال ${fa(year)}${type ? ` — ${EXPENSE_TYPES[type].label}` : ''}`, value: fa(s.total), unit: 'قبض',
+    { k: 'summary', label: `پرداخت قبض‌ها — سال ${fa(year)}${type ? ` — ${typeInfo(type).label}` : ''}`, value: fa(s.total), unit: 'قبض',
       meta: [`پرداخت‌شده ${fa(s.paid)}`, `پرداخت‌نشده ${fa(s.unpaid)}`],
       lines: [{ label: 'به‌موقع', value: fa(s.onTime) }, { label: 'با تأخیر', value: fa(s.late) }, { label: 'پرداخت‌نشده', value: fa(s.unpaid) }] },
     { k: 'rows', rows: rows.map((r) => ({
-      label: `${EXPENSE_TYPES[r.bill.expenseType].label} ${period(r.bill.year, r.bill.month)}`, type: r.bill.expenseType,
+      label: `${typeInfo(r.bill.expenseType).label} ${period(r.bill.year, r.bill.month)}`, type: r.bill.expenseType,
       sub: `مهلت: ${dateText(r.dueDate)} • پرداخت: ${dateText(r.paidDate)}`, value: faAmount(r.bill.totalAmount),
       tag: { text: r.label, tone: toneOf(r.timing) },
     })) },
@@ -146,7 +147,7 @@ export function monthlyDetailDoc(t: MonthlyTotals): ReportDoc {
     if (u.vacant) blocks.push({ k: 'rows', rows: [{ label: VACANT_LABEL, sub: 'در این ماه سهمی ندارد', value: '—', tag: { text: VACANT_LABEL, tone: 'muted' }, muted: true }] });
     else blocks.push({
       k: 'rows',
-      rows: u.items.map((i) => ({ label: EXPENSE_TYPES[i.expenseType].label, type: i.expenseType, value: faAmount(i.amount) })),
+      rows: u.items.map((i) => ({ label: typeInfo(i.expenseType).label, type: i.expenseType, value: faAmount(i.amount) })),
       footer: { label: 'قابل پرداخت', value: money(u.remaining), note: u.paid > 0 ? `از مجموع ${faAmount(u.total)} • پرداخت‌شده ${faAmount(u.paid)}` : undefined, ok: u.remaining === 0 },
     });
   }
@@ -159,9 +160,9 @@ export function chartDoc(kind: ChartKind, year: number, type: ExpenseType | null
   const blocks: DocBlock[] = [];
   if (kind === 'pie') {
     blocks.push({ k: 'chart', kind, title: `سهم هر نوع قبض از مجموع ${range}`, shares: shares.shares, total: shares.total });
-    blocks.push({ k: 'rows', rows: shares.shares.map((s) => ({ label: EXPENSE_TYPES[s.type].label, type: s.type, sub: `${fa(s.count)} قبض • ${faPercent(s.percent)}`, value: money(s.total) })), footer: { label: 'جمع دوره', value: money(shares.total) } });
+    blocks.push({ k: 'rows', rows: shares.shares.map((s) => ({ label: typeInfo(s.type).label, type: s.type, sub: `${fa(s.count)} قبض • ${faPercent(s.percent)}`, value: money(s.total) })), footer: { label: 'جمع دوره', value: money(shares.total) } });
   } else {
-    blocks.push({ k: 'chart', kind, title: `مبلغ ${type ? `قبض ${EXPENSE_TYPES[type].label}` : 'همهٔ قبض‌ها'} در هر ماه`, series, typeColor: type });
+    blocks.push({ k: 'chart', kind, title: `مبلغ ${type ? `قبض ${typeInfo(type).label}` : 'همهٔ قبض‌ها'} در هر ماه`, series, typeColor: type });
     blocks.push({ k: 'summary', label: `جمع ${range}`, value: faAmount(series.total), unit: CURRENCY, meta: [`میانگین ماهانه ${faAmount(series.average)}`],
       lines: [...(series.max ? [{ label: `بیشترین (${monthName(series.max.month)})`, value: faAmount(series.max.total) }] : []), ...(series.min ? [{ label: `کمترین (${monthName(series.min.month)})`, value: faAmount(series.min.total) }] : [])] });
     blocks.push({ k: 'rows', rows: series.months.map((m) => ({
@@ -170,7 +171,7 @@ export function chartDoc(kind: ChartKind, year: number, type: ExpenseType | null
       sub: m.delta === null ? undefined : m.delta === 0 ? 'بدون تغییر نسبت به ماه قبل' : `${m.delta > 0 ? '▲' : '▼'} ${m.percent === null ? '' : faPercent(m.percent) + ' • '}${m.delta >= 0 ? '+' : '−'}${faAmount(Math.abs(m.delta))} نسبت به ماه قبل`,
     })) });
   }
-  return { id: 'charts', title: 'گزارش نموداری', subtitle: `${range}${type && kind !== 'pie' ? ` — ${EXPENSE_TYPES[type].label}` : ''}`, fileBase: `chart-${kind}-${year}`, blocks };
+  return { id: 'charts', title: 'گزارش نموداری', subtitle: `${range}${type && kind !== 'pie' ? ` — ${typeInfo(type).label}` : ''}`, fileBase: `chart-${kind}-${year}`, blocks };
 }
 
 export const DOC_APP_NAME = APP_NAME_FA;

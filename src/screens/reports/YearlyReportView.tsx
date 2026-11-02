@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { BillWithUnits } from '../../models/types';
-import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../../models/constants';
+import { CURRENCY, MONTHS } from '../../models/constants';
 import { SelectField } from '../../components/SelectField';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
 import { IconChart, IconChevronLeft } from '../../components/Icons';
@@ -14,6 +14,7 @@ import { useEntryPrefs } from '../../context/EntryPrefsContext';
 import { pickReportYear, yearlyReport } from '../../logic/report';
 import { yearlyDoc } from '../../logic/reportDoc';
 import { ReportActions } from '../../components/ReportActions';
+import { typeInfo } from '../../logic/billTypes';
 
 interface Props {
   /** همه قبض‌ها (null = در حال بارگذاری) */
@@ -85,13 +86,13 @@ export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMont
             <h2 className="report-heading">به تفکیک نوع هزینه</h2>
             <div className="card report-card">
               {withCost.map((t) => {
-                const info = EXPENSE_TYPES[t.type];
+                const info = typeInfo(t.type);
                 return (
                   <div className="type-row" key={t.type}>
                     <ExpenseIcon type={t.type} size={38} />
                     <div className="type-row__body">
                       <div className="type-row__top">
-                        <span className="type-row__label">{info.label}</span>
+                        <span className="type-row__label">{info.label}{info.custom && <span className="ct-badge">سفارشی</span>}</span>
                         <span className="type-row__amount">
                           <b className="num">{formatAmount(t.total)}</b> {CURRENCY}
                         </span>
@@ -111,7 +112,7 @@ export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMont
                 <div className="type-zero">
                   <span className="type-zero__k">بدون هزینه در این سال:</span>
                   {withoutCost.map((t) => (
-                    <span key={t.type} className="type-zero__chip">{EXPENSE_TYPES[t.type].label}</span>
+                    <span key={t.type} className="type-zero__chip">{typeInfo(t.type).label}</span>
                   ))}
                 </div>
               )}

@@ -30,7 +30,10 @@ beforeEach(newPhone);
 
 const SPECS: BuildingSpec[] = [
   { name: 'برج آفتاب', units: 5, bills: 12, fund: true },
-  { name: 'مجتمع یاس', units: 20, bills: 9, fund: true, meetings: 3, fundTypes: ['building', 'repairs', 'misc'] },
+  {
+    name: 'مجتمع یاس', units: 20, bills: 9, fund: true, meetings: 3, fundTypes: ['building', 'repairs', 'misc'],
+    customTypes: [{ name: 'آسانسور', icon: 'elevator', color: 'indigo' }, { name: 'نگهبانی', icon: 'shield', color: 'green', hidden: true }],
+  },
   { name: 'ساختمان قدیمی', units: 7, bills: 4, archived: true, periods: 1 },
 ];
 

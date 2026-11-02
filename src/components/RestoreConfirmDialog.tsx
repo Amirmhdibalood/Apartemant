@@ -28,6 +28,9 @@ export function RestoreConfirmDialog({ summary, currentBills, title = 'بازی�
             {years.length > 0 && <div><dt>سال‌ها</dt><dd>{years.map((y) => toPersianDigits(y)).join('، ')}</dd></div>}
             {summary.appVersion && <div><dt>نسخه برنامه</dt><dd>{toPersianDigits(summary.appVersion)}</dd></div>}
           </dl>
+          {(summary.remappedBills ?? 0) > 0 && (
+            <p className="card__hint">نوع {toPersianDigits(summary.remappedBills)} قبض در این فایل شناخته نشد و «متفرقه» بازیابی می‌شود.</p>
+          )}
           {currentBills > 0 ? (
             <p className="backup-warning">
               <strong>توجه:</strong> همه اطلاعات فعلی این گوشی ({toPersianDigits(currentBills)} قبض و تنظیمات) <strong>حذف و با اطلاعات این فایل جایگزین</strong> می‌شود.

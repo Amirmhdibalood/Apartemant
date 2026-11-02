@@ -1,7 +1,7 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { BillWithUnits, ExpenseType } from '../src/models/types';
+import type { BillWithUnits, BuiltinExpenseType, ExpenseType } from '../src/models/types';
 import { EXPENSE_TYPE_ORDER } from '../src/models/constants';
 import {
   ALL_SPLIT_METHODS, DEFAULT_ENTRY_PREFS, activeTypeFilter, isMethodEnabled, isTypeEnabled, resolveMethod, sanitizeEntryPrefs,
@@ -131,7 +131,7 @@ describe('ذخیره و فرم', () => {
   it('کلید جدا در kvStore؛ خارج از پشتیبان؛ مقدار خراب ← همه فعال', async () => {
     expect(await entryPrefsRepository.get()).toEqual(DEFAULT_ENTRY_PREFS);
     await entryPrefsRepository.save({ types: ['water', 'gas'], methods: ['perUnit'] });
-    expect(JSON.parse(mem.get('entryPrefs')!)).toEqual({ types: ['gas', 'water'].sort((a, b) => EXPENSE_TYPE_ORDER.indexOf(a as ExpenseType) - EXPENSE_TYPE_ORDER.indexOf(b as ExpenseType)), methods: ['perUnit'] });
+    expect(JSON.parse(mem.get('entryPrefs')!)).toEqual({ types: ['gas', 'water'].sort((a, b) => EXPENSE_TYPE_ORDER.indexOf(a as BuiltinExpenseType) - EXPENSE_TYPE_ORDER.indexOf(b as BuiltinExpenseType)), methods: ['perUnit'] });
     expect((await entryPrefsRepository.get()).methods).toEqual(['perUnit']);
     expect(JSON.stringify(await backupRepository.collect())).not.toContain('entryPrefs');
     expect(serializeBackup(createBackup(await backupRepository.collect(), '1.6.11'))).not.toContain('entryPrefs');

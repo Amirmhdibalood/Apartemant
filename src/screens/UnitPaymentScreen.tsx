@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { BillWithUnits } from '../models/types';
-import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../models/constants';
+import { CURRENCY, MONTHS } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
 import { AmountInput } from '../components/AmountInput';
 import { ExpenseIcon } from '../components/ExpenseIcon';
@@ -20,6 +20,7 @@ import {
   applyAllocation, previewAllocation, undoBatch, unitTotalDebt,
   type Allocation, type AllocationLine,
 } from '../logic/unitPayment';
+import { typeInfo } from '../logic/billTypes';
 
 interface Props {
   unitNumber: number;
@@ -45,7 +46,7 @@ function Lines({ lines, done }: { lines: AllocationLine[]; done: boolean }) {
             <ExpenseIcon type={l.expenseType} size={36} />
             <span className="up-line__main">
               <span className="up-line__title">
-                {EXPENSE_TYPES[l.expenseType].label} <span className="up-line__period">· {MONTHS[l.month - 1]} <span className="num">{l.year}</span></span>
+                {typeInfo(l.expenseType).label} <span className="up-line__period">· {MONTHS[l.month - 1]} <span className="num">{l.year}</span></span>
               </span>
               <span className="up-bar" aria-hidden="true"><i className={'up-bar__fill is-' + l.kind} style={{ width: `${pct}%` }} /></span>
               <span className="up-line__sub">

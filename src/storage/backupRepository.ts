@@ -15,6 +15,7 @@ import { createBackup, groupUnitsByBill, isFullBackupData, parseBackup } from '.
 import { billRepository } from './billRepository';
 import { settingsRepository } from './settingsRepository';
 import { buildingRepository } from './buildingRepository';
+import { billTypeRepository } from './billTypeRepository';
 import { buildingFromBills, sanitizeBuilding } from '../logic/building';
 import { sanitizeSplitDefaults } from '../logic/split';
 import { splitDefaultsRepository } from './splitDefaultsRepository';
@@ -244,7 +245,7 @@ export const backupRepository = {
     return withSqlite((db) => {
       const stmt = db.prepare(`SELECT
         (SELECT COUNT(*) FROM bills) + (SELECT COUNT(*) FROM fund_entries) + (SELECT COUNT(*) FROM management_periods)
-        + (SELECT COUNT(*) FROM meetings) + (SELECT COUNT(*) FROM buildings WHERE id <> ?) AS n`);
+        + (SELECT COUNT(*) FROM meetings) + (SELECT COUNT(*) FROM bill_types) + (SELECT COUNT(*) FROM buildings WHERE id <> ?) AS n`);
       try {
         stmt.bind([DEFAULT_BUILDING_ID]);
         return stmt.step() && Number(stmt.get()[0]) > 0;
@@ -256,8 +257,13 @@ export const backupRepository = {
 
   /** جایگزینی کامل داده‌های فعلی با داده‌های پشتیبان (اتمی) */
   async replaceAll(data: BackupData): Promise<void> {
-    if (isFullBackupData(data)) await restoreFull(data);
-    else await restoreLegacy(data);
+    try {
+      if (isFullBackupData(data)) await restoreFull(data);
+      else await restoreLegacy(data);
+    } finally {
+      // نوع‌های سفارشی (و برچسب قبض‌ها) همیشه با دیتابیس هم‌خوان بمانند، چه بازیابی موفق شود چه برگردانده شود
+      await billTypeRepository.refresh().catch(() => undefined);
+    }
   },
 
   /**

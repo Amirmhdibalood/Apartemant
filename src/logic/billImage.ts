@@ -11,6 +11,7 @@ import { jalaliDateTime, jalaliIsoDate } from './date';
 import { sanitizeAlias, unitShortLabel } from './building';
 import { formatArea, parseArea, sumAreas } from './area';
 import { occupantTotal, occupiedCount, VACANT_LABEL } from './vacant';
+import { typeInfo } from './billTypes';
 
 export const APP_NAME_FA = 'آپارتمانت';
 
@@ -85,7 +86,7 @@ function faDate(date: Date): string {
 }
 
 export function buildBillImageModel({ bill, units }: BillWithUnits, now: Date = new Date()): BillImageModel {
-  const type = EXPENSE_TYPES[bill.expenseType] ?? EXPENSE_TYPES.misc;
+  const type = typeInfo(bill.expenseType) ?? EXPENSE_TYPES.misc;
   const method = splitMethodOf(bill);
   const sorted = [...units].sort((a, b) => a.unitNumber - b.unitNumber);
   const anyPayment = sorted.some((u) => paidAmount(u) > 0);

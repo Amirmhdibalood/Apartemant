@@ -5,7 +5,7 @@
  * - بیشترین/کمترین: بین ماه‌های دارای قبض، فقط وقتی دست‌کم دو ماه داده و مقدارها یکسان نباشند.
  */
 import type { BillWithUnits, ExpenseType } from '../models/types';
-import { EXPENSE_TYPE_ORDER } from '../models/constants';
+import { compareTypes } from './billTypes';
 import { isBillDeleted } from './billPaid';
 
 export interface ChartMonth {
@@ -90,6 +90,6 @@ export function typeShares(all: BillWithUnits[], year: number, fromMonth: number
   const shares = [...map.entries()]
     .map(([type, v]) => ({ type, total: v.total, count: v.count, percent: total > 0 ? (v.total / total) * 100 : 0 }))
     .filter((s) => s.total > 0)
-    .sort((a, b) => b.total - a.total || EXPENSE_TYPE_ORDER.indexOf(a.type) - EXPENSE_TYPE_ORDER.indexOf(b.type));
+    .sort((a, b) => b.total - a.total || compareTypes(a.type, b.type));
   return { shares, total };
 }

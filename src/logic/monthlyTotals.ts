@@ -7,7 +7,7 @@
  * - جمع کل واحدها = جمع مبلغ قبض‌های ماه (تقسیم هرگز تومان کم یا زیاد نمی‌کند).
  */
 import type { BillWithUnits, ExpenseType } from '../models/types';
-import { EXPENSE_TYPE_ORDER } from '../models/constants';
+import { typeOrderIndex } from './billTypes';
 import { isBillDeleted } from './billPaid';
 import { sanitizeAlias } from './building';
 import { paidAmount, remainingAmount } from './payments';
@@ -55,7 +55,7 @@ export interface MonthlyTotals {
   vacantCount: number;
 }
 
-const typeIndex = (t: ExpenseType) => EXPENSE_TYPE_ORDER.indexOf(t);
+const typeIndex = (t: ExpenseType) => typeOrderIndex(t);
 
 export function monthlyTotals(all: BillWithUnits[], year: number, month: number, types?: ExpenseType[]): MonthlyTotals {
   const own = all

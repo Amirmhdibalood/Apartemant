@@ -3,7 +3,7 @@
  * ساخت فایل پشتیبان JSON، نام‌گذاری، اعتبارسنجی کامل فایل ورودی و خلاصه محتوای آن.
  */
 import type { AppSettings, Bill, BuildingSettings, ExpenseType, Payment, Unit } from '../models/types';
-import { EXPENSE_TYPES, EXPENSE_TYPE_ORDER, isExpenseType } from '../models/constants';
+import { EXPENSE_TYPE_ORDER, isCustomTypeId, isExpenseType } from '../models/constants';
 import { DEFAULT_FUND_TYPES, sanitizeFundTypes } from './fundTypes';
 import { sanitizeSettings } from './settings';
 import { formatJalaliDateTimeFa, jalaliIsoDate } from './date';
@@ -14,6 +14,10 @@ import { isSplitMethod, sanitizeSplitDefaults, type SplitDefaults } from './spli
 import { isBillDeleted, migrateBill, normalizePaidDate } from './billPaid';
 import { parseJalaliKey } from './jalali';
 import { parseArea } from './area';
+import {
+  MAX_CUSTOM_TYPES, TYPE_NAME_MAX, TYPE_NAME_MIN, cleanTypeName, isCustomColorId, isCustomIconId, typeInfo, validateCustomType,
+  type CustomBillType, type CustomColorId, type CustomIconId,
+} from './billTypes';
 
 /** شناسهٔ ساختمان پیش‌فرض (هم‌ارز storage/sqlite/schema؛ اینجا تکرار شده تا منطق خالص به لایهٔ ذخیره وابسته نباشد) */
 export const DEFAULT_BUILDING_ID = 'building-default';
@@ -41,10 +45,14 @@ export const BACKUP_APP_ID = 'apartemant';
  *    قالب‌های ۱ تا ۸ مثل قبل بازیابی می‌شوند (همه در ساختمان پیش‌فرض؛ صندوق/دوره/جلسه ندارند).
  * ۱۰: نسخه ۱.۸ (+ `buildings[].fundTypes`: قبض‌های واریزی به صندوق هر ساختمان). قالب ۹ بدون این فیلد = فقط «شارژ ساختمان».
  *    قالب‌های ۱ تا ۸ صندوق ندارند (تنظیم صندوق گوشی دست نمی‌خورد).
+ * ۱۱: نسخه ۱.۹ (+ `buildings[].billTypes`: نوع‌های قبض سفارشی هر ساختمان). پشتیبان همیشه تعریف همهٔ نوع‌های سفارشی همهٔ
+ *    ساختمان‌ها را دارد؛ پس در استفادهٔ عادی «نوع ناشناخته» پیش نمی‌آید. فقط برای فایل دستکاری‌شده/خراب: قبضی که نوعش نه
+ *    داخلی است نه سفارشیِ تعریف‌شدهٔ ساختمانِ خودش، رد نمی‌شود و «متفرقه» بازیابی می‌شود (`summary.remappedBills`).
+ *    قالب‌های ۱ تا ۱۰ نوع سفارشی ندارند.
  * همه قالب‌های قدیمی‌تر (۱ تا ۷) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
  * بدون dueDate = بدون مهلت پرداخت، بدون deletedAt = حذف‌نشده).
  */
-export const BACKUP_VERSION = 10;
+export const BACKUP_VERSION = 11;
 /**
  * حداکثر حجم قابل قبول فایل پشتیبان. باید از بزرگ‌ترین پشتیبانی که خود برنامه می‌سازد بزرگ‌تر باشد
  * (۱۰ هزار قبض × ۱۰۰ واحد ≈ ۱۷۰ MB)؛ اگر خروجی از این سقف بگذرد، هنگام گرفتن پشتیبان هشدار داده می‌شود.
@@ -91,6 +99,19 @@ export interface BackupBuilding {
   createdAt: string;
   archivedAt: string | null;
   units: BuildingSettings['units'];
+  /** قالب ۱۱: نوع‌های قبض سفارشی این ساختمان (نبودن = هیچ) */
+  billTypes: BackupBillType[];
+}
+
+/** نوع قبض سفارشی در فایل پشتیبان (ساختمانش = ساختمانی که داخلش آمده) */
+export interface BackupBillType {
+  id: CustomBillType['id'];
+  name: string;
+  icon: CustomIconId;
+  color: CustomColorId;
+  sortOrder: number;
+  hidden: boolean;
+  createdAt: string;
 }
 
 export interface BackupFundEntry {
@@ -163,6 +184,10 @@ export interface BackupSummary {
   years: number[];
   /** از قالب ۹ (در قالب‌های قدیمی ۱ = ساختمان پیش‌فرض) */
   buildings: number;
+  /** نوع‌های قبض سفارشی (همهٔ ساختمان‌ها؛ از قالب ۱۱) */
+  customTypes: number;
+  /** فقط فایل دستکاری‌شده/خراب: قبض‌هایی که نوع ناشناخته داشتند و «متفرقه» بازیابی می‌شوند (معمولاً ۰) */
+  remappedBills: number;
   fundEntries: number;
   managementPeriods: number;
   meetings: number;
@@ -205,7 +230,7 @@ export function createBackup(data: BackupData, appVersion: string, now: Date = n
       ...withBuilding(data.building),
       ...withSplitDefaults(data.splitDefaults),
       ...(isFullBackupData(data) ? {
-        buildings: data.buildings.map((b) => ({ ...b, units: b.units.map((u) => ({ ...u })) })),
+        buildings: data.buildings.map((b) => ({ ...b, units: b.units.map((u) => ({ ...u })), billTypes: (b.billTypes ?? []).map((t) => ({ ...t })) })),
         fundEntries: data.fundEntries.map((f) => ({ ...f })),
         managementPeriods: data.managementPeriods.map((p) => ({ ...p })),
         meetings: data.meetings.map((m) => ({ ...m, attendance: m.attendance.map((a) => ({ ...a })) })),
@@ -257,7 +282,7 @@ export function serializeBackup(backup: BackupFile): string {
   return JSON.stringify(backup);
 }
 
-export function summarizeBackup(backup: BackupFile): BackupSummary {
+export function summarizeBackup(backup: BackupFile, remappedBills = 0): BackupSummary {
   const { bills, units } = backup.data;
   return {
     bills: bills.length,
@@ -266,6 +291,8 @@ export function summarizeBackup(backup: BackupFile): BackupSummary {
     deletedBills: bills.filter((b) => isBillDeleted(b)).length,
     years: Array.from(new Set(bills.map((b) => b.year))).sort((a, b) => a - b),
     buildings: backup.data.buildings?.length ?? 1,
+    customTypes: (backup.data.buildings ?? []).reduce((n, b) => n + (b.billTypes?.length ?? 0), 0),
+    remappedBills,
     fundEntries: backup.data.fundEntries?.length ?? 0,
     managementPeriods: backup.data.managementPeriods?.length ?? 0,
     meetings: backup.data.meetings?.length ?? 0,
@@ -289,13 +316,20 @@ class BackupFormatError extends Error {}
 const bad = (detail: string): never => { throw new BackupFormatError(detail); };
 const nth = (i: number) => toPersianDigits(i + 1);
 
+/**
+ * نوع قبض در فایل: رشتهٔ کوتاه و غیرِ کلید ارثی (constructor/__proto__/… همچنان رد می‌شود).
+ * اینکه داخلی است یا سفارشیِ تعریف‌شدهٔ ساختمانش، بعد از خواندن ساختمان‌ها بررسی می‌شود (ناشناخته = «متفرقه»).
+ */
+const isTypeToken = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length <= 64
+  && !(v in Object.prototype) && v !== '__proto__';
+
 function parseBills(raw: unknown): Bill[] {
   if (!Array.isArray(raw)) bad('فهرست قبض‌ها پیدا نشد.');
   const ids = new Set<string>();
   return (raw as unknown[]).map((b, i) => {
     if (!isObj(b)) return bad(`اطلاعات قبض ${nth(i)} نامعتبر است.`);
     const ok = isId(b.id) && isInt(b.year, 1300, 1700) && isInt(b.month, 1, 12)
-      && isExpenseType(b.expenseType)
+      && isTypeToken(b.expenseType)
       && optText(b.billNumber) && optText(b.description)
       && isInt(b.totalAmount, 1) && validDate(b.createdAt) && typeof b.isFullySettled === 'boolean'
       && (b.splitMethod == null || isSplitMethod(b.splitMethod)) // نحوه تقسیم (از قالب ۳، اختیاری)
@@ -399,6 +433,7 @@ function parseBuildings(raw: unknown): BackupBuilding[] {
   const list = arrayOf(raw, 'ساختمان‌ها', MAX_BACKUP_BUILDINGS);
   if (list.length === 0) bad('هیچ ساختمانی در فایل نیست.');
   const ids = new Set<string>();
+  const typeIds = new Set<string>();
   return list.map((b, i) => {
     if (!isObj(b)) return bad(`اطلاعات ساختمان ${nth(i)} نامعتبر است.`);
     const ok = isId(b.id) && reqText(b.name) && typeof b.fundEnabled === 'boolean' && validDate(b.createdAt)
@@ -413,17 +448,64 @@ function parseBuildings(raw: unknown): BackupBuilding[] {
       if (!clean) bad(`تنظیمات واحدهای ساختمان ${nth(i)} نامعتبر است.`);
       units = clean!.units;
     }
+    const billTypes = parseBillTypes(b.billTypes, i, typeIds);
     let fundTypes: ExpenseType[] = [...DEFAULT_FUND_TYPES];
     if (b.fundTypes !== undefined) {
-      const clean = Array.isArray(b.fundTypes) && b.fundTypes.length <= EXPENSE_TYPE_ORDER.length ? sanitizeFundTypes(b.fundTypes) : null;
+      const clean = Array.isArray(b.fundTypes) && b.fundTypes.length <= EXPENSE_TYPE_ORDER.length + billTypes.length
+        ? sanitizeFundTypes(b.fundTypes) : null;
       if (!clean) bad(`قبض‌های صندوق ساختمان ${nth(i)} نامعتبر است.`);
       fundTypes = clean!;
     }
+    // صندوق فقط نوع‌های داخلی و سفارشیِ همین ساختمان را نگه می‌دارد
+    const own = new Set<string>(billTypes.map((t) => t.id));
+    fundTypes = fundTypes.filter((t) => isExpenseType(t) || own.has(t));
     return {
       id: b.id as string, name: b.name as string, fundEnabled: b.fundEnabled as boolean, fundTypes,
-      createdAt: b.createdAt as string, archivedAt: (b.archivedAt as string | null | undefined) ?? null, units,
+      createdAt: b.createdAt as string, archivedAt: (b.archivedAt as string | null | undefined) ?? null, units, billTypes,
     };
   });
+}
+
+/** نوع‌های سفارشی یک ساختمان (قالب ۱۱)؛ همان قواعد فرم: سقف ۱۲، نام ۲ تا ۲۰ و یکتا، ترکیب نماد/رنگ یکتا */
+function parseBillTypes(raw: unknown, bi: number, seenIds: Set<string>): BackupBillType[] {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw) || raw.length > MAX_CUSTOM_TYPES) return bad(`نوع‌های قبض سفارشی ساختمان ${nth(bi)} نامعتبر است.`);
+  const out: BackupBillType[] = [];
+  for (const t of raw as unknown[]) {
+    const ok = isObj(t) && isCustomTypeId(t.id) && typeof t.name === 'string' && t.name.length <= 200
+      && isCustomIconId(t.icon) && isCustomColorId(t.color) && isInt(t.sortOrder, 0, 10_000)
+      && typeof t.hidden === 'boolean' && validDate(t.createdAt);
+    if (!ok) return bad(`نوع قبض سفارشی ساختمان ${nth(bi)} نامعتبر است.`);
+    const o = t as Obj;
+    const name = cleanTypeName(o.name as string);
+    if (name.length < TYPE_NAME_MIN || name.length > TYPE_NAME_MAX) return bad(`نام نوع قبض سفارشی ساختمان ${nth(bi)} نامعتبر است.`);
+    if (seenIds.has(o.id as string)) return bad(`شناسه نوع قبض سفارشی ساختمان ${nth(bi)} تکراری است.`);
+    seenIds.add(o.id as string);
+    const item: BackupBillType = {
+      id: o.id as BackupBillType['id'], name, icon: o.icon as CustomIconId, color: o.color as CustomColorId,
+      sortOrder: o.sortOrder as number, hidden: o.hidden as boolean, createdAt: o.createdAt as string,
+    };
+    const err = validateCustomType(item, out.map((x) => ({ ...x, buildingId: '' })), { isNew: true });
+    if (err) return bad(`نوع قبض سفارشی «${name}» ساختمان ${nth(bi)}: ${err}`);
+    out.push(item);
+  }
+  return out;
+}
+
+/**
+ * فقط دفاعی (فایل دستکاری‌شده/خراب): نوعی که نه داخلی است نه سفارشیِ تعریف‌شدهٔ ساختمانِ همان قبض ← «متفرقه».
+ * `customByBuilding` = null یعنی فایل نوع سفارشی ندارد (قالب ۱ تا ۱۰ یا غیرکامل). تعداد قبض‌های تغییرکرده برمی‌گردد.
+ */
+export function remapUnknownBillTypes(bills: Bill[], customByBuilding: Map<string, Set<string>> | null): number {
+  let n = 0;
+  for (const b of bills) {
+    if (isExpenseType(b.expenseType)) continue;
+    const own = customByBuilding?.get(b.buildingId ?? DEFAULT_BUILDING_ID);
+    if (own?.has(b.expenseType)) continue;
+    b.expenseType = 'misc';
+    n++;
+  }
+  return n;
 }
 
 function parseFundEntries(raw: unknown, buildingIds: Set<string>): BackupFundEntry[] {
@@ -542,15 +624,15 @@ export function parseBackup(text: string): ParseBackupResult {
     const ownUnits = (billId: string): Unit[] => unitsByBill.get(billId) ?? [];
     for (const bill of bills) {
       const own = ownUnits(bill.id);
-      if (own.length === 0) bad(`قبض «${EXPENSE_TYPES[bill.expenseType].label} ${toPersianDigits(bill.month)}/${toPersianDigits(bill.year)}» هیچ واحدی ندارد.`);
+      if (own.length === 0) bad(`قبض «${typeInfo(bill.expenseType).label} ${toPersianDigits(bill.month)}/${toPersianDigits(bill.year)}» هیچ واحدی ندارد.`);
       const sum = own.reduce((s, u) => s + u.shareAmount, 0);
-      if (sum !== bill.totalAmount) bad(`جمع سهم واحدهای قبض «${EXPENSE_TYPES[bill.expenseType].label} ${toPersianDigits(bill.month)}/${toPersianDigits(bill.year)}» با مبلغ کل برابر نیست.`);
+      if (sum !== bill.totalAmount) bad(`جمع سهم واحدهای قبض «${typeInfo(bill.expenseType).label} ${toPersianDigits(bill.month)}/${toPersianDigits(bill.year)}» با مبلغ کل برابر نیست.`);
       if (new Set(own.map((u) => u.unitNumber)).size !== own.length) bad('شماره واحدهای یک قبض تکراری است.');
       // وضعیت کلی تسویه همیشه از روی واحدها محاسبه می‌شود
       bill.isFullySettled = own.every((u) => u.isSettled);
       // تقسیم «بر اساس متراژ»: متراژ همه واحدهای غیرخالی باید ثبت شده باشد
       if (bill.splitMethod === 'perArea' && own.some((u) => !u.vacant && parseArea(u.area ?? null) === null)) {
-        bad(`متراژ واحدهای قبض «${EXPENSE_TYPES[bill.expenseType].label} ${toPersianDigits(bill.month)}/${toPersianDigits(bill.year)}» (تقسیم بر اساس متراژ) ثبت نشده است.`);
+        bad(`متراژ واحدهای قبض «${typeInfo(bill.expenseType).label} ${toPersianDigits(bill.month)}/${toPersianDigits(bill.year)}» (تقسیم بر اساس متراژ) ثبت نشده است.`);
       }
     }
     const settings = sanitizeSettings(isObj(data.settings) ? (data.settings as Partial<AppSettings>) : null);
@@ -583,6 +665,10 @@ export function parseBackup(text: string): ParseBackupResult {
         multiBuilding: parseMultiBuilding(data.multiBuilding, buildingIds),
       };
     }
+    const customByBuilding = full.buildings
+      ? new Map(full.buildings.map((b) => [b.id, new Set<string>(b.billTypes.map((t) => t.id))]))
+      : null;
+    const remapped = remapUnknownBillTypes(bills, customByBuilding);
     const backup: BackupFile = {
       app: BACKUP_APP_ID,
       backupVersion: json.backupVersion as number,
@@ -590,7 +676,7 @@ export function parseBackup(text: string): ParseBackupResult {
       createdAt: json.createdAt as string,
       data: { bills, units, settings, ...withTemplate(data.unitTemplate), building, ...withSplitDefaults(data.splitDefaults), ...full },
     };
-    return { ok: true, backup, summary: summarizeBackup(backup) };
+    return { ok: true, backup, summary: summarizeBackup(backup, remapped) };
   } catch (e) {
     if (e instanceof BackupFormatError) return { ok: false, error: BackupErrors.corrupt(e.message) };
     return { ok: false, error: BackupErrors.notJson };

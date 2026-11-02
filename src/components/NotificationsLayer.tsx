@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
-import { EXPENSE_TYPES } from '../models/constants';
 import { ExpenseIcon } from './ExpenseIcon';
 import { IconBell, IconChevronLeft, IconX } from './Icons';
 import { useNotif } from '../context/NotifContext';
 import { alertChipText, groupAlerts, type DueAlert } from '../logic/dueAlerts';
 import { popoverAnchor } from '../logic/popoverAnchor';
 import { toPersianDigits } from '../logic/formatting';
+import { typeInfo } from '../logic/billTypes';
 
 const fmtDue = (d: string | null) => (d ? toPersianDigits(d.replace(/-/g, '/')) : '');
 
@@ -14,7 +14,7 @@ function Item({ a, onGo }: { a: DueAlert; onGo: () => void }) {
     <button type="button" className={'notif-item is-' + a.kind} onClick={onGo}>
       <ExpenseIcon type={a.expenseType} size={42} />
       <span className="notif-item__body">
-        <span className="notif-item__title">قبض {EXPENSE_TYPES[a.expenseType].label} <span className="notif-item__period">{a.title.replace(/^[^(]*/, '')}</span></span>
+        <span className="notif-item__title">قبض {typeInfo(a.expenseType).label} <span className="notif-item__period">{a.title.replace(/^[^(]*/, '')}</span></span>
         <span className="notif-item__meta">
           <span className={'notif-chip is-' + a.kind}>{alertChipText(a)}</span>
           {a.dueDate && <span>مهلت: <span className="num">{fmtDue(a.dueDate)}</span></span>}

@@ -7,7 +7,8 @@ import { migrateBill } from '../../logic/billPaid';
 import { unitPayments } from '../../logic/payments';
 import { newId } from '../../logic/id';
 import { BILL_DEPOSIT_REASONS, FUND_REASON_BILL_PAYMENT, fundTypesToJson, parseFundTypesJson } from '../../logic/fundTypes';
-import { isExpenseType } from '../../models/constants';
+import { isCustomTypeId, isExpenseType } from '../../models/constants';
+import { cleanTypeName, isCustomColorId, isCustomIconId, type CustomBillType } from '../../logic/billTypes';
 import { DEFAULT_BUILDING_ID, SQLITE_SCHEMA_VERSION } from './schema';
 import { getMeta, requestCheckpoint, setMeta } from './db';
 
@@ -601,7 +602,7 @@ export function readFundEntries(db: Database, buildingId: string): FundEntryRow[
     relatedPaymentId: (r.related_payment_id as string | null) ?? null,
     note: (r.note as string | null) ?? null,
     createdAt: String(r.created_at),
-    billExpenseType: isExpenseType(r.bill_expense_type) ? r.bill_expense_type : null,
+    billExpenseType: isExpenseType(r.bill_expense_type) || isCustomTypeId(r.bill_expense_type) ? r.bill_expense_type : null,
   }));
 }
 
@@ -806,3 +807,63 @@ export function deleteMeeting(db: Database, id: string): void {
   db.run('DELETE FROM meetings WHERE id = ?', [id]);
 }
 
+
+/* ─── نوع‌های قبض سفارشی (هر ساختمان جدا؛ طرح ۷) ─── */
+
+export function billTypeFromRow(r: Record<string, unknown>): CustomBillType | null {
+  const id = r.id, icon = r.icon, color = r.color;
+  if (!isCustomTypeId(id) || !isCustomIconId(icon) || !isCustomColorId(color)) return null;
+  return {
+    id,
+    buildingId: String(r.building_id),
+    name: cleanTypeName(String(r.name ?? '')),
+    icon,
+    color,
+    sortOrder: Number(r.sort_order) || 0,
+    hidden: Number(r.hidden) === 1,
+    createdAt: String(r.created_at ?? ''),
+  };
+}
+
+/** همهٔ نوع‌های سفارشی (همهٔ ساختمان‌ها یا یک ساختمان) */
+export function readBillTypes(db: Database, buildingId?: string): CustomBillType[] {
+  const stmt = buildingId
+    ? db.prepare('SELECT * FROM bill_types WHERE building_id = ? ORDER BY sort_order, created_at, id')
+    : db.prepare('SELECT * FROM bill_types ORDER BY building_id, sort_order, created_at, id');
+  if (buildingId) stmt.bind([buildingId]);
+  const out: CustomBillType[] = [];
+  forEachRowObject(stmt, (r) => { const t = billTypeFromRow(r); if (t) out.push(t); });
+  stmt.free();
+  return out;
+}
+
+export function insertBillType(db: Database, t: CustomBillType): void {
+  db.run(
+    'INSERT INTO bill_types(id, building_id, name, icon, color, sort_order, hidden, created_at) VALUES (?,?,?,?,?,?,?,?)',
+    [t.id, t.buildingId, t.name, t.icon, t.color, t.sortOrder, boolInt(t.hidden), t.createdAt],
+  );
+}
+
+export function updateBillTypeRow(db: Database, t: Pick<CustomBillType, 'id' | 'name' | 'icon' | 'color'>): void {
+  db.run('UPDATE bill_types SET name = ?, icon = ?, color = ? WHERE id = ?', [t.name, t.icon, t.color, t.id]);
+}
+
+export function setBillTypeHidden(db: Database, id: string, hidden: boolean): void {
+  db.run('UPDATE bill_types SET hidden = ? WHERE id = ?', [boolInt(hidden), id]);
+}
+
+/** شمار قبض‌های این نوع در این ساختمان (حذف‌شده‌ها هم) */
+export function billTypeUsage(db: Database, buildingId: string, typeId: string): number {
+  const stmt = db.prepare('SELECT COUNT(*) AS n FROM bills WHERE building_id = ? AND expense_type = ?');
+  stmt.bind([buildingId, typeId]);
+  const n = stmt.step() ? Number(stmt.getAsObject().n) : 0;
+  stmt.free();
+  return n;
+}
+
+/** حذف نوع سفارشیِ بی‌استفاده (+ پاک شدن از انتخاب صندوق همان ساختمان) */
+export function deleteBillTypeRow(db: Database, buildingId: string, typeId: string): void {
+  db.run('DELETE FROM bill_types WHERE id = ? AND building_id = ?', [typeId, buildingId]);
+  const fund = getBuildingFundTypes(db, buildingId);
+  if (fund.includes(typeId as ExpenseType)) setBuildingFundTypes(db, buildingId, fund.filter((t) => t !== typeId));
+}

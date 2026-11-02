@@ -3,7 +3,7 @@
  * ویرایش، حذف نرم، فیلتر انواع خاموش و رفت‌وبرگشت پشتیبان (قالب ۷ و قالب‌های قدیمی).
  */
 import { describe, expect, it } from 'vitest';
-import type { BillWithUnits, ExpenseType, SplitMethod } from '../src/models/types';
+import type { BillWithUnits, BuiltinExpenseType, ExpenseType, SplitMethod } from '../src/models/types';
 import { EXPENSE_TYPE_ORDER } from '../src/models/constants';
 import { calculateShares } from '../src/logic/calculation';
 import { calculateBySplit } from '../src/logic/split';
@@ -346,9 +346,9 @@ describe('گزارش‌ها و جمع‌ها (۲۰۰ دنیای تصادفی)', 
     const r = rng(34);
     for (let w = 0; w < 200; w++) {
       const bills = randomWorld(r, int(r, 0, 25)).filter((b) => !b.bill.deletedAt);
-      const on = EXPENSE_TYPE_ORDER.filter(() => r() < 0.6);
+      const on: ExpenseType[] = EXPENSE_TYPE_ORDER.filter(() => r() < 0.6);
       if (on.length === 0) on.push(EXPENSE_TYPE_ORDER[0]);
-      const prefs = { ...DEFAULT_ENTRY_PREFS, types: on };
+      const prefs = { ...DEFAULT_ENTRY_PREFS, types: on as BuiltinExpenseType[] };
       const vis = visibleBills(bills, prefs);
       expect(vis.every((b) => on.includes(b.bill.expenseType))).toBe(true);
       expect(vis.length).toBe(bills.filter((b) => on.includes(b.bill.expenseType)).length);

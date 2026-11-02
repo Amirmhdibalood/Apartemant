@@ -104,7 +104,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     const e = errorOf(text((o) => { o.backupVersion = BACKUP_VERSION + 1; }));
     expect(e).toContain('نسخه جدیدتری');
     expect(e).toContain(String(BACKUP_VERSION + 1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]));
-    expect(BACKUP_VERSION).toBe(10);
+    expect(BACKUP_VERSION).toBe(11);
   });
 
   it('نسخه نامعتبر قالب', () => {
@@ -119,7 +119,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
       ['فهرست قبض‌ها', (o) => { o.data.bills = {}; }],
       ['فهرست واحدها', (o) => { delete o.data.units; }],
       ['قبض ۱', (o) => { o.data.bills[0].month = 13; }],
-      ['قبض ۲', (o) => { o.data.bills[1].expenseType = 'phone'; }],
+      ['قبض ۲', (o) => { o.data.bills[1].expenseType = 42; }],
       ['قبض ۱', (o) => { o.data.bills[0].totalAmount = -5; }],
       ['تکراری', (o) => { o.data.bills[1].id = 'b1'; }],
       ['واحد ۳', (o) => { o.data.units[2].personCount = -1; }],

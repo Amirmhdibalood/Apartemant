@@ -5,13 +5,13 @@ import { formatAmount, toPersianDigits } from '../logic/formatting';
 import { useFeedback } from '../context/FeedbackContext';
 import { Errors } from '../logic/errors';
 import { formatJalaliDateTimeFa } from '../logic/date';
-import { DEFAULT_FUND_TYPES, fundReasonFa, fundTypeRows, toggleFundType } from '../logic/fundTypes';
-import { EXPENSE_TYPES } from '../models/constants';
+import { DEFAULT_FUND_TYPES, fundDisplayOrder, fundReasonFa, fundTypeRows, toggleFundType } from '../logic/fundTypes';
 import type { ExpenseType } from '../models/types';
 import { typeColors } from '../logic/typeColor';
 import { useTheme } from '../context/ThemeContext';
 import { useEntryPrefs } from '../context/EntryPrefsContext';
 import { FundTypesPicker, type FundTypeOption } from './FundTypesPicker';
+import { typeInfo } from '../logic/billTypes';
 
 export function FundSection({ reloadKey = 0 }: { reloadKey?: number }) {
   const { toast, showErrors } = useFeedback();
@@ -23,7 +23,9 @@ export function FundSection({ reloadKey = 0 }: { reloadKey?: number }) {
   const [busy, setBusy] = useState(false);
   const [fundTypes, setFundTypes] = useState<ExpenseType[]>([...DEFAULT_FUND_TYPES]);
   const { theme, palette, lightPalette } = useTheme();
-  const { prefs } = useEntryPrefs();
+  const { prefs, customTypes } = useEntryPrefs();
+  // نوع‌های سفارشی همین ساختمان بلافاصله در فهرست انتخاب هستند (بعد از نوع‌های داخلی)
+  const order = fundDisplayOrder(customTypes.map((c) => c.id));
 
   const reload = useCallback(async () => {
     const on = await buildingRepository.getFundEnabled();
@@ -50,7 +52,7 @@ export function FundSection({ reloadKey = 0 }: { reloadKey?: number }) {
 
   const onToggleType = async (id: string) => {
     const prev = fundTypes;
-    const next = toggleFundType(prev, id as ExpenseType);
+    const next = toggleFundType(prev, id as ExpenseType, order);
     setFundTypes(next);
     try {
       await buildingRepository.setFundTypes(next);
@@ -60,9 +62,9 @@ export function FundSection({ reloadKey = 0 }: { reloadKey?: number }) {
     }
   };
 
-  const typeOptions: FundTypeOption[] = fundTypeRows(prefs.types, fundTypes).map((t) => ({
+  const typeOptions: FundTypeOption[] = fundTypeRows(prefs.types, fundTypes, order).map((t) => ({
     id: t,
-    label: EXPENSE_TYPES[t].label,
+    label: typeInfo(t).label,
     color: typeColors(t, theme, palette, lightPalette).color,
     tag: DEFAULT_FUND_TYPES.includes(t) ? 'پیش‌فرض' : undefined,
   }));
@@ -117,7 +119,7 @@ export function FundSection({ reloadKey = 0 }: { reloadKey?: number }) {
 
       {enabled && (
         <>
-          <FundTypesPicker options={typeOptions} selected={fundTypes} onToggle={(id) => void onToggleType(id)} />
+          <FundTypesPicker options={typeOptions} selected={fundTypes} onToggle={(id) => void onToggleType(id)} hintOrder={order} />
 
           <div className="fund-balance" role="status">
             <span className="fund-balance__label">موجودی</span>

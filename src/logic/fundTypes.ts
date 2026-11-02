@@ -4,7 +4,8 @@
  * پرداخت‌های بعدی اثر دارد و گردش قبلی صندوق هرگز عوض نمی‌شود.
  */
 import type { ExpenseType } from '../models/types';
-import { EXPENSE_TYPES, EXPENSE_TYPE_ORDER, isExpenseType } from '../models/constants';
+import { EXPENSE_TYPE_ORDER, isCustomTypeId, isExpenseType } from '../models/constants';
+import { MAX_CUSTOM_TYPES, typeLabel } from './billTypes';
 
 export const DEFAULT_FUND_TYPES: readonly ExpenseType[] = ['building'];
 
@@ -13,12 +14,17 @@ export const FUND_REASON_LEGACY_CHARGE = 'charge_bill';
 export const FUND_REASON_BILL_PAYMENT = 'bill_payment';
 export const BILL_DEPOSIT_REASONS: readonly string[] = [FUND_REASON_LEGACY_CHARGE, FUND_REASON_BILL_PAYMENT];
 
-/** فقط نوع‌های معتبر، بدون تکرار، به ترتیب استاندارد؛ ورودی نامعتبر (غیرآرایه) = null */
+/**
+ * فقط نوع‌های معتبر (۸ نوع داخلی یا شناسهٔ سفارشی با الگوی درست)، بدون تکرار؛ داخلی‌ها به ترتیب استاندارد،
+ * بعد سفارشی‌ها به ترتیب ورودی. ورودی نامعتبر (غیرآرایه / عضو نامعتبر / بیش از حد) = null
+ */
 export function sanitizeFundTypes(raw: unknown): ExpenseType[] | null {
   if (!Array.isArray(raw)) return null;
-  if (!raw.every(isExpenseType)) return null;
+  if (raw.length > (EXPENSE_TYPE_ORDER.length + MAX_CUSTOM_TYPES) * 2) return null;
+  if (!raw.every((t) => isExpenseType(t) || isCustomTypeId(t))) return null;
   const set = new Set(raw as ExpenseType[]);
-  return EXPENSE_TYPE_ORDER.filter((t) => set.has(t));
+  const customs = [...new Set((raw as ExpenseType[]).filter(isCustomTypeId))];
+  return [...EXPENSE_TYPE_ORDER.filter((t) => set.has(t)), ...customs];
 }
 
 /** مقدار ستون fund_types → فهرست؛ خراب = پیش‌فرض (فقط شارژ) */
@@ -44,7 +50,11 @@ type TypeOrder = readonly string[];
 export const FUND_DISPLAY_ORDER: readonly ExpenseType[] = [
   ...DEFAULT_FUND_TYPES, ...EXPENSE_TYPE_ORDER.filter((t) => !DEFAULT_FUND_TYPES.includes(t)),
 ];
-const builtinLabel = (t: string): string => (isExpenseType(t) ? EXPENSE_TYPES[t].label : t);
+/** برچسب از رجیستری (داخلی + سفارشی) */
+const builtinLabel = (t: string): string => typeLabel(t);
+
+/** ترتیب فهرست صندوق برای یک ساختمان: ترتیب پیش‌فرض + نوع‌های سفارشی همان ساختمان */
+export const fundDisplayOrder = (customIds: readonly string[]): string[] => [...FUND_DISPLAY_ORDER, ...customIds];
 
 /**
  * ردیف‌های فهرست انتخاب: نوع‌های روشن در «انواع قبض و روش‌ها».

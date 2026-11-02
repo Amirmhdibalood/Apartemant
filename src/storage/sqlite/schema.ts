@@ -1,5 +1,5 @@
-/** SQLite DDL for Apartemant domain DB (schema version 6 = per-building fund bill types). */
-export const SQLITE_SCHEMA_VERSION = 6;
+/** SQLite DDL for Apartemant domain DB (schema version 7 = per-building custom bill types). */
+export const SQLITE_SCHEMA_VERSION = 7;
 
 /** پیش‌فرض قبض‌های واریزی به صندوق (JSON مرتب‌شده با EXPENSE_TYPE_ORDER) */
 export const DEFAULT_FUND_TYPES_JSON = '["building"]';
@@ -131,4 +131,16 @@ CREATE TABLE IF NOT EXISTS meeting_attendance (
   UNIQUE(meeting_id, unit_number)
 );
 CREATE INDEX IF NOT EXISTS idx_meet_att_meeting ON meeting_attendance(meeting_id);
+
+CREATE TABLE IF NOT EXISTS bill_types (
+  id TEXT PRIMARY KEY NOT NULL,
+  building_id TEXT NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  icon TEXT NOT NULL,
+  color TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  hidden INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_bill_types_building ON bill_types(building_id, sort_order);
 `;

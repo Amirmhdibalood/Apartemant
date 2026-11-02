@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { unitLabel } from '../logic/building';
 import type { BillWithUnits } from '../models/types';
-import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../models/constants';
+import { CURRENCY, MONTHS } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
 import { ExpenseIcon } from '../components/ExpenseIcon';
 import { useVisibleBills } from '../context/EntryPrefsContext';
@@ -12,6 +12,7 @@ import { useFeedback } from '../context/FeedbackContext';
 import { Errors } from '../logic/errors';
 import { listUnitBatches, undoBatch } from '../logic/unitPayment';
 import { paymentHistory, PAYMENT_GRACE_DAYS, RATING_LABELS, type PaymentEntry } from '../logic/debts';
+import { typeInfo } from '../logic/billTypes';
 
 interface Props {
   unitNumber: number;
@@ -98,7 +99,7 @@ export function UnitHistoryScreen({ unitNumber, onBack, onOpenBill }: Props) {
                   <ExpenseIcon type={e.expenseType} size={36} />
                   <span className="history-item__main">
                     <span className="history-item__top">
-                      <span className="history-item__title">{EXPENSE_TYPES[e.expenseType].label} · {MONTHS[e.month - 1]} <span className="num">{e.year}</span></span>
+                      <span className="history-item__title">{typeInfo(e.expenseType).label} · {MONTHS[e.month - 1]} <span className="num">{e.year}</span></span>
                       <span className="history-item__amount num">{formatAmount(e.amount)}</span>
                     </span>
                     <span className="history-item__dates">

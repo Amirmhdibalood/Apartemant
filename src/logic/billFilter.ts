@@ -4,8 +4,9 @@
  * وضعیت «همه» (پیش‌فرض) = پرداخت‌شده + پرداخت‌نشده، بدون حذف‌شده‌ها؛ حذف‌شده‌ها فقط با انتخاب صریح «حذف‌شده».
  */
 import type { BillWithUnits, ExpenseType } from '../models/types';
-import { EXPENSE_TYPES, EXPENSE_TYPE_ORDER, MONTHS, isExpenseType } from '../models/constants';
+import { EXPENSE_TYPE_ORDER, MONTHS, isCustomTypeId, isExpenseType } from '../models/constants';
 import { isBillDeleted, isBillPaid } from './billPaid';
+import { typeInfo } from './billTypes';
 
 export type StatusFilter = 'all' | 'paid' | 'unpaid' | 'deleted';
 
@@ -35,7 +36,7 @@ export function normalizeMonth(v: unknown): number | null {
 
 /** تبدیل مقدار خام به نوع هزینه معتبر یا null (= همه) */
 export function normalizeType(v: unknown): ExpenseType | null {
-  return isExpenseType(v) ? v : null;
+  return isExpenseType(v) || isCustomTypeId(v) ? v : null;
 }
 
 export function normalizeStatus(v: unknown): StatusFilter {
@@ -86,7 +87,7 @@ const STATUS_WORD: Record<StatusFilter, string> = { all: '', paid: 'پرداخت
 export function emptyMessage(f: RecordsFilter): string {
   const y = String(f.year);
   const where = f.month === null ? `سال ${y}` : `${MONTHS[f.month - 1]} ${y}`;
-  const what = [f.type ? `«${EXPENSE_TYPES[f.type].label}»` : '', STATUS_WORD[f.status]].filter(Boolean).join(' ');
+  const what = [f.type ? `«${typeInfo(f.type).label}»` : '', STATUS_WORD[f.status]].filter(Boolean).join(' ');
   if (!what) return f.month === null ? `برای سال ${y} هنوز قبضی ثبت نشده است.` : `برای ${where} هنوز قبضی ثبت نشده است.`;
   return `در ${where} هیچ قبض ${what} پیدا نشد.`;
 }
@@ -94,7 +95,7 @@ export function emptyMessage(f: RecordsFilter): string {
 /** گزینه‌های کشوی نوع هزینه: همه + ۸ نوع (به ترتیب نمایش برنامه) */
 export const TYPE_FILTER_OPTIONS: { value: ExpenseType | null; label: string }[] = [
   { value: null, label: ALL_LABEL },
-  ...EXPENSE_TYPE_ORDER.map((t) => ({ value: t, label: EXPENSE_TYPES[t].label })),
+  ...EXPENSE_TYPE_ORDER.map((t) => ({ value: t, label: typeInfo(t).label })),
 ];
 
 /** گزینه‌های کشوی ماه: همه + فروردین..اسفند */

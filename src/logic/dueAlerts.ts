@@ -5,11 +5,12 @@
  * کارت بنر صفحه اصلی را می‌شود بست (فقط تا اجرای بعدی) و اعلانِ زنگوله را حذف نمی‌کند.
  */
 import type { Bill } from '../models/types';
-import { EXPENSE_TYPES, monthName } from '../models/constants';
+import { monthName } from '../models/constants';
 import { isBillDeleted, isBillPaid } from './billPaid';
 import { daysUntilDue } from './billStatus';
 import type { JalaliDate } from './jalali';
 import { toPersianDigits } from './formatting';
+import { typeInfo } from './billTypes';
 
 /** از چند روز قبل از مهلت اعلان نمایش داده شود (۲ = از ۲ روز قبل) */
 export const ALERT_DAYS_BEFORE = 2;
@@ -34,7 +35,7 @@ export interface DueAlert {
 }
 
 export const billLabel = (bill: Pick<Bill, 'expenseType' | 'month' | 'year'>) =>
-  `${EXPENSE_TYPES[bill.expenseType]?.label ?? ''} (${monthName(bill.month)} ${toPersianDigits(bill.year)})`;
+  `${typeInfo(bill.expenseType)?.label ?? ''} (${monthName(bill.month)} ${toPersianDigits(bill.year)})`;
 
 /** متن هشدار، مثل «فردا مهلت پرداخت قبض گاز (مهر ۱۴۰۵) است» */
 export function dueAlertText(bill: Pick<Bill, 'expenseType' | 'month' | 'year'>, kind: DueAlertKind, overdueDays = 0): string {

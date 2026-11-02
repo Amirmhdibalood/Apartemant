@@ -28,6 +28,7 @@ import { REPORTS } from '../logic/reportCatalog';
 import { ALL_SPLIT_METHODS } from '../logic/entryPrefs';
 import { EXPENSE_TYPES, EXPENSE_TYPE_ORDER, SPLIT_METHOD_LABELS } from '../models/constants';
 import { ExpenseIcon } from '../components/ExpenseIcon';
+import { CustomTypesSection } from '../components/CustomTypesSection';
 import { useIconPrefs } from '../context/IconPrefsContext';
 import { AREA_ICONS, UNIT_ICONS } from '../logic/iconPrefs';
 import { AreaIcon, UnitIcon } from '../components/PrefIcons';
@@ -46,7 +47,9 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
   const { mode, setMode } = useNotif();
   const { areaMode, setAreaMode } = useAreaMode();
   const { unitIcon, areaIcon, setUnitIcon, setAreaIcon } = useIconPrefs();
-  const { prefs, setTypeOn, setMethodOn } = useEntryPrefs();
+  const entry = useEntryPrefs();
+  const { prefs, setTypeOn, setMethodOn } = entry;
+  const builtinPrefs = entry.builtinPrefs ?? prefs;
   const { prefs: reportPrefs, setReportOn } = useReportPrefs();
   const years = selectableYears();
   const [restoreKey, setRestoreKey] = useState(0);
@@ -137,17 +140,18 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
           </p>
           <h3 className="settings-sub">انواع قبض در برنامه</h3>
           {EXPENSE_TYPE_ORDER.map((t) => {
-            const on = prefs.types.includes(t);
+            const on = builtinPrefs.types.includes(t);
             return (
               <div className="setting-row entry-prefs__row" key={t}>
                 <label htmlFor={`sw-type-${t}`} className="setting-row__text entry-prefs__label">
                   <ExpenseIcon type={t} size={26} />
                   <span className="setting-row__label">{EXPENSE_TYPES[t].label}</span>
                 </label>
-                <Switch id={`sw-type-${t}`} label={`نوع قبض ${EXPENSE_TYPES[t].label}`} checked={on} disabled={on && prefs.types.length === 1} onChange={(v) => setTypeOn(t, v)} />
+                <Switch id={`sw-type-${t}`} label={`نوع قبض ${EXPENSE_TYPES[t].label}`} checked={on} disabled={on && builtinPrefs.types.length === 1} onChange={(v) => setTypeOn(t, v)} />
               </div>
             );
           })}
+          <CustomTypesSection />
           <h3 className="settings-sub">روش‌های محاسبه در ثبت قبض</h3>
           {ALL_SPLIT_METHODS.map((m) => {
             const on = prefs.methods.includes(m);

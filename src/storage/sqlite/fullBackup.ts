@@ -7,6 +7,8 @@
  */
 import type { Database, Statement } from 'sql.js';
 import type { Bill, BuildingUnit, ExpenseType, Unit } from '../../models/types';
+import type { BackupBillType } from '../../logic/backup';
+import { isExpenseType } from '../../models/constants';
 import { fundTypesToJson, parseFundTypesJson } from '../../logic/fundTypes';
 import { migrateBill } from '../../logic/billPaid';
 import { unitPayments } from '../../logic/payments';
@@ -18,6 +20,7 @@ import {
   inTransaction,
   readAllBills,
   readAllUnits,
+  readBillTypes,
   readUnitTemplates,
   type FundEntryRow,
   type ManagementPeriodRow,
@@ -37,6 +40,7 @@ export const BACKUP_TABLE_COVERAGE: Record<string, string> = {
   management_periods: 'data.managementPeriods[]',
   meetings: 'data.meetings[]',
   meeting_attendance: 'data.meetings[].attendance[]',
+  bill_types: 'data.buildings[].billTypes[]',
 };
 
 /**
@@ -55,6 +59,7 @@ export const BACKUP_COLUMN_COVERAGE: Record<string, readonly string[]> = {
   management_periods: ['id', 'building_id', 'manager_label', 'start_date', 'end_date', 'ended_early_at', 'notes'],
   meetings: ['id', 'building_id', 'meeting_date', 'weekday', 'hour', 'minute', 'place', 'summary', 'created_at'],
   meeting_attendance: ['id:regenerated', 'meeting_id', 'unit_number', 'unit_alias', 'status'],
+  bill_types: ['id', 'building_id', 'name', 'icon', 'color', 'sort_order', 'hidden', 'created_at'],
 };
 
 export interface FullBuilding {
@@ -67,6 +72,8 @@ export interface FullBuilding {
   archivedAt: string | null;
   /** unit templates (تنظیمات ساختمان)، ترتیب = شماره واحد */
   units: BuildingUnit[];
+  /** نوع‌های قبض سفارشی این ساختمان (قالب ۱۱؛ همیشه کامل نوشته می‌شود) */
+  billTypes: BackupBillType[];
 }
 
 export interface FullDomain {
@@ -98,6 +105,12 @@ const str = (v: unknown): string | null => (v == null ? null : String(v));
 /** Read every user row from the DB (all buildings, archived included). */
 export function readFullDomain(db: Database): FullDomain {
   ensureDefaultBuilding(db);
+  const typesByBuilding = new Map<string, BackupBillType[]>();
+  for (const t of readBillTypes(db)) {
+    const list = typesByBuilding.get(t.buildingId) ?? [];
+    list.push({ id: t.id, name: t.name, icon: t.icon, color: t.color, sortOrder: t.sortOrder, hidden: t.hidden, createdAt: t.createdAt });
+    typesByBuilding.set(t.buildingId, list);
+  }
   const buildings: FullBuilding[] = rows(db, 'SELECT * FROM buildings ORDER BY created_at, id').map((r) => ({
     id: String(r.id),
     name: String(r.name),
@@ -106,6 +119,7 @@ export function readFullDomain(db: Database): FullDomain {
     createdAt: String(r.created_at),
     archivedAt: str(r.archived_at),
     units: readUnitTemplates(db, String(r.id))?.units ?? [],
+    billTypes: typesByBuilding.get(String(r.id)) ?? [],
   }));
   const bills = readAllBills(db);
   const units = readAllUnits(db);
@@ -155,7 +169,7 @@ export function readFullDomain(db: Database): FullDomain {
 
 /** Child tables first so deletes never trip a foreign key. */
 const WIPE_ORDER = [
-  'meeting_attendance', 'meetings', 'management_periods', 'fund_entries',
+  'meeting_attendance', 'meetings', 'bill_types', 'management_periods', 'fund_entries',
   'payments', 'bill_units', 'bills', 'building_unit_templates', 'buildings',
 ];
 
@@ -180,6 +194,18 @@ export function replaceFullDomain(db: Database, full: FullDomain): void {
     });
     ensureDefaultBuilding(db);
 
+    const customByBuilding = new Map<string, Set<string>>();
+    withStmt(db, 'INSERT INTO bill_types(id, building_id, name, icon, color, sort_order, hidden, created_at) VALUES (?,?,?,?,?,?,?,?)', (s) => {
+      for (const b of full.buildings) {
+        const own = new Set<string>();
+        for (const t of b.billTypes ?? []) {
+          s.run([t.id, b.id, t.name, t.icon, t.color, t.sortOrder, b01(t.hidden), t.createdAt]);
+          own.add(t.id);
+        }
+        customByBuilding.set(b.id, own);
+      }
+    });
+
     withStmt(db, `INSERT INTO building_unit_templates(id, building_id, unit_number, alias, default_persons, vacant, area, phone)
       VALUES (?,?,?,?,?,?,?,?)`, (s) => {
       for (const b of full.buildings) {
@@ -197,8 +223,10 @@ export function replaceFullDomain(db: Database, full: FullDomain): void {
         const b = migrateBill(raw);
         const bid = raw.buildingId || DEFAULT_BUILDING_ID;
         billBuilding.set(b.id, bid);
+        // دفاعی: نوعی که برای ساختمانِ قبض تعریف نشده هرگز در دیتابیس نمی‌نشیند (parseBackup قبلاً «متفرقه»اش کرده)
+        const type: ExpenseType = isExpenseType(b.expenseType) || customByBuilding.get(bid)?.has(b.expenseType) ? b.expenseType : 'misc';
         s.run([
-          b.id, bid, b.year, b.month, b.expenseType, b.billNumber, b.description, b.totalAmount,
+          b.id, bid, b.year, b.month, type, b.billNumber, b.description, b.totalAmount,
           b.createdAt, b01(b.isFullySettled), b.splitMethod ?? null, b01(b.billPaid), b.billPaidDate ?? null,
           b.dueDate ?? null, b.deletedAt ?? null,
         ]);

@@ -1,5 +1,5 @@
-/** انواع هزینه (فقط یکی از این ۸ مورد؛ سه مورد آخر از نسخه ۱.۲.۰) */
-export type ExpenseType =
+/** ۸ نوع هزینهٔ داخلی (سه مورد آخر از نسخه ۱.۲.۰) */
+export type BuiltinExpenseType =
   | 'water'
   | 'electricity'
   | 'gas'
@@ -8,6 +8,12 @@ export type ExpenseType =
   | 'cleaning'
   | 'repairs'
   | 'beautification';
+
+/** شناسهٔ نوع قبض سفارشی (هر ساختمان جدا؛ الگوی سخت‌گیرانه c_[a-z0-9]{8,24}) */
+export type CustomTypeId = `c_${string}`;
+
+/** نوع هزینهٔ یک قبض: یکی از ۸ نوع داخلی یا نوع سفارشیِ ساختمانِ همان قبض */
+export type ExpenseType = BuiltinExpenseType | CustomTypeId;
 
 /**
  * نحوه تقسیم قبض (از نسخه ۱.۳.۰):

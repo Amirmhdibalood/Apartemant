@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { BillWithUnits, ExpenseType } from '../../models/types';
-import { CURRENCY, EXPENSE_TYPES, monthName } from '../../models/constants';
+import { CURRENCY, monthName } from '../../models/constants';
 import { SelectField } from '../../components/SelectField';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
 import { IconCalendar, IconCheck, IconChevronLeft, IconX } from '../../components/Icons';
@@ -14,6 +14,7 @@ import { billPaymentReport, filterPaymentRows, PAYMENT_STATUS_LABEL, toggleStatu
 import { formatJalaliSlash, todayJalali } from '../../logic/jalali';
 import { billPaymentsDoc } from '../../logic/reportDoc';
 import { ReportActions } from '../../components/ReportActions';
+import { typeInfo } from '../../logic/billTypes';
 
 interface Props {
   all: BillWithUnits[] | null;
@@ -57,7 +58,7 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
         <div className="empty-state">
           <IconCalendar size={40} />
           <p>
-            برای سال {year}{type ? ` و قبض «${EXPENSE_TYPES[type].label}»` : ''} هنوز قبضی ثبت نشده است.
+            برای سال {year}{type ? ` و قبض «${typeInfo(type).label}»` : ''} هنوز قبضی ثبت نشده است.
             برای بهره‌گیری کامل از این گزارش، هنگام ثبت قبض «مهلت پرداخت» را تعیین کنید و پس از پرداخت، تیک «پرداخت شد» را بزنید.
           </p>
         </div>
@@ -113,7 +114,7 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
                 <ExpenseIcon type={r.bill.expenseType} size={38} />
                 <div className="bp-row__main">
                   <div className="bp-row__title">
-                    {EXPENSE_TYPES[r.bill.expenseType].label} — {monthName(r.bill.month)}
+                    {typeInfo(r.bill.expenseType).label} — {monthName(r.bill.month)}
                     <span className="bp-row__amount"><span className="num">{formatAmount(r.bill.totalAmount)}</span> {CURRENCY}</span>
                   </div>
                   <div className="bp-row__dates">

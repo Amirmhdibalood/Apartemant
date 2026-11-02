@@ -275,6 +275,9 @@
 :root[data-theme="light"][data-light="paper"] .meet-att__btn.is-absent { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
 :root[data-theme="light"][data-light="paper"] .meet-att__btn.is-empty { background: var(--soft-panel); border-color: var(--warning); color: var(--text); }
 :root[data-theme="light"][data-light="paper"] .btn--soon { background: #f1efeb; color: #958973; border: 1px solid #e9e6e0; }
+:root[data-theme="light"][data-light="paper"] .ct-sheet { box-shadow: 0 -10px 40px rgba(60,50,32,0.25); }
+:root[data-theme="light"][data-light="paper"] .ct-grid button.is-on { border-color: var(--tc); color: var(--tc); background: color-mix(in srgb, var(--tc) 12%, var(--card)); }
+:root[data-theme="light"][data-light="paper"] .ct-colors button.is-on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--c); }
 
 /* ---- پالت روشن mint: نعناعی سرد ---- */
 :root[data-theme="light"][data-light="mint"] { --bg: #edf7f4; --card: #fbfefd; --text: #20363c; --text-2: #3d5960; --muted: #5a746c; --border: #e6f0ed; --border-2: #dae9e4; --primary: #0d7686; --primary-press: #0b616e; --primary-soft: #ebfbfd; --success: #1e8751; --success-press: #1c864e; --success-soft: #e8f7ef; --danger: #eb1515; --danger-soft: #fdecec; --warning: #f7c23c; --purple: #8b5cf6; --soft-panel: #eff7f4; --summary: #effafb; --shadow: 0 4px 18px rgba(32,60,51,0.07); --shadow-sm: 0 2px 8px rgba(32,60,51,0.06); }
@@ -551,6 +554,9 @@
 :root[data-theme="light"][data-light="mint"] .meet-att__btn.is-absent { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
 :root[data-theme="light"][data-light="mint"] .meet-att__btn.is-empty { background: var(--soft-panel); border-color: var(--warning); color: var(--text); }
 :root[data-theme="light"][data-light="mint"] .btn--soon { background: #eff3f2; color: #73958b; border: 1px solid #e4ebe9; }
+:root[data-theme="light"][data-light="mint"] .ct-sheet { box-shadow: 0 -10px 40px rgba(32,60,51,0.25); }
+:root[data-theme="light"][data-light="mint"] .ct-grid button.is-on { border-color: var(--tc); color: var(--tc); background: color-mix(in srgb, var(--tc) 12%, var(--card)); }
+:root[data-theme="light"][data-light="mint"] .ct-colors button.is-on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--c); }
 
 /* ---- پالت روشن lavender: اسلیت یاسی ---- */
 :root[data-theme="light"][data-light="lavender"] { --bg: #f1effa; --card: #fdfcff; --text: #231f3d; --text-2: #423d60; --muted: #6e6886; --border: #e8e5f1; --border-2: #dddae9; --primary: #5d4fd6; --primary-press: #493ad1; --primary-soft: #edebfd; --success: #1e8751; --success-press: #1c864e; --success-soft: #e8f7ef; --danger: #eb1515; --danger-soft: #fdecec; --warning: #f7c23c; --purple: #8b5cf6; --soft-panel: #f1eff7; --summary: #f0effb; --shadow: 0 4px 18px rgba(38,32,60,0.07); --shadow-sm: 0 2px 8px rgba(38,32,60,0.06); }
@@ -827,6 +833,9 @@
 :root[data-theme="light"][data-light="lavender"] .meet-att__btn.is-absent { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
 :root[data-theme="light"][data-light="lavender"] .meet-att__btn.is-empty { background: var(--soft-panel); border-color: var(--warning); color: var(--text); }
 :root[data-theme="light"][data-light="lavender"] .btn--soon { background: #f0eff3; color: #8c86a4; border: 1px solid #e5e4eb; }
+:root[data-theme="light"][data-light="lavender"] .ct-sheet { box-shadow: 0 -10px 40px rgba(38,32,60,0.25); }
+:root[data-theme="light"][data-light="lavender"] .ct-grid button.is-on { border-color: var(--tc); color: var(--tc); background: color-mix(in srgb, var(--tc) 12%, var(--card)); }
+:root[data-theme="light"][data-light="lavender"] .ct-colors button.is-on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--c); }
 
 /* ---- پالت روشن graycool: خاکستری سرد (کنتراست بالا) ---- */
 :root[data-theme="light"][data-light="graycool"] { --bg: #eceff3; --card: #ffffff; --text: #171c22; --text-2: #283039; --muted: #47505b; --border: #d6d9dc; --border-2: #cccfd3; --primary: #1244b7; --primary-press: #103b9f; --primary-soft: #ebf0fd; --success: #1e8751; --success-press: #1c864e; --success-soft: #e8f7ef; --danger: #eb1515; --danger-soft: #fdecec; --warning: #f7c23c; --purple: #8b5cf6; --soft-panel: #f2f3f4; --summary: #eff2fb; --shadow: 0 4px 18px rgba(32,44,60,0.07); --shadow-sm: 0 2px 8px rgba(32,44,60,0.06); }
@@ -1103,3 +1112,6 @@
 :root[data-theme="light"][data-light="graycool"] .meet-att__btn.is-absent { background: var(--danger-soft); border-color: var(--danger); color: var(--danger); }
 :root[data-theme="light"][data-light="graycool"] .meet-att__btn.is-empty { background: var(--soft-panel); border-color: var(--warning); color: var(--text); }
 :root[data-theme="light"][data-light="graycool"] .btn--soon { background: #dedfe1; color: #5f6c7e; border: 1px solid #d4d5d7; }
+:root[data-theme="light"][data-light="graycool"] .ct-sheet { box-shadow: 0 -10px 40px rgba(32,44,60,0.25); }
+:root[data-theme="light"][data-light="graycool"] .ct-grid button.is-on { border-color: var(--tc); color: var(--tc); background: color-mix(in srgb, var(--tc) 12%, var(--card)); }
+:root[data-theme="light"][data-light="graycool"] .ct-colors button.is-on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--c); }

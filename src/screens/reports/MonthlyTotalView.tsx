@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { BillWithUnits } from '../../models/types';
-import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../../models/constants';
+import { CURRENCY, MONTHS } from '../../models/constants';
 import { SelectField } from '../../components/SelectField';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
 import { IconCalendar, IconCheck } from '../../components/Icons';
@@ -18,6 +18,7 @@ import { pickReportYear } from '../../logic/report';
 import { currentJalali } from '../../logic/date';
 import { monthlyTotals, monthsWithBills, type MonthlyUnit } from '../../logic/monthlyTotals';
 import { monthlyDetailDoc, monthlyDoc } from '../../logic/reportDoc';
+import { typeInfo } from '../../logic/billTypes';
 
 const fa = toPersianDigits;
 
@@ -85,8 +86,8 @@ export function MonthlyTotalView({ all, detailed = false }: Props) {
           </section>
           <div className="rt-types">
             {t.byType.map((x) => (
-              <span key={x.type} className="rt-tchip" title={`${EXPENSE_TYPES[x.type].label}: ${faAmount(shareSum(x.type))}`}>
-                <ExpenseIcon type={x.type} size={22} />{EXPENSE_TYPES[x.type].label}
+              <span key={x.type} className="rt-tchip" title={`${typeInfo(x.type).label}: ${faAmount(shareSum(x.type))}`}>
+                <ExpenseIcon type={x.type} size={22} />{typeInfo(x.type).label}
               </span>
             ))}
           </div>
@@ -128,7 +129,7 @@ export function MonthlyTotalView({ all, detailed = false }: Props) {
                   {u.items.map((i) => (
                     <div key={i.billId} className="rt-brow">
                       <ExpenseIcon type={i.expenseType} size={32} />
-                      <div className="rt-bname">{EXPENSE_TYPES[i.expenseType].label}</div>
+                      <div className="rt-bname">{typeInfo(i.expenseType).label}</div>
                       <b className="num">{faAmount(i.amount)}</b>
                     </div>
                   ))}

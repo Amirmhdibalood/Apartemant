@@ -2,7 +2,7 @@ import { VACANT_LABEL } from '../logic/vacant';
 import { useEffect, useState } from 'react';
 import { unitLabel } from '../logic/building';
 import type { Bill, BillDraft, BillWithUnits, Unit } from '../models/types';
-import { CURRENCY, EXPENSE_TYPES, SPLIT_METHOD_LABELS, monthName } from '../models/constants';
+import { CURRENCY, SPLIT_METHOD_LABELS, monthName } from '../models/constants';
 import { splitMethodOf } from '../logic/split';
 import { AppHeader } from '../components/AppHeader';
 import { ExpenseIcon } from '../components/ExpenseIcon';
@@ -28,6 +28,7 @@ import { DEFAULT_DUE_OFFSET_DAYS, billTone, dueText } from '../logic/billStatus'
 import { addJalaliDays, dateYearOptions, formatJalaliSlash, parseJalaliKey, todayJalali } from '../logic/jalali';
 import { formatJalaliDateTimeFa } from '../logic/date';
 import { classifyBillPayment } from '../logic/billPaymentReport';
+import { typeInfo } from '../logic/billTypes';
 
 interface Props {
   billId: string;
@@ -65,7 +66,7 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
   const ppmExact = totalArea > 0 ? bill.totalAmount / totalArea : 0;
   const faMoney = (n: number) => toPersianDigits(formatAmount(n)).replace(/,/g, '٬');
   const ppmText = (Number.isInteger(ppmExact) ? '' : '≈ ') + faMoney(Math.round(ppmExact));
-  const type = EXPENSE_TYPES[bill.expenseType];
+  const type = typeInfo(bill.expenseType);
   const locked = bill.isFullySettled;
   const deleted = isBillDeleted(bill);
   const billPaid = isBillPaid(bill);

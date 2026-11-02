@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { BillWithUnits, ExpenseType } from '../src/models/types';
+import type { BillWithUnits, BuiltinExpenseType, ExpenseType } from '../src/models/types';
 import { EXPENSE_TYPES, EXPENSE_TYPE_ORDER, EXPENSE_TILE_ROWS } from '../src/models/constants';
 import { percentOf, pickReportYear, yearlyReport } from '../src/logic/report';
 
@@ -96,7 +96,7 @@ describe('انواع هزینه جدید', () => {
     expect(EXPENSE_TYPES.cleaning.label).toBe('نظافت');
     expect(EXPENSE_TYPES.repairs.label).toBe('تعمیرات');
     expect(EXPENSE_TYPES.beautification.label).toBe('زیبایی ساختمان');
-    for (const t of ['water', 'electricity', 'gas', 'building', 'misc'] as ExpenseType[]) expect(EXPENSE_TYPES[t]).toBeTruthy();
+    for (const t of ['water', 'electricity', 'gas', 'building', 'misc'] as BuiltinExpenseType[]) expect(EXPENSE_TYPES[t]).toBeTruthy();
     expect(EXPENSE_TYPE_ORDER).toHaveLength(8);
     expect(EXPENSE_TILE_ROWS.flat().sort()).toEqual([...EXPENSE_TYPE_ORDER].sort());
   });

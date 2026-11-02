@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { UnitName } from '../../components/UnitName';
 import type { BillWithUnits } from '../../models/types';
-import { CURRENCY, EXPENSE_TYPES, MONTHS } from '../../models/constants';
+import { CURRENCY, MONTHS } from '../../models/constants';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
 import { UnitIcon } from '../../components/PrefIcons';
 import { useIconPrefs } from '../../context/IconPrefsContext';
@@ -10,6 +10,7 @@ import { formatAmount } from '../../logic/formatting';
 import { debtorsReport, PAYMENT_GRACE_DAYS } from '../../logic/debts';
 import { debtorsDoc } from '../../logic/reportDoc';
 import { ReportActions } from '../../components/ReportActions';
+import { typeInfo } from '../../logic/billTypes';
 
 interface Props {
   all: BillWithUnits[] | null;
@@ -79,7 +80,7 @@ export function DebtorsView({ all, onOpenBill, onOpenUnit, onPayUnit }: Props) {
                         <button type="button" key={it.billId} className="debt-item" onClick={() => onOpenBill(it.billId)}>
                           <ExpenseIcon type={it.expenseType} size={32} />
                           <span className="debt-item__main">
-                            <span className="debt-item__title">{EXPENSE_TYPES[it.expenseType].label}</span>
+                            <span className="debt-item__title">{typeInfo(it.expenseType).label}</span>
                             <span className="debt-item__period">
                               {MONTHS[it.month - 1]} <span className="num">{it.year}</span>
                               {' · '}<span className={it.daysOutstanding > PAYMENT_GRACE_DAYS ? 'is-late' : ''}><span className="num">{it.daysOutstanding}</span> روز از ثبت</span>

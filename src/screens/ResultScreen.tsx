@@ -3,7 +3,7 @@ import { UnitIcon } from '../components/PrefIcons';
 import { useIconPrefs } from '../context/IconPrefsContext';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BillDraft, BillWithUnits } from '../models/types';
-import { CURRENCY, EXPENSE_TYPES, SPLIT_METHOD_LABELS, monthName } from '../models/constants';
+import { CURRENCY, SPLIT_METHOD_LABELS, monthName } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
 import { ExpenseIcon } from '../components/ExpenseIcon';
 import { IconCalendarSave, IconMinus, IconPlus, IconTrash } from '../components/Icons';
@@ -20,6 +20,7 @@ import { useAreaMode } from '../context/AreaModeContext';
 import { formatArea } from '../logic/area';
 import { toPersianDigits } from '../logic/formatting';
 import { billRepository } from '../storage/billRepository';
+import { typeInfo } from '../logic/billTypes';
 
 interface Props {
   draft: BillDraft;
@@ -57,7 +58,7 @@ export function ResultScreen({ draft, setDraft, onBack, onSaved }: Props) {
   }, [calc, confirmWarning]);
 
   if (!calc || !draft.expenseType) return null;
-  const type = EXPENSE_TYPES[draft.expenseType];
+  const type = typeInfo(draft.expenseType);
 
   const removeUnit = (index: number) => {
     if (draft.personCounts.length <= 1) {

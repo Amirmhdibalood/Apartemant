@@ -492,7 +492,7 @@ describe('QA 1.7.0 — پشتیبان', () => {
       ['negative total', (x) => { x.data.bills[0].totalAmount = -5; }],
       ['float total', (x) => { x.data.bills[0].totalAmount = 10.5; }],
       ['unsafe total', (x) => { x.data.bills[0].totalAmount = 2 ** 60; }],
-      ['bad expense', (x) => { x.data.bills[0].expenseType = 'rent'; }],
+      ['bad expense', (x) => { x.data.bills[0].expenseType = 42; }],
       ['bad due', (x) => { x.data.bills[0].dueDate = '1405-13-40'; }],
       ['no units', (x) => { x.data.units = []; }],
       ['bills not array', (x) => { x.data.bills = {}; }],
