@@ -1001,6 +1001,22 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
 .fund-balance__label { display: block; font-size: 12.5px; color: var(--muted); }
 .fund-balance__value { display: block; font-size: 1.25rem; font-weight: 800; color: var(--primary); margin-top: 2px; }
 .fund-form__actions { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 14px; }
+/* «قبض‌های واریزی به صندوق» (موکاپ ۰۹) — فقط متغیرهای تم */
+.fund-card__intro { margin-bottom: 10px; }
+.fund-types { border: 1px solid var(--border-2); border-radius: var(--radius); background: var(--card); overflow: hidden; margin: 4px 0 10px; }
+.fund-types__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+.fund-types__title { font-weight: 800; font-size: 14px; color: var(--text); }
+.fund-types__count { font-size: 12px; font-weight: 700; color: var(--primary); background: var(--primary-soft); border-radius: 99px; padding: 2px 10px; white-space: nowrap; }
+.fund-types .year-row { min-height: 44px; }
+.fund-types .year-row__year { font-size: 14.5px; }
+.fund-types__dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.fund-types__tag { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.fund-note { display: flex; gap: 10px; align-items: flex-start; background: var(--primary-soft); color: var(--text-2); border-radius: 12px; padding: 11px 12px; font-size: 13px; line-height: 1.9; margin: 0 0 6px; }
+.fund-note svg { flex-shrink: 0; margin-top: 3px; color: var(--primary); }
+.fund-note b { color: var(--text); font-weight: 800; }
+.fund-note.is-empty { background: color-mix(in srgb, var(--warning) 14%, transparent); }
+.fund-note.is-empty svg { color: var(--warning); }
+.fund-note__sub { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
 .fund-ledger { list-style: none; margin: 0; padding: 0; }
 .fund-ledger__row { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--border); font-size: 13px; }
 .fund-ledger__reason { font-weight: 700; }

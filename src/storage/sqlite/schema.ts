@@ -1,5 +1,8 @@
-/** SQLite DDL for Apartemant domain DB (schema version 5 = meetings + unit phone). */
-export const SQLITE_SCHEMA_VERSION = 5;
+/** SQLite DDL for Apartemant domain DB (schema version 6 = per-building fund bill types). */
+export const SQLITE_SCHEMA_VERSION = 6;
+
+/** پیش‌فرض قبض‌های واریزی به صندوق (JSON مرتب‌شده با EXPENSE_TYPE_ORDER) */
+export const DEFAULT_FUND_TYPES_JSON = '["building"]';
 
 export const DEFAULT_BUILDING_ID = 'building-default';
 
@@ -15,6 +18,7 @@ CREATE TABLE IF NOT EXISTS buildings (
   id TEXT PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,
   fund_enabled INTEGER NOT NULL DEFAULT 0,
+  fund_types TEXT NOT NULL DEFAULT '["building"]',
   created_at TEXT NOT NULL,
   archived_at TEXT
 );

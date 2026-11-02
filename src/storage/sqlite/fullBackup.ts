@@ -6,7 +6,8 @@
  * compares it with sqlite_master so a new table can't silently be left out of backups.
  */
 import type { Database, Statement } from 'sql.js';
-import type { Bill, BuildingUnit, Unit } from '../../models/types';
+import type { Bill, BuildingUnit, ExpenseType, Unit } from '../../models/types';
+import { fundTypesToJson, parseFundTypesJson } from '../../logic/fundTypes';
 import { migrateBill } from '../../logic/billPaid';
 import { unitPayments } from '../../logic/payments';
 import { newId } from '../../logic/id';
@@ -38,10 +39,30 @@ export const BACKUP_TABLE_COVERAGE: Record<string, string> = {
   meeting_attendance: 'data.meetings[].attendance[]',
 };
 
+/**
+ * Every column of every user table and how it reaches a backup. A test compares this with PRAGMA table_info,
+ * so a new column (e.g. one with a DEFAULT that a round-trip test would silently "restore") can't be forgotten.
+ * 'regenerated' = rebuilt on restore (row ids of child tables, derived building_id).
+ */
+export const BACKUP_COLUMN_COVERAGE: Record<string, readonly string[]> = {
+  buildings: ['id', 'name', 'fund_enabled', 'fund_types', 'created_at', 'archived_at'],
+  building_unit_templates: ['id:regenerated', 'building_id', 'unit_number', 'alias', 'default_persons', 'vacant', 'area', 'phone'],
+  bills: ['id', 'building_id', 'year', 'month', 'expense_type', 'bill_number', 'description', 'total_amount', 'created_at',
+    'is_fully_settled', 'split_method', 'bill_paid', 'bill_paid_date', 'due_date', 'deleted_at'],
+  bill_units: ['id', 'bill_id', 'building_id:regenerated', 'unit_number', 'person_count', 'alias', 'vacant', 'area', 'share_amount', 'is_settled'],
+  payments: ['id', 'bill_unit_id', 'bill_id', 'building_id:regenerated', 'amount', 'paid_at', 'batch_id'],
+  fund_entries: ['id', 'building_id', 'kind', 'amount', 'reason', 'related_bill_id', 'related_payment_id', 'note', 'created_at'],
+  management_periods: ['id', 'building_id', 'manager_label', 'start_date', 'end_date', 'ended_early_at', 'notes'],
+  meetings: ['id', 'building_id', 'meeting_date', 'weekday', 'hour', 'minute', 'place', 'summary', 'created_at'],
+  meeting_attendance: ['id:regenerated', 'meeting_id', 'unit_number', 'unit_alias', 'status'],
+};
+
 export interface FullBuilding {
   id: string;
   name: string;
   fundEnabled: boolean;
+  /** قبض‌های واریزی به صندوق (قالب ۱۰؛ قالب ۹ = فقط شارژ ساختمان) */
+  fundTypes: ExpenseType[];
   createdAt: string;
   archivedAt: string | null;
   /** unit templates (تنظیمات ساختمان)، ترتیب = شماره واحد */
@@ -81,6 +102,7 @@ export function readFullDomain(db: Database): FullDomain {
     id: String(r.id),
     name: String(r.name),
     fundEnabled: Number(r.fund_enabled) === 1,
+    fundTypes: parseFundTypesJson(r.fund_types),
     createdAt: String(r.created_at),
     archivedAt: str(r.archived_at),
     units: readUnitTemplates(db, String(r.id))?.units ?? [],
@@ -153,8 +175,8 @@ export function replaceFullDomain(db: Database, full: FullDomain): void {
   inTransaction(db, () => {
     for (const t of WIPE_ORDER) db.run(`DELETE FROM ${ident(t)}`);
 
-    withStmt(db, 'INSERT INTO buildings(id, name, fund_enabled, created_at, archived_at) VALUES (?,?,?,?,?)', (s) => {
-      for (const b of full.buildings) s.run([b.id, b.name, b01(b.fundEnabled), b.createdAt, b.archivedAt ?? null]);
+    withStmt(db, 'INSERT INTO buildings(id, name, fund_enabled, fund_types, created_at, archived_at) VALUES (?,?,?,?,?,?)', (s) => {
+      for (const b of full.buildings) s.run([b.id, b.name, b01(b.fundEnabled), fundTypesToJson(b.fundTypes ?? ['building']), b.createdAt, b.archivedAt ?? null]);
     });
     ensureDefaultBuilding(db);
 

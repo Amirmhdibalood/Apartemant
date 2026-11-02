@@ -3,7 +3,8 @@
  * ساخت فایل پشتیبان JSON، نام‌گذاری، اعتبارسنجی کامل فایل ورودی و خلاصه محتوای آن.
  */
 import type { AppSettings, Bill, BuildingSettings, ExpenseType, Payment, Unit } from '../models/types';
-import { EXPENSE_TYPES, isExpenseType } from '../models/constants';
+import { EXPENSE_TYPES, EXPENSE_TYPE_ORDER, isExpenseType } from '../models/constants';
+import { DEFAULT_FUND_TYPES, sanitizeFundTypes } from './fundTypes';
 import { sanitizeSettings } from './settings';
 import { formatJalaliDateTimeFa, jalaliIsoDate } from './date';
 import { toPersianDigits } from './formatting';
@@ -38,10 +39,12 @@ export const BACKUP_APP_ID = 'apartemant';
  *    روی هر قبض، دفتر صندوق `fundEntries`، دوره‌های مدیریت `managementPeriods`، جلسه‌ها با حضور و غیاب `meetings`
  *    و حالت چندساختمانی `multiBuilding`. بازیابی قالب ۹ همه‌چیز را دقیقاً سر جای خودش برمی‌گرداند.
  *    قالب‌های ۱ تا ۸ مثل قبل بازیابی می‌شوند (همه در ساختمان پیش‌فرض؛ صندوق/دوره/جلسه ندارند).
+ * ۱۰: نسخه ۱.۸ (+ `buildings[].fundTypes`: قبض‌های واریزی به صندوق هر ساختمان). قالب ۹ بدون این فیلد = فقط «شارژ ساختمان».
+ *    قالب‌های ۱ تا ۸ صندوق ندارند (تنظیم صندوق گوشی دست نمی‌خورد).
  * همه قالب‌های قدیمی‌تر (۱ تا ۷) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
  * بدون dueDate = بدون مهلت پرداخت، بدون deletedAt = حذف‌نشده).
  */
-export const BACKUP_VERSION = 9;
+export const BACKUP_VERSION = 10;
 /**
  * حداکثر حجم قابل قبول فایل پشتیبان. باید از بزرگ‌ترین پشتیبانی که خود برنامه می‌سازد بزرگ‌تر باشد
  * (۱۰ هزار قبض × ۱۰۰ واحد ≈ ۱۷۰ MB)؛ اگر خروجی از این سقف بگذرد، هنگام گرفتن پشتیبان هشدار داده می‌شود.
@@ -83,6 +86,8 @@ export interface BackupBuilding {
   id: string;
   name: string;
   fundEnabled: boolean;
+  /** قالب ۱۰: قبض‌های واریزی به صندوق (نبودن در قالب ۹ = فقط شارژ ساختمان) */
+  fundTypes: ExpenseType[];
   createdAt: string;
   archivedAt: string | null;
   units: BuildingSettings['units'];
@@ -408,8 +413,14 @@ function parseBuildings(raw: unknown): BackupBuilding[] {
       if (!clean) bad(`تنظیمات واحدهای ساختمان ${nth(i)} نامعتبر است.`);
       units = clean!.units;
     }
+    let fundTypes: ExpenseType[] = [...DEFAULT_FUND_TYPES];
+    if (b.fundTypes !== undefined) {
+      const clean = Array.isArray(b.fundTypes) && b.fundTypes.length <= EXPENSE_TYPE_ORDER.length ? sanitizeFundTypes(b.fundTypes) : null;
+      if (!clean) bad(`قبض‌های صندوق ساختمان ${nth(i)} نامعتبر است.`);
+      fundTypes = clean!;
+    }
     return {
-      id: b.id as string, name: b.name as string, fundEnabled: b.fundEnabled as boolean,
+      id: b.id as string, name: b.name as string, fundEnabled: b.fundEnabled as boolean, fundTypes,
       createdAt: b.createdAt as string, archivedAt: (b.archivedAt as string | null | undefined) ?? null, units,
     };
   });

@@ -5,13 +5,13 @@ import { formatAmount, toPersianDigits } from '../logic/formatting';
 import { useFeedback } from '../context/FeedbackContext';
 import { Errors } from '../logic/errors';
 import { formatJalaliDateTimeFa } from '../logic/date';
-
-const reasonFa = (r: string, kind: string): string => {
-  if (r === 'charge_bill') return 'واریز از پرداخت شارژ ساختمان';
-  if (r === 'manual' && kind === 'deposit') return 'واریز دستی';
-  if (r === 'expense' || kind === 'withdraw') return 'برداشت / هزینه';
-  return r;
-};
+import { DEFAULT_FUND_TYPES, fundReasonFa, fundTypeRows, toggleFundType } from '../logic/fundTypes';
+import { EXPENSE_TYPES } from '../models/constants';
+import type { ExpenseType } from '../models/types';
+import { typeColors } from '../logic/typeColor';
+import { useTheme } from '../context/ThemeContext';
+import { useEntryPrefs } from '../context/EntryPrefsContext';
+import { FundTypesPicker, type FundTypeOption } from './FundTypesPicker';
 
 export function FundSection({ reloadKey = 0 }: { reloadKey?: number }) {
   const { toast, showErrors } = useFeedback();
@@ -21,10 +21,14 @@ export function FundSection({ reloadKey = 0 }: { reloadKey?: number }) {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
+  const [fundTypes, setFundTypes] = useState<ExpenseType[]>([...DEFAULT_FUND_TYPES]);
+  const { theme, palette, lightPalette } = useTheme();
+  const { prefs } = useEntryPrefs();
 
   const reload = useCallback(async () => {
     const on = await buildingRepository.getFundEnabled();
     setEnabled(on);
+    setFundTypes(await buildingRepository.getFundTypes());
     if (!on) { setBalance(0); setEntries([]); return; }
     setBalance(await buildingRepository.getFundBalance());
     setEntries(await buildingRepository.listFundEntries());
@@ -43,6 +47,25 @@ export function FundSection({ reloadKey = 0 }: { reloadKey?: number }) {
       showErrors(Errors.storageFailed());
     }
   };
+
+  const onToggleType = async (id: string) => {
+    const prev = fundTypes;
+    const next = toggleFundType(prev, id as ExpenseType);
+    setFundTypes(next);
+    try {
+      await buildingRepository.setFundTypes(next);
+    } catch {
+      setFundTypes(prev);
+      showErrors(Errors.storageFailed());
+    }
+  };
+
+  const typeOptions: FundTypeOption[] = fundTypeRows(prefs.types, fundTypes).map((t) => ({
+    id: t,
+    label: EXPENSE_TYPES[t].label,
+    color: typeColors(t, theme, palette, lightPalette).color,
+    tag: DEFAULT_FUND_TYPES.includes(t) ? 'پیش‌فرض' : undefined,
+  }));
 
   const parseAmt = (): number | null => {
     const digits = amount.replace(/[^\d]/g, '');
@@ -84,10 +107,7 @@ export function FundSection({ reloadKey = 0 }: { reloadKey?: number }) {
 
   return (
     <div className="fund-card">
-      <p className="card__hint">
-        صندوق برای هر ساختمان جدا و اختیاری است. اگر روشن باشد، با هر پرداخت روی قبض نوع «شارژ ساختمان» همان مبلغ به صندوق واریز می‌شود.
-        اگر خاموش باشد، شارژ مثل بقیهٔ قبض‌هاست و بخش صندوق دیده نمی‌شود.
-      </p>
+      <p className="card__hint fund-card__intro">صندوق برای هر ساختمان جدا و اختیاری است.</p>
       <div className="setting-row">
         <label htmlFor="sw-fund" className="setting-row__text">
           <span className="setting-row__label">صندوق این ساختمان</span>
@@ -97,6 +117,8 @@ export function FundSection({ reloadKey = 0 }: { reloadKey?: number }) {
 
       {enabled && (
         <>
+          <FundTypesPicker options={typeOptions} selected={fundTypes} onToggle={(id) => void onToggleType(id)} />
+
           <div className="fund-balance" role="status">
             <span className="fund-balance__label">موجودی</span>
             <strong className="fund-balance__value">{formatAmount(balance)} تومان</strong>
@@ -125,7 +147,7 @@ export function FundSection({ reloadKey = 0 }: { reloadKey?: number }) {
               {[...entries].reverse().map((e) => (
                 <li key={e.id} className={'fund-ledger__row' + (e.kind === 'withdraw' ? ' is-out' : ' is-in')}>
                   <div>
-                    <div className="fund-ledger__reason">{reasonFa(e.reason, e.kind)}</div>
+                    <div className="fund-ledger__reason">{fundReasonFa(e.reason, e.kind, e.billExpenseType)}</div>
                     {e.note ? <div className="fund-ledger__note">{e.note}</div> : null}
                     <div className="fund-ledger__date">{formatJalaliDateTimeFa(new Date(e.createdAt))}</div>
                   </div>

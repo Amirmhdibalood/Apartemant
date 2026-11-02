@@ -18,6 +18,7 @@ import {
   replaceAllDomain,
   replaceUnitsForBill,
   syncFundDepositsForBill,
+  readPaymentIdsForBill,
   upsertBillRow,
 } from './sqlite/domain';
 import { DEFAULT_BUILDING_ID } from './sqlite/schema';
@@ -173,8 +174,9 @@ async function persistRowLevel(
         next.buildingByBill.set(bill.id, bid);
         upsertBillRow(db, bill, bid);
         const units = next.unitsByBill.get(bill.id) ?? [];
+        const previousPaymentIds = readPaymentIdsForBill(db, bill.id);
         replaceUnitsForBill(db, bill.id, bid, units);
-        syncFundDepositsForBill(db, bill, bid, units);
+        syncFundDepositsForBill(db, bill, bid, units, previousPaymentIds);
       }
     }));
   });

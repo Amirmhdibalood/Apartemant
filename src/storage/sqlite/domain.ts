@@ -2,10 +2,12 @@
  * Row-level SQLite domain operations for buildings, bills, units, payments, fund.
  */
 import type { Database, Statement } from 'sql.js';
-import type { Bill, BuildingSettings, BuildingUnit, Payment, Unit } from '../../models/types';
+import type { Bill, BuildingSettings, BuildingUnit, ExpenseType, Payment, Unit } from '../../models/types';
 import { migrateBill } from '../../logic/billPaid';
 import { unitPayments } from '../../logic/payments';
 import { newId } from '../../logic/id';
+import { BILL_DEPOSIT_REASONS, FUND_REASON_BILL_PAYMENT, fundTypesToJson, parseFundTypesJson } from '../../logic/fundTypes';
+import { isExpenseType } from '../../models/constants';
 import { DEFAULT_BUILDING_ID, SQLITE_SCHEMA_VERSION } from './schema';
 import { getMeta, requestCheckpoint, setMeta } from './db';
 
@@ -76,7 +78,22 @@ export function getBuildingFundEnabled(db: Database, buildingId: string): boolea
 }
 
 export function setBuildingFundEnabled(db: Database, buildingId: string, enabled: boolean): void {
+  // خاموش/روشن کردن صندوق به انتخاب قبض‌ها (fund_types) دست نمی‌زند
   db.run('UPDATE buildings SET fund_enabled = ? WHERE id = ?', [boolInt(enabled), buildingId]);
+}
+
+/** قبض‌های واریزی به صندوق این ساختمان (پیش‌فرض: فقط شارژ ساختمان) */
+export function getBuildingFundTypes(db: Database, buildingId: string): ExpenseType[] {
+  const stmt = db.prepare('SELECT fund_types FROM buildings WHERE id = ?');
+  stmt.bind([buildingId]);
+  let raw: unknown = null;
+  if (stmt.step()) raw = stmt.getAsObject().fund_types;
+  stmt.free();
+  return parseFundTypesJson(raw);
+}
+
+export function setBuildingFundTypes(db: Database, buildingId: string, types: readonly ExpenseType[]): void {
+  db.run('UPDATE buildings SET fund_types = ? WHERE id = ?', [fundTypesToJson(types), buildingId]);
 }
 
 export function replaceUnitTemplates(db: Database, buildingId: string, settings: BuildingSettings): void {
@@ -252,7 +269,6 @@ export function replaceUnitsForBill(
   buildingId: string,
   units: Unit[],
 ): void {
-  // Capture previous payment ids for fund sync caller
   db.run('DELETE FROM payments WHERE bill_id = ?', [billId]);
   db.run('DELETE FROM bill_units WHERE bill_id = ?', [billId]);
   for (const u of units) {
@@ -326,38 +342,57 @@ export function getBillBuildingId(db: Database, billId: string): string | null {
   return id;
 }
 
-/** Sync fund deposits for building-charge payments when fund_enabled. */
+/** شناسهٔ پرداخت‌های فعلی یک قبض در جدول payments (قبل از جایگزینی واحدها خوانده می‌شود) */
+export function readPaymentIdsForBill(db: Database, billId: string): Set<string> {
+  const stmt = db.prepare('SELECT id FROM payments WHERE bill_id = ?');
+  stmt.bind([billId]);
+  const out = new Set<string>();
+  while (stmt.step()) out.add(String(stmt.get()[0]));
+  stmt.free();
+  return out;
+}
+
+/**
+ * واریزهای خودکار صندوق برای پرداخت‌های یک قبض — مقایسه به‌ازای هر پرداخت (نه پاک‌کردن و ساختن دوباره):
+ * - واریزِ پرداختی که حذف شده، فقط همان واریز پاک می‌شود؛
+ * - واریزهای موجود هرگز عوض نمی‌شوند (حتی اگر صندوق خاموش شود یا انتخاب قبض‌ها عوض شود)؛
+ * - فقط پرداخت تازه (در `previousPaymentIds` نبوده) تصمیم می‌گیرد: صندوق روشن + نوع قبض انتخاب‌شده → واریز.
+ * `previousPaymentIds = null` یعنی جدول‌ها تازه پاک شده‌اند (بازیابی قالب قدیمی/مهاجرت): همه پرداخت‌ها تازه حساب می‌شوند.
+ */
 export function syncFundDepositsForBill(
   db: Database,
   bill: Bill,
   buildingId: string,
   units: Unit[],
+  previousPaymentIds: ReadonlySet<string> | null = null,
 ): void {
-  const fundOn = getBuildingFundEnabled(db, buildingId);
-  // Remove existing charge deposits for this bill always (rebuild or clear)
-  db.run(
-    `DELETE FROM fund_entries WHERE related_bill_id = ? AND reason = 'charge_bill' AND kind = 'deposit'`,
-    [bill.id],
+  const payments = units.flatMap((u) => unitPayments(u));
+  const current = new Set(payments.map((p) => p.id));
+  const placeholders = BILL_DEPOSIT_REASONS.map(() => '?').join(',');
+  const existing = new Set<string>();
+  const stale: string[] = [];
+  const stmt = db.prepare(
+    `SELECT id, related_payment_id FROM fund_entries WHERE related_bill_id = ? AND kind = 'deposit' AND reason IN (${placeholders})`,
   );
-  if (!fundOn || bill.expenseType !== 'building') return;
-  for (const u of units) {
-    for (const p of unitPayments(u)) {
-      db.run(
-        `INSERT INTO fund_entries(id, building_id, kind, amount, reason, related_bill_id, related_payment_id, note, created_at)
-         VALUES (?,?,?,?,?,?,?,?,?)`,
-        [
-          newId(),
-          buildingId,
-          'deposit',
-          p.amount,
-          'charge_bill',
-          bill.id,
-          p.id,
-          null,
-          p.paidAt ?? new Date().toISOString(),
-        ],
-      );
-    }
+  stmt.bind([bill.id, ...BILL_DEPOSIT_REASONS]);
+  while (stmt.step()) {
+    const [id, pid] = stmt.get();
+    if (pid != null && current.has(String(pid))) existing.add(String(pid));
+    else stale.push(String(id));
+  }
+  stmt.free();
+  for (const id of stale) db.run('DELETE FROM fund_entries WHERE id = ?', [id]);
+
+  const fresh = payments.filter((p) => !existing.has(p.id) && !(previousPaymentIds?.has(p.id)));
+  if (fresh.length === 0) return;
+  if (!getBuildingFundEnabled(db, buildingId)) return;
+  if (!getBuildingFundTypes(db, buildingId).includes(bill.expenseType)) return;
+  for (const p of fresh) {
+    db.run(
+      `INSERT INTO fund_entries(id, building_id, kind, amount, reason, related_bill_id, related_payment_id, note, created_at)
+       VALUES (?,?,?,?,?,?,?,?,?)`,
+      [newId(), buildingId, 'deposit', p.amount, FUND_REASON_BILL_PAYMENT, bill.id, p.id, null, p.paidAt ?? new Date().toISOString()],
+    );
   }
 }
 
@@ -432,7 +467,8 @@ export function fundBalance(db: Database, buildingId: string): number {
 }
 
 export function listFundEntries(db: Database, buildingId: string): Array<Record<string, unknown>> {
-  const stmt = db.prepare('SELECT * FROM fund_entries WHERE building_id = ? ORDER BY created_at');
+  const stmt = db.prepare(`SELECT f.*, b.expense_type AS bill_expense_type FROM fund_entries f
+    LEFT JOIN bills b ON b.id = f.related_bill_id WHERE f.building_id = ? ORDER BY f.created_at`);
   stmt.bind([buildingId]);
   const out: Array<Record<string, unknown>> = [];
   while (stmt.step()) out.push(stmt.getAsObject() as Record<string, unknown>);
@@ -446,6 +482,7 @@ export interface BuildingRow {
   id: string;
   name: string;
   fundEnabled: boolean;
+  fundTypes: ExpenseType[];
   createdAt: string;
   archivedAt: string | null;
 }
@@ -463,6 +500,7 @@ export function listBuildings(db: Database, opts?: { includeArchived?: boolean }
       id: String(r.id),
       name: String(r.name),
       fundEnabled: Number(r.fund_enabled) === 1,
+      fundTypes: parseFundTypesJson(r.fund_types),
       createdAt: String(r.created_at),
       archivedAt: (r.archived_at as string | null) ?? null,
     });
@@ -548,6 +586,8 @@ export type FundEntryRow = {
   relatedPaymentId: string | null;
   note: string | null;
   createdAt: string;
+  /** فقط برای نمایش (عنوان «واریز از پرداخت قبض …»)؛ در پشتیبان نیست */
+  billExpenseType?: ExpenseType | null;
 };
 
 export function readFundEntries(db: Database, buildingId: string): FundEntryRow[] {
@@ -561,6 +601,7 @@ export function readFundEntries(db: Database, buildingId: string): FundEntryRow[
     relatedPaymentId: (r.related_payment_id as string | null) ?? null,
     note: (r.note as string | null) ?? null,
     createdAt: String(r.created_at),
+    billExpenseType: isExpenseType(r.bill_expense_type) ? r.bill_expense_type : null,
   }));
 }
 

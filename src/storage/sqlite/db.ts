@@ -357,6 +357,12 @@ function applySchema(database: Database): void {
   } catch {
     /* already exists */
   }
+  try {
+    // قبض‌های واریزی به صندوق هر ساختمان (۱.۸ / طرح ۶)؛ ساختمان‌های موجود = فقط شارژ ساختمان
+    database.run(`ALTER TABLE buildings ADD COLUMN fund_types TEXT NOT NULL DEFAULT '["building"]'`);
+  } catch {
+    /* already exists */
+  }
   const ver = getMeta(database, 'schemaVersion');
   if (ver !== String(SQLITE_SCHEMA_VERSION)) {
     setMeta(database, 'schemaVersion', String(SQLITE_SCHEMA_VERSION));

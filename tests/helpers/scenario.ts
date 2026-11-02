@@ -20,6 +20,8 @@ export interface BuildingSpec {
   units: number;
   bills: number;
   fund?: boolean;
+  /** قبض‌های واریزی به صندوق (پیش‌فرض: فقط شارژ) */
+  fundTypes?: ExpenseType[];
   archived?: boolean;
   periods?: number;
   meetings?: number;
@@ -102,6 +104,7 @@ export async function seedScenario(specs: BuildingSpec[], seed = 7): Promise<str
     ids.push(id);
     await buildingRepository.save({ units: templates(sp.units, sp.name) }, id);
     if (sp.fund) await buildingRepository.setFundEnabled(true, id);
+    if (sp.fundTypes) await buildingRepository.setFundTypes(sp.fundTypes, id);
     // building-charge bills (fund sync) need expenseType 'building' — makeBills cycles all types
     const items = makeBills(id, `s${i}`, sp.bills, sp.units, seed * 31 + i);
     if (items.length) await billRepository.upsertMany(items);

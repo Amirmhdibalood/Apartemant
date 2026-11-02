@@ -1,7 +1,7 @@
 /**
  * Buildings + unit templates + fund + management periods (SQLite) with active-building focus.
  */
-import type { BuildingSettings } from '../models/types';
+import type { BuildingSettings, ExpenseType } from '../models/types';
 import { readJson, removeKey, writeJson } from './kvStore';
 import { billRepository } from './billRepository';
 import { buildingFromBills, defaultBuilding, sanitizeBuilding } from '../logic/building';
@@ -14,6 +14,7 @@ import {
   ensureDefaultBuilding,
   fundBalance,
   getBuildingFundEnabled,
+  getBuildingFundTypes,
   getBuildingName,
   insertManagementPeriod,
   listBuildings,
@@ -23,6 +24,7 @@ import {
   renameBuilding,
   replaceUnitTemplates,
   setBuildingFundEnabled,
+  setBuildingFundTypes,
   listMeetings,
   getMeeting,
   insertMeeting,
@@ -182,6 +184,25 @@ export const buildingRepository = {
     await withSqliteWrite((db) => {
       ensureDefaultBuilding(db);
       setBuildingFundEnabled(db, bid, enabled);
+    });
+  },
+
+  /** قبض‌های واریزی به صندوق (فقط روی پرداخت‌های بعدی اثر دارد) */
+  async getFundTypes(buildingId?: string): Promise<ExpenseType[]> {
+    await ensureMigrationDone();
+    const bid = buildingId ?? await this.getActiveId();
+    return withSqlite((db) => {
+      ensureDefaultBuilding(db);
+      return getBuildingFundTypes(db, bid);
+    });
+  },
+
+  async setFundTypes(types: readonly ExpenseType[], buildingId?: string): Promise<void> {
+    await ensureMigrationDone();
+    const bid = buildingId ?? await this.getActiveId();
+    await withSqliteWrite((db) => {
+      ensureDefaultBuilding(db);
+      setBuildingFundTypes(db, bid, types);
     });
   },
 

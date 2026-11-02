@@ -10,7 +10,7 @@ import { billRepository } from '../src/storage/billRepository';
 import { backupRepository, PREF_KEY_POLICY } from '../src/storage/backupRepository';
 import { buildingRepository } from '../src/storage/buildingRepository';
 import { settingsRepository } from '../src/storage/settingsRepository';
-import { BACKUP_TABLE_COVERAGE, listSqliteTables } from '../src/storage/sqlite/fullBackup';
+import { BACKUP_COLUMN_COVERAGE, BACKUP_TABLE_COVERAGE, listSqliteTables } from '../src/storage/sqlite/fullBackup';
 import { DEFAULT_BUILDING_ID } from '../src/storage/sqlite/schema';
 import {
   BACKUP_VERSION, MAX_BACKUP_BYTES, backupTooLargeWarning, createBackup, parseBackup, serializeBackup, type BackupData,
@@ -30,7 +30,7 @@ beforeEach(newPhone);
 
 const SPECS: BuildingSpec[] = [
   { name: 'برج آفتاب', units: 5, bills: 12, fund: true },
-  { name: 'مجتمع یاس', units: 20, bills: 9, fund: true, meetings: 3 },
+  { name: 'مجتمع یاس', units: 20, bills: 9, fund: true, meetings: 3, fundTypes: ['building', 'repairs', 'misc'] },
   { name: 'ساختمان قدیمی', units: 7, bills: 4, archived: true, periods: 1 },
 ];
 
@@ -45,6 +45,22 @@ describe('پوشش: هیچ جدول یا کلیدی از پشتیبان جا ن�
     await buildingRepository.list();
     const tables = await withSqlite((db) => listSqliteTables(db));
     expect([...tables].sort()).toEqual(Object.keys(BACKUP_TABLE_COVERAGE).sort());
+  });
+
+  it('هر ستون هر جدول در BACKUP_COLUMN_COVERAGE آمده است (ستون تازه، حتی با مقدار پیش‌فرض = شکست تست)', async () => {
+    await buildingRepository.list();
+    const cols = await withSqlite((db) => {
+      const out: Record<string, string[]> = {};
+      for (const t of listSqliteTables(db)) {
+        if (t === 'app_meta') continue;
+        const r = db.exec(`PRAGMA table_info(${t})`);
+        out[t] = (r[0]?.values ?? []).map((v) => String(v[1])).sort();
+      }
+      return out;
+    });
+    const declared = Object.fromEntries(Object.entries(BACKUP_COLUMN_COVERAGE).map(([t, c]) => [t, c.map((x) => x.split(':')[0]).sort()]));
+    expect(cols).toEqual(declared);
+    expect(cols.buildings).toContain('fund_types');
   });
 
   it('هر کلید kvStore در src/storage طبقه‌بندی شده است (پشتیبان / ترجیح گوشی / داخلی)', () => {

@@ -104,7 +104,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     const e = errorOf(text((o) => { o.backupVersion = BACKUP_VERSION + 1; }));
     expect(e).toContain('نسخه جدیدتری');
     expect(e).toContain(String(BACKUP_VERSION + 1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]));
-    expect(BACKUP_VERSION).toBe(9);
+    expect(BACKUP_VERSION).toBe(10);
   });
 
   it('نسخه نامعتبر قالب', () => {
