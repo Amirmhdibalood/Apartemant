@@ -10,7 +10,9 @@ import { formatAmount } from '../logic/formatting';
 import { formatJalaliDate } from '../logic/date';
 import { useFeedback } from '../context/FeedbackContext';
 import { Errors } from '../logic/errors';
-import { listUnitBatches, undoBatch } from '../logic/unitPayment';
+import { BATCH_LOCKED_MESSAGE, batchTouchesLocked, listUnitBatches, undoBatch } from '../logic/unitPayment';
+import { periodsRepository } from '../storage/periodsRepository';
+import { IconLock } from '../components/Icons';
 import { paymentHistory, PAYMENT_GRACE_DAYS, RATING_LABELS, type PaymentEntry } from '../logic/debts';
 import { typeInfo } from '../logic/billTypes';
 
@@ -52,7 +54,25 @@ export function UnitHistoryScreen({ unitNumber, onBack, onOpenBill }: Props) {
   const { confirmDanger, toast, showErrors } = useFeedback();
   // پرداخت‌های ثبت‌شده با «پرداخت بدهی» (قابل لغو) — از همهٔ قبض‌ها، حتی نوع خاموش
   const batches = useMemo(() => listUnitBatches(allRaw ?? [], unitNumber), [allRaw, unitNumber]);
+  // ۱.۹: پرداختی که به قبضِ سال بسته یا دورهٔ بسته خورده، لغو نمی‌شود (قفل)
+  const [locked, setLocked] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let alive = true;
+    void periodsRepository.lockedIds().then((ids) => { if (alive) setLocked(ids); }).catch(() => undefined);
+    return () => { alive = false; };
+  }, [allRaw]);
+  const lockedBatch = useMemo(() => {
+    const out = new Set<string>();
+    if (locked.size === 0) return out;
+    for (const b of batches) if (batchTouchesLocked(allRaw ?? [], b.batchId, locked)) out.add(b.batchId);
+    return out;
+  }, [batches, allRaw, locked]);
   const cancelBatch = async (batchId: string, total: number) => {
+    const ids = await periodsRepository.lockedIds().catch(() => new Set<string>());
+    if (batchTouchesLocked(await billRepository.getAllWithDeleted(), batchId, ids)) {
+      showErrors(Errors.backupInvalid(BATCH_LOCKED_MESSAGE));
+      return;
+    }
     const ok = await confirmDanger({
       title: 'لغو این پرداخت', text: `پرداخت ${formatAmount(total)} ${CURRENCY} برگردانده می‌شود و بدهی قبض‌ها به حالت قبل برمی‌گردد.`, confirmLabel: 'لغو پرداخت',
     });
@@ -141,7 +161,9 @@ export function UnitHistoryScreen({ unitNumber, onBack, onOpenBill }: Props) {
                       <b><span className="num">{formatAmount(b.total)}</span> {CURRENCY}</b>
                       <small>{b.paidAt ? <span className="num">{date(b.paidAt)}</span> : 'نامشخص'} · <span className="num">{b.billCount}</span> قبض</small>
                     </span>
-                    <button type="button" className="up-undo" onClick={() => void cancelBatch(b.batchId, b.total)}>لغو این پرداخت</button>
+                    {lockedBatch.has(b.batchId)
+                      ? <span className="up-undo is-locked" title={BATCH_LOCKED_MESSAGE}><IconLock size={13} /> قفل</span>
+                      : <button type="button" className="up-undo" onClick={() => void cancelBatch(b.batchId, b.total)}>لغو این پرداخت</button>}
                   </div>
                 ))}
               </section>

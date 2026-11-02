@@ -26,7 +26,7 @@ let themeState: { theme: 'light' | 'dark'; palette: DarkPaletteId; lightPalette?
 vi.mock('../src/context/ThemeContext', () => ({
   useTheme: () => ({ lightPalette: 'sky', ...themeState, toggle: () => undefined, setTheme: () => undefined, setPalette: () => undefined, setLightPalette: () => undefined }),
 }));
-const { ThemePicker } = await import('../src/components/ThemePicker');
+const { DARK_ROWS, LIGHT_ROWS, PaletteRows, ThemePicker } = await import('../src/components/ThemePicker');
 
 const lum = (hex: string) => {
   const f = (v: number) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
@@ -51,6 +51,14 @@ function cssVars(css: string, id: DarkPaletteId): Record<string, string> {
 }
 const css = readFileSync(OUT_CSS, 'utf8');
 const prng = (seed: number) => () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32; };
+
+/** ۱.۹: فهرست پالت‌ها شناور (Popover) است؛ سرها از ThemePicker و ردیف‌ها از PaletteRows (همان داده و همان قاعدهٔ فعال‌بودن) */
+const renderPicker = (st: { theme: 'light' | 'dark'; palette: string; lightPalette?: string }) => {
+  const dark = st.theme === 'dark';
+  return renderToStaticMarkup(createElement(ThemePicker))
+    + renderToStaticMarkup(createElement(PaletteRows, { label: 'پالت‌های تاریک', rows: DARK_ROWS, active: dark, activeId: st.palette, onPick: () => undefined }))
+    + renderToStaticMarkup(createElement(PaletteRows, { label: 'پالت‌های روشن', rows: LIGHT_ROWS, active: !dark, activeId: st.lightPalette ?? 'sky', onPick: () => undefined }));
+};
 
 describe('تعریف پالت‌ها', () => {
   it('۴ پالت با نام فارسی و ترتیب ثابت؛ پیش‌فرض سرمه‌ای عمیق', () => {
@@ -228,7 +236,7 @@ describe('ماندگاری انتخاب پالت', () => {
 });
 
 describe('انتخابگر «تم» در تنظیمات', () => {
-  const render = (state: typeof themeState) => { themeState = state; return renderToStaticMarkup(createElement(ThemePicker)); };
+  const render = (state: typeof themeState) => { themeState = state; return renderPicker(state); };
   it('گروه «تم» با دو حالت بازشونده: تاریک و روشن (بدون نشان «به‌زودی»)', () => {
     const html = render({ theme: 'dark', palette: 'navy' });
     expect(html).toContain('<h3 class="settings-sub" id="theme-title">تم</h3>');
@@ -240,7 +248,7 @@ describe('انتخابگر «تم» در تنظیمات', () => {
     expect(html).toContain('role="radiogroup" aria-label="پالت‌های روشن"');
     expect(html).toContain('پالت: سرمه‌ای عمیق');
     expect(html).toContain('role="radiogroup" aria-label="پالت‌های تاریک"');
-    expect(html).toMatch(/class="tp-body"[^>]*hidden/); // بسته: دیده نمی‌شود و فوکوس نمی‌گیرد
+    expect(renderToStaticMarkup(createElement(ThemePicker))).not.toContain('tp-body'); // بسته: فهرست شناور اصلاً رندر نمی‌شود
   });
   it('۴ پالت با نام، توضیح، پیش‌نمایش و نشان «پیش‌فرض» فقط برای سرمه‌ای', () => {
     const html = render({ theme: 'dark', palette: 'navy' });

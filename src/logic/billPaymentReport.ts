@@ -100,14 +100,20 @@ export function classifyBillPayment(bill: Bill, today: JalaliDate): BillPaymentR
 export interface BillPaymentReport { rows: BillPaymentRow[]; summary: BillPaymentSummary }
 
 /** سطرهای گزارش (به ترتیب مهلت/ماه، جدیدترین اول) + خلاصه */
+/**
+ * `year` / `type`: یک مقدار یا (از ۱.۹) چند مقدار؛ فهرست خالی یا null = بدون فیلتر.
+ * خلاصه و شمارش‌ها فقط از ردیف‌های همین فیلتر حساب می‌شوند.
+ */
 export function billPaymentReport(
-  all: BillWithUnits[], year: number, type: ExpenseType | null, today: JalaliDate,
+  all: BillWithUnits[], year: number | readonly number[], type: ExpenseType | null | readonly ExpenseType[], today: JalaliDate,
 ): BillPaymentReport {
+  const years = typeof year === 'number' ? [year] : year;
+  const types = type === null ? [] : typeof type === 'string' ? [type] : type;
   const rows = all
-    .filter(({ bill }) => bill.year === year && (type === null || bill.expenseType === type))
+    .filter(({ bill }) => (years.length === 0 || years.includes(bill.year)) && (types.length === 0 || types.includes(bill.expenseType)))
     .map(({ bill }) => classifyBillPayment(bill, today))
     .filter((r): r is BillPaymentRow => r !== null)
-    .sort((a, b) => b.bill.month - a.bill.month
+    .sort((a, b) => b.bill.year - a.bill.year || b.bill.month - a.bill.month
       || (b.bill.dueDate ?? '').localeCompare(a.bill.dueDate ?? '')
       || b.bill.createdAt.localeCompare(a.bill.createdAt));
   const count = (t: PaymentTiming) => rows.filter((r) => r.timing === t).length;

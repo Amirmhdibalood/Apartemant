@@ -12,6 +12,7 @@ import { sanitizeUnitTemplate } from './unitTemplate';
 import { buildingFromBills, sanitizeAlias, sanitizeBuilding } from './building';
 import { isSplitMethod, sanitizeSplitDefaults, type SplitDefaults } from './split';
 import { isBillDeleted, migrateBill, normalizePaidDate } from './billPaid';
+import type { BuildingYear } from './periods';
 import { parseJalaliKey } from './jalali';
 import { parseArea } from './area';
 import {
@@ -49,10 +50,14 @@ export const BACKUP_APP_ID = 'apartemant';
  *    ساختمان‌ها را دارد؛ پس در استفادهٔ عادی «نوع ناشناخته» پیش نمی‌آید. فقط برای فایل دستکاری‌شده/خراب: قبضی که نوعش نه
  *    داخلی است نه سفارشیِ تعریف‌شدهٔ ساختمانِ خودش، رد نمی‌شود و «متفرقه» بازیابی می‌شود (`summary.remappedBills`).
  *    قالب‌های ۱ تا ۱۰ نوع سفارشی ندارند.
+ * ۱۲: نسخه ۱.۹ (+ سال‌ها و مدیر ساختمان): `buildings[].mgmtEnabled` (کلید مدیر ساختمان)، `buildings[].defaultYear`،
+ *    `buildings[].years[]` (سال‌های بسته/پنهان)، `managementPeriods[].managerUnit/hidden` (پایان خالی = بدون تاریخ پایان)
+ *    و `bills[].mgmtPeriodId` (دورهٔ مدیریتِ قبض). قالب‌های ۹ تا ۱۱: کلید مدیر روشن، سالی بسته نیست و دورهٔ هر قبض
+ *    مثل مهاجرت از روی تاریخ ثبت تعیین می‌شود. قالب‌های ۱ تا ۸ هم هنگام ذخیره همین‌طور به دوره‌های موجود وصل می‌شوند.
  * همه قالب‌های قدیمی‌تر (۱ تا ۷) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
  * بدون dueDate = بدون مهلت پرداخت، بدون deletedAt = حذف‌نشده).
  */
-export const BACKUP_VERSION = 11;
+export const BACKUP_VERSION = 12;
 /**
  * حداکثر حجم قابل قبول فایل پشتیبان. باید از بزرگ‌ترین پشتیبانی که خود برنامه می‌سازد بزرگ‌تر باشد
  * (۱۰ هزار قبض × ۱۰۰ واحد ≈ ۱۷۰ MB)؛ اگر خروجی از این سقف بگذرد، هنگام گرفتن پشتیبان هشدار داده می‌شود.
@@ -101,6 +106,12 @@ export interface BackupBuilding {
   units: BuildingSettings['units'];
   /** قالب ۱۱: نوع‌های قبض سفارشی این ساختمان (نبودن = هیچ) */
   billTypes: BackupBillType[];
+  /** قالب ۱۲: کلید «مدیر ساختمان» (قالب‌های ۹ تا ۱۱ = روشن) */
+  mgmtEnabled: boolean;
+  /** قالب ۱۲: سال پیش‌فرض فرم قبض */
+  defaultYear: number | null;
+  /** قالب ۱۲: سال‌های ساختمان (بسته/پنهان) */
+  years: BuildingYear[];
 }
 
 /** نوع قبض سفارشی در فایل پشتیبان (ساختمانش = ساختمانی که داخلش آمده) */
@@ -131,9 +142,14 @@ export interface BackupManagementPeriod {
   buildingId: string;
   managerLabel: string;
   startDate: string;
+  /** '' = بدون تاریخ پایان (قالب ۱۲) */
   endDate: string;
   endedEarlyAt: string | null;
   notes: string | null;
+  /** قالب ۱۲: واحد مدیر (null = قدیمی، فقط نام) */
+  managerUnit: number | null;
+  /** قالب ۱۲: پنهان از فهرست */
+  hidden: boolean;
 }
 
 export interface BackupMeetingAttendance {
@@ -230,7 +246,10 @@ export function createBackup(data: BackupData, appVersion: string, now: Date = n
       ...withBuilding(data.building),
       ...withSplitDefaults(data.splitDefaults),
       ...(isFullBackupData(data) ? {
-        buildings: data.buildings.map((b) => ({ ...b, units: b.units.map((u) => ({ ...u })), billTypes: (b.billTypes ?? []).map((t) => ({ ...t })) })),
+        buildings: data.buildings.map((b) => ({
+          ...b, units: b.units.map((u) => ({ ...u })), billTypes: (b.billTypes ?? []).map((t) => ({ ...t })),
+          mgmtEnabled: !!b.mgmtEnabled, defaultYear: b.defaultYear ?? null, years: (b.years ?? []).map((y) => ({ ...y })),
+        })),
         fundEntries: data.fundEntries.map((f) => ({ ...f })),
         managementPeriods: data.managementPeriods.map((p) => ({ ...p })),
         meetings: data.meetings.map((m) => ({ ...m, attendance: m.attendance.map((a) => ({ ...a })) })),
@@ -323,7 +342,7 @@ const nth = (i: number) => toPersianDigits(i + 1);
 const isTypeToken = (v: unknown): v is string => typeof v === 'string' && v.length > 0 && v.length <= 64
   && !(v in Object.prototype) && v !== '__proto__';
 
-function parseBills(raw: unknown): Bill[] {
+function parseBills(raw: unknown, version: number): Bill[] {
   if (!Array.isArray(raw)) bad('فهرست قبض‌ها پیدا نشد.');
   const ids = new Set<string>();
   return (raw as unknown[]).map((b, i) => {
@@ -337,7 +356,8 @@ function parseBills(raw: unknown): Bill[] {
       && (b.billPaidDate == null || normalizePaidDate(b.billPaidDate) !== null)
       && (b.dueDate == null || parseJalaliKey(b.dueDate) !== null) // مهلت پرداخت (از قالب ۴، اختیاری)
       && (b.deletedAt == null || validDate(b.deletedAt)) // حذف نرم (از قالب ۴، اختیاری)
-      && (b.buildingId == null || isId(b.buildingId)); // از قالب ۸، اختیاری
+      && (b.buildingId == null || isId(b.buildingId)) // از قالب ۸، اختیاری
+      && (b.mgmtPeriodId == null || isId(b.mgmtPeriodId)); // از قالب ۱۲، اختیاری
     if (!ok) bad(`اطلاعات قبض ${nth(i)} نامعتبر است.`);
     if (ids.has(b.id as string)) bad(`شناسه قبض ${nth(i)} تکراری است.`);
     ids.add(b.id as string);
@@ -357,6 +377,8 @@ function parseBills(raw: unknown): Bill[] {
       dueDate: (b.dueDate as string | null | undefined) ?? null,
       deletedAt: (b.deletedAt as string | null | undefined) ?? null,
       ...(typeof b.buildingId === 'string' && b.buildingId ? { buildingId: b.buildingId } : {}),
+      // قالب ۱۲: دوره همان که بود (null = بدون دوره)؛ قدیمی‌تر = تعیین از روی تاریخ ثبت هنگام بازیابی
+      ...(version >= 12 ? { mgmtPeriodId: (b.mgmtPeriodId as string | null | undefined) ?? null } : {}),
     });
   });
 }
@@ -429,7 +451,7 @@ function arrayOf(raw: unknown, label: string, max: number): unknown[] {
   return raw;
 }
 
-function parseBuildings(raw: unknown): BackupBuilding[] {
+function parseBuildings(raw: unknown, version: number): BackupBuilding[] {
   const list = arrayOf(raw, 'ساختمان‌ها', MAX_BACKUP_BUILDINGS);
   if (list.length === 0) bad('هیچ ساختمانی در فایل نیست.');
   const ids = new Set<string>();
@@ -459,10 +481,36 @@ function parseBuildings(raw: unknown): BackupBuilding[] {
     // صندوق فقط نوع‌های داخلی و سفارشیِ همین ساختمان را نگه می‌دارد
     const own = new Set<string>(billTypes.map((t) => t.id));
     fundTypes = fundTypes.filter((t) => isExpenseType(t) || own.has(t));
+    let mgmtEnabled = true; // قالب‌های ۹ تا ۱۱ = کاربر قبلی → کلید مدیر روشن
+    let defaultYear: number | null = null;
+    let years: BuildingYear[] = [];
+    if (version >= 12) {
+      if (typeof b.mgmtEnabled !== 'boolean') bad(`کلید مدیر ساختمان ${nth(i)} نامعتبر است.`);
+      mgmtEnabled = b.mgmtEnabled as boolean;
+      if (b.defaultYear != null && !isInt(b.defaultYear, 1300, 1700)) bad(`سال پیش‌فرض ساختمان ${nth(i)} نامعتبر است.`);
+      defaultYear = (b.defaultYear as number | null | undefined) ?? null;
+      years = parseBuildingYears(b.years, i);
+    }
     return {
       id: b.id as string, name: b.name as string, fundEnabled: b.fundEnabled as boolean, fundTypes,
       createdAt: b.createdAt as string, archivedAt: (b.archivedAt as string | null | undefined) ?? null, units, billTypes,
+      mgmtEnabled, defaultYear, years,
     };
+  });
+}
+
+/** سال‌های یک ساختمان (قالب ۱۲): سال یکتا، زمان بستن معتبر یا null، پنهان فقط برای سال بسته */
+function parseBuildingYears(raw: unknown, bi: number): BuildingYear[] {
+  const list = arrayOf(raw ?? [], 'سال‌ها', 200);
+  const seen = new Set<number>();
+  return list.map((y) => {
+    if (!isObj(y) || !isInt(y.year, 1300, 1700) || !nullDate(y.closedAt ?? null) || (y.hidden != null && typeof y.hidden !== 'boolean')) {
+      return bad(`سال‌های ساختمان ${nth(bi)} نامعتبر است.`);
+    }
+    if (seen.has(y.year as number)) bad(`سال تکراری در ساختمان ${nth(bi)}.`);
+    seen.add(y.year as number);
+    const closedAt = (y.closedAt as string | null | undefined) ?? null;
+    return { year: y.year as number, closedAt, hidden: !!closedAt && y.hidden === true };
   });
 }
 
@@ -531,13 +579,19 @@ function parseFundEntries(raw: unknown, buildingIds: Set<string>): BackupFundEnt
   });
 }
 
-function parseManagementPeriods(raw: unknown, buildingIds: Set<string>): BackupManagementPeriod[] {
+function parseManagementPeriods(raw: unknown, buildingIds: Set<string>, version: number): BackupManagementPeriod[] {
   const list = arrayOf(raw, 'دوره‌های مدیریت', MAX_BACKUP_SECTION_ROWS);
   const ids = new Set<string>();
   return list.map((p, i) => {
     if (!isObj(p)) return bad(`دوره مدیریت ${nth(i)} نامعتبر است.`);
-    const ok = isId(p.id) && isId(p.buildingId) && reqText(p.managerLabel) && reqText(p.startDate, 40) && reqText(p.endDate, 40)
-      && nullDate(p.endedEarlyAt ?? null) && nullText(p.notes ?? null);
+    const v12 = version >= 12;
+    const unit = v12 && p.managerUnit != null ? p.managerUnit : null;
+    const ok = isId(p.id) && isId(p.buildingId)
+      && (v12 ? (unit === null || isInt(unit, 1, 10_000)) && typeof p.managerLabel === 'string' && (p.managerLabel as string).length <= MAX_SHORT_TEXT
+        && ((p.managerLabel as string).length > 0 || unit !== null) : reqText(p.managerLabel))
+      && reqText(p.startDate, 40) && (v12 ? typeof p.endDate === 'string' && (p.endDate as string).length <= 40 : reqText(p.endDate, 40))
+      && nullDate(p.endedEarlyAt ?? null) && nullText(p.notes ?? null)
+      && (p.hidden == null || typeof p.hidden === 'boolean');
     if (!ok) bad(`دوره مدیریت ${nth(i)} نامعتبر است.`);
     if (!buildingIds.has(p.buildingId as string)) bad(`دوره مدیریت ${nth(i)} به هیچ ساختمانی تعلق ندارد.`);
     if (ids.has(p.id as string)) bad(`شناسه دوره مدیریت ${nth(i)} تکراری است.`);
@@ -546,6 +600,7 @@ function parseManagementPeriods(raw: unknown, buildingIds: Set<string>): BackupM
       id: p.id as string, buildingId: p.buildingId as string, managerLabel: p.managerLabel as string,
       startDate: p.startDate as string, endDate: p.endDate as string,
       endedEarlyAt: (p.endedEarlyAt as string | null | undefined) ?? null, notes: (p.notes as string | null | undefined) ?? null,
+      managerUnit: unit as number | null, hidden: p.hidden === true,
     };
   });
 }
@@ -617,7 +672,8 @@ export function parseBackup(text: string): ParseBackupResult {
     if (!validDate(json.createdAt)) bad('تاریخ تهیه پشتیبان نامعتبر است.');
     if (!isObj(json.data)) bad('بخش اطلاعات پیدا نشد.');
     const data = json.data as Obj;
-    const bills = parseBills(data.bills);
+    const version = json.backupVersion as number;
+    const bills = parseBills(data.bills, version);
     const units = parseUnits(data.units, bills);
     // گروه‌بندی یک‌باره واحدها بر اساس قبض (قبلاً برای هر قبض کل واحدها فیلتر می‌شد: O(قبض×واحد))
     const unitsByBill = groupUnitsByBill(units);
@@ -649,7 +705,7 @@ export function parseBackup(text: string): ParseBackupResult {
     const present = fullKeys.filter((k) => data[k] !== undefined).length;
     if ((json.backupVersion as number) >= 9 && present > 0 && present < fullKeys.length) bad('بخشی از اطلاعات پشتیبان کامل پیدا نشد.');
     if ((json.backupVersion as number) >= 9 && present === fullKeys.length) {
-      const buildings = parseBuildings(data.buildings);
+      const buildings = parseBuildings(data.buildings, version);
       const buildingIds = new Set(buildings.map((b) => b.id));
       if (!buildingIds.has(DEFAULT_BUILDING_ID)) bad('ساختمان اصلی در فایل نیست.');
       for (let i = 0; i < bills.length; i++) {
@@ -660,10 +716,19 @@ export function parseBackup(text: string): ParseBackupResult {
       full = {
         buildings,
         fundEntries: parseFundEntries(data.fundEntries, buildingIds),
-        managementPeriods: parseManagementPeriods(data.managementPeriods, buildingIds),
+        managementPeriods: parseManagementPeriods(data.managementPeriods, buildingIds, version),
         meetings: parseMeetings(data.meetings, buildingIds),
         multiBuilding: parseMultiBuilding(data.multiBuilding, buildingIds),
       };
+    }
+    // دورهٔ قبض باید از همان ساختمان باشد؛ ارجاع ناشناخته = بدون دوره
+    if (full.managementPeriods) {
+      const periodBuilding = new Map(full.managementPeriods.map((p) => [p.id, p.buildingId]));
+      for (const b of bills) {
+        if (b.mgmtPeriodId && periodBuilding.get(b.mgmtPeriodId) !== b.buildingId) b.mgmtPeriodId = null;
+      }
+    } else {
+      for (const b of bills) delete b.mgmtPeriodId; // بازیابی در ساختمان پیش‌فرض: دوره از روی تاریخ ثبت
     }
     const customByBuilding = full.buildings
       ? new Map(full.buildings.map((b) => [b.id, new Set<string>(b.billTypes.map((t) => t.id))]))

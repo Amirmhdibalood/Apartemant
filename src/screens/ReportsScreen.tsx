@@ -50,7 +50,7 @@ export function ReportsScreen({ tab, year, type: typeProp, onChange, onOpenRepor
   useEffect(() => {
     if (!page) { setAll(null); return; }
     let alive = true;
-    const needsAllYears = page === 'debtors';
+    const needsAllYears = page === 'debtors' || page === 'billPayments' || page === 'monthly' || page === 'monthlyDetail' || page === 'charts';
     const loader = needsAllYears || year == null
       ? billRepository.getAll()
       : billRepository.getByYear(year);

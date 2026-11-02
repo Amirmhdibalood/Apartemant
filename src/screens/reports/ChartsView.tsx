@@ -2,17 +2,17 @@ import { useMemo, useState } from 'react';
 import type { BillWithUnits, ExpenseType } from '../../models/types';
 import { CURRENCY, MONTHS, monthName } from '../../models/constants';
 import { SelectField } from '../../components/SelectField';
+import { MultiOptionPicker } from '../../components/MultiOptionPicker';
+import { usePeriods } from '../../hooks/usePeriods';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
 import { IconBars, IconLine, IconPie, IconChart } from '../../components/Icons';
 import { BarLineChart, PieChart } from '../../components/ChartSvg';
 import { ReportActions } from '../../components/ReportActions';
 import { useTheme } from '../../context/ThemeContext';
-import { useSettings } from '../../context/SettingsContext';
 import { useEntryPrefs } from '../../context/EntryPrefsContext';
 import { typeBarColor } from '../../logic/typeColor';
 import { faAmount } from '../../logic/billImage';
 import { toPersianDigits } from '../../logic/formatting';
-import { recordYearOptions } from '../../logic/years';
 import { pickReportYear } from '../../logic/report';
 import { currentJalali } from '../../logic/date';
 import { typeFilterOptions } from '../../logic/entryPrefs';
@@ -29,24 +29,27 @@ const KINDS: { id: ChartKind; label: string; Icon: typeof IconBars }[] = [
 
 /** «گزارش نموداری»: مقایسهٔ مبلغ ماه‌ها (میله‌ای/خطی) و سهم هر نوع (دایره‌ای) با فیلتر سال، نوع قبض و بازهٔ ماه */
 export function ChartsView({ all }: { all: BillWithUnits[] | null }) {
-  const { settings } = useSettings();
+  const { visibleYears } = usePeriods();
   const { prefs } = useEntryPrefs();
   const { theme } = useTheme();
   const now = currentJalali();
   const typeOptions = typeFilterOptions(prefs);
   const billYears = useMemo(() => Array.from(new Set((all ?? []).map((b) => b.bill.year))), [all]);
-  const years = recordYearOptions(settings.activeYears, billYears);
+  const years = visibleYears.length ? visibleYears : [now.year];
+  const [pieTypes, setPieTypes] = useState<ExpenseType[]>([]);
   const [kind, setKind] = useState<ChartKind>('bar');
   const [yearSel, setYearSel] = useState<number | null>(null);
   const [typeIdx, setTypeIdx] = useState(0);
   const [range, setRange] = useState<[number, number] | null>(null);
-  const year = yearSel && years.includes(yearSel) ? yearSel : pickReportYear(years, billYears, now.year);
+  const year = yearSel && years.includes(yearSel) ? yearSel : pickReportYear(years, billYears.filter((y) => years.includes(y)), now.year);
   const have = useMemo(() => monthsWithBills(all ?? [], year), [all, year]);
   const last = have.length ? have[have.length - 1] : year === now.year ? now.month : 12;
   const [from, to] = range ?? normalizeRange(Math.max(1, last - 3), last);
   const type: ExpenseType | null = typeOptions[Math.min(typeIdx, typeOptions.length - 1)]?.value ?? null;
   const series = useMemo(() => chartSeries(all ?? [], year, type, from, to, prefs.types), [all, year, type, from, to, prefs.types]);
-  const shares = useMemo(() => typeShares(all ?? [], year, from, to, prefs.types), [all, year, from, to, prefs.types]);
+  // ۱.۹: در نمودار دایره‌ای نوع قبض چندتایی است؛ خالی = همه. درصدها از جمع همین نوع‌ها حساب می‌شوند.
+  const pieSel = pieTypes.filter((t) => prefs.types.includes(t));
+  const shares = useMemo(() => typeShares(all ?? [], year, from, to, pieSel.length ? pieSel : prefs.types), [all, year, from, to, prefs.types, pieSel.join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const hasData = kind === 'pie' ? shares.total > 0 : series.monthsWithData > 0;
   const doc = useMemo(() => (all && hasData ? chartDoc(kind, year, type, series, shares) : null), [all, hasData, kind, year, type, series, shares]);
   const monthOptions = MONTHS.map((m, i) => ({ value: i + 1, label: m }));
@@ -63,7 +66,18 @@ export function ChartsView({ all }: { all: BillWithUnits[] | null }) {
 
       <div className="card chart-filters">
         <SelectField id="ch-year" label="سال" value={year} options={years.map((y) => ({ value: y, label: String(y) }))} onChange={(y) => setYearSel(y)} />
-        <SelectField id="ch-type" label="نوع قبض" value={kind === 'pie' ? 0 : Math.min(typeIdx, typeOptions.length - 1)} options={(kind === 'pie' ? typeOptions.slice(0, 1) : typeOptions).map((o, i) => ({ value: i, label: o.label === 'همه' ? 'همه انواع' : o.label }))} onChange={(i) => setTypeIdx(i)} />
+        {kind === 'pie' ? (
+          <MultiOptionPicker
+            id="ch-type"
+            label="نوع قبض"
+            unit="نوع"
+            value={pieSel}
+            options={typeOptions.filter((o) => o.value !== null).map((o) => ({ value: o.value as ExpenseType, label: o.label }))}
+            onChange={setPieTypes}
+          />
+        ) : (
+          <SelectField id="ch-type" label="نوع قبض" value={Math.min(typeIdx, typeOptions.length - 1)} options={typeOptions.map((o, i) => ({ value: i, label: o.label === 'همه' ? 'همه انواع' : o.label }))} onChange={(i) => setTypeIdx(i)} />
+        )}
         <div className="rpt-pair">
           <SelectField id="ch-from" label="از ماه" value={from} options={monthOptions} onChange={(m) => setRange(normalizeRange(m, to))} />
           <SelectField id="ch-to" label="تا ماه" value={to} options={monthOptions} onChange={(m) => setRange(normalizeRange(from, m))} />
@@ -115,7 +129,7 @@ export function ChartsView({ all }: { all: BillWithUnits[] | null }) {
       {all && hasData && kind === 'pie' && (
         <>
           <div className="card chart-card">
-            <div className="chart-card__sub">سهم هر نوع قبض از مجموع {monthName(from)} تا {monthName(to)} {fa(year)}</div>
+            <div className="chart-card__sub">سهم {pieSel.length ? `${fa(pieSel.length)} نوع انتخاب‌شده` : 'هر نوع قبض'} از مجموع {monthName(from)} تا {monthName(to)} {fa(year)}</div>
             <PieChart shares={shares.shares} />
             <div className="chart-card__total">جمع دوره: <b className="num">{faAmount(shares.total)}</b> <span>{CURRENCY}</span></div>
           </div>

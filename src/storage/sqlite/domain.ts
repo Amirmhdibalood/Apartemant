@@ -4,6 +4,7 @@
 import type { Database, Statement } from 'sql.js';
 import type { Bill, BuildingSettings, BuildingUnit, ExpenseType, Payment, Unit } from '../../models/types';
 import { migrateBill } from '../../logic/billPaid';
+import { jalaliIsoDate } from '../../logic/date';
 import { unitPayments } from '../../logic/payments';
 import { newId } from '../../logic/id';
 import { BILL_DEPOSIT_REASONS, FUND_REASON_BILL_PAYMENT, fundTypesToJson, parseFundTypesJson } from '../../logic/fundTypes';
@@ -11,6 +12,8 @@ import { isCustomTypeId, isExpenseType } from '../../models/constants';
 import { cleanTypeName, isCustomColorId, isCustomIconId, type CustomBillType } from '../../logic/billTypes';
 import { DEFAULT_BUILDING_ID, SQLITE_SCHEMA_VERSION } from './schema';
 import { getMeta, requestCheckpoint, setMeta } from './db';
+import { assignPeriodForNewBill, getMgmtEnabled, periodFromRow, readBillPeriodId, readPeriods, setMgmtEnabled } from './periodsSql';
+import type { MgmtPeriod } from '../../logic/periods';
 
 export type BillRow = Bill & { buildingId: string };
 
@@ -154,6 +157,7 @@ function billFromRow(r: Record<string, unknown>): BillRow {
     billPaidDate: (r.bill_paid_date as string | null) ?? null,
     dueDate: (r.due_date as string | null) ?? null,
     deletedAt: (r.deleted_at as string | null) ?? null,
+    mgmtPeriodId: (r.mgmt_period_id as string | null) ?? null,
     buildingId: String(r.building_id),
   } as Bill & { buildingId: string });
   return { ...bill, buildingId: String(r.building_id) };
@@ -229,13 +233,21 @@ export function readAllUnits(db: Database): Unit[] {
   });
 }
 
+/**
+ * Insert/update one bill row. `mgmt_period_id` is assigned once: a new row gets `bill.mgmtPeriodId`
+ * when given (restore of a v12 backup, null included), otherwise the period covering its created_at
+ * (only when the building's «مدیر ساختمان» switch is on). An update never changes or clears it.
+ */
 export function upsertBillRow(db: Database, bill: Bill, buildingId: string): void {
   const b = migrateBill(bill);
+  let periodId: string | null = null;
+  if (b.mgmtPeriodId !== undefined) periodId = b.mgmtPeriodId ?? null;
+  else if (!readBillPeriodId(db, b.id).exists) periodId = assignPeriodForNewBill(db, buildingId, b.createdAt);
   db.run(
     `INSERT INTO bills(
       id, building_id, year, month, expense_type, bill_number, description, total_amount,
-      created_at, is_fully_settled, split_method, bill_paid, bill_paid_date, due_date, deleted_at
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      created_at, is_fully_settled, split_method, bill_paid, bill_paid_date, due_date, deleted_at, mgmt_period_id
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     ON CONFLICT(id) DO UPDATE SET
       building_id=excluded.building_id, year=excluded.year, month=excluded.month,
       expense_type=excluded.expense_type, bill_number=excluded.bill_number,
@@ -243,7 +255,8 @@ export function upsertBillRow(db: Database, bill: Bill, buildingId: string): voi
       created_at=excluded.created_at, is_fully_settled=excluded.is_fully_settled,
       split_method=excluded.split_method, bill_paid=excluded.bill_paid,
       bill_paid_date=excluded.bill_paid_date, due_date=excluded.due_date,
-      deleted_at=excluded.deleted_at`,
+      deleted_at=excluded.deleted_at,
+      mgmt_period_id=COALESCE(bills.mgmt_period_id, excluded.mgmt_period_id)`,
     [
       b.id,
       buildingId,
@@ -260,6 +273,7 @@ export function upsertBillRow(db: Database, bill: Bill, buildingId: string): voi
       b.billPaidDate ?? null,
       b.dueDate ?? null,
       b.deletedAt ?? null,
+      periodId,
     ],
   );
 }
@@ -486,6 +500,8 @@ export interface BuildingRow {
   fundTypes: ExpenseType[];
   createdAt: string;
   archivedAt: string | null;
+  mgmtEnabled: boolean;
+  defaultYear: number | null;
 }
 
 export function listBuildings(db: Database, opts?: { includeArchived?: boolean }): BuildingRow[] {
@@ -504,6 +520,8 @@ export function listBuildings(db: Database, opts?: { includeArchived?: boolean }
       fundTypes: parseFundTypesJson(r.fund_types),
       createdAt: String(r.created_at),
       archivedAt: (r.archived_at as string | null) ?? null,
+      mgmtEnabled: Number(r.mgmt_enabled) === 1,
+      defaultYear: r.default_year == null ? null : Number(r.default_year),
     });
   }
   stmt.free();
@@ -525,6 +543,8 @@ export function createBuilding(db: Database, name: string, templates?: BuildingS
   );
   const units = templates ?? { units: [{ alias: null, defaultPersons: 1 }] };
   replaceUnitTemplates(db, id, units);
+  // ساختمان تازه کلید «مدیر ساختمان» را از ساختمان اصلی به ارث می‌برد (کاربر قدیمی = روشن، نصب تازه = خاموش)
+  setMgmtEnabled(db, id, getMgmtEnabled(db, DEFAULT_BUILDING_ID));
   return id;
 }
 
@@ -608,61 +628,62 @@ export function readFundEntries(db: Database, buildingId: string): FundEntryRow[
 
 /* ─── Management periods ─── */
 
-export type ManagementPeriodRow = {
-  id: string;
-  buildingId: string;
-  managerLabel: string;
-  startDate: string;
-  endDate: string;
-  endedEarlyAt: string | null;
-  notes: string | null;
-};
+export type ManagementPeriodRow = MgmtPeriod;
 
 export function listManagementPeriods(db: Database, buildingId: string): ManagementPeriodRow[] {
-  const stmt = db.prepare(
-    'SELECT * FROM management_periods WHERE building_id = ? ORDER BY start_date DESC, id DESC',
-  );
-  stmt.bind([buildingId]);
-  const out: ManagementPeriodRow[] = [];
-  while (stmt.step()) {
-    const r = stmt.getAsObject() as Record<string, unknown>;
-    out.push({
-      id: String(r.id),
-      buildingId: String(r.building_id),
-      managerLabel: String(r.manager_label),
-      startDate: String(r.start_date),
-      endDate: String(r.end_date),
-      endedEarlyAt: (r.ended_early_at as string | null) ?? null,
-      notes: (r.notes as string | null) ?? null,
-    });
-  }
-  stmt.free();
-  return out;
+  return readPeriods(db, buildingId);
 }
+
+export function getManagementPeriod(db: Database, id: string): ManagementPeriodRow | null {
+  const stmt = db.prepare('SELECT * FROM management_periods WHERE id = ?');
+  try {
+    stmt.bind([id]);
+    return stmt.step() ? periodFromRow(stmt.getAsObject() as Record<string, unknown>) : null;
+  } finally {
+    stmt.free();
+  }
+}
+
+export const cleanManagerLabel = (s: string | null | undefined): string => (s ?? '').replace(/\s+/g, ' ').trim().slice(0, 80);
 
 export function insertManagementPeriod(
   db: Database,
-  row: Omit<ManagementPeriodRow, 'id' | 'endedEarlyAt'> & { endedEarlyAt?: string | null },
+  row: Pick<ManagementPeriodRow, 'buildingId' | 'managerLabel' | 'startDate' | 'endDate' | 'notes'>
+    & { managerUnit?: number | null; endedEarlyAt?: string | null; hidden?: boolean },
 ): string {
   const id = newId();
+  const unit = row.managerUnit ?? null;
+  const label = cleanManagerLabel(row.managerLabel) || (unit == null ? 'مدیر' : '');
   db.run(
-    `INSERT INTO management_periods(id, building_id, manager_label, start_date, end_date, ended_early_at, notes)
-     VALUES (?,?,?,?,?,?,?)`,
-    [
-      id,
-      row.buildingId,
-      row.managerLabel.replace(/\s+/g, ' ').trim().slice(0, 80) || 'مدیر',
-      row.startDate,
-      row.endDate,
-      row.endedEarlyAt ?? null,
-      row.notes ?? null,
-    ],
+    `INSERT INTO management_periods(id, building_id, manager_label, start_date, end_date, ended_early_at, notes, manager_unit, hidden)
+     VALUES (?,?,?,?,?,?,?,?,?)`,
+    [id, row.buildingId, label, row.startDate, row.endDate ?? '', row.endedEarlyAt ?? null, row.notes ?? null, unit, row.hidden ? 1 : 0],
   );
   return id;
 }
 
-export function endManagementPeriodEarly(db: Database, id: string, atIso: string = new Date().toISOString()): void {
-  db.run('UPDATE management_periods SET ended_early_at = ? WHERE id = ?', [atIso, id]);
+export function updateManagementPeriod(
+  db: Database,
+  id: string,
+  patch: { managerLabel?: string; managerUnit?: number | null; endDate?: string; hidden?: boolean },
+): void {
+  const cur = getManagementPeriod(db, id);
+  if (!cur) return;
+  const unit = patch.managerUnit !== undefined ? patch.managerUnit : cur.managerUnit;
+  const label = patch.managerLabel !== undefined ? cleanManagerLabel(patch.managerLabel) : cur.managerLabel;
+  db.run(
+    'UPDATE management_periods SET manager_label = ?, manager_unit = ?, end_date = ?, hidden = ? WHERE id = ?',
+    [label || (unit == null ? 'مدیر' : ''), unit, patch.endDate ?? cur.endDate, (patch.hidden ?? cur.hidden) ? 1 : 0, id],
+  );
+}
+
+/** «بستن دوره»: پایان = امروز (اگر دیرتر یا خالی بود) و زمان بستن ثبت می‌شود؛ برگشت ندارد. */
+export function endManagementPeriodEarly(db: Database, id: string, atIso: string = new Date().toISOString(), todayKey?: string): void {
+  const cur = getManagementPeriod(db, id);
+  if (!cur || cur.endedEarlyAt) return;
+  const t = todayKey ?? jalaliIsoDate(new Date(atIso));
+  const end = cur.endDate && cur.endDate <= t ? cur.endDate : (t < cur.startDate ? cur.startDate : t);
+  db.run('UPDATE management_periods SET ended_early_at = ?, end_date = ? WHERE id = ?', [atIso, end, id]);
 }
 
 export function deleteManagementPeriod(_db: Database, _id: string): void {

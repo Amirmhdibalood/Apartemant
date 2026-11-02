@@ -94,7 +94,7 @@ describe('پشتیبان کامل چندساختمانی: گرفتن → گوش�
     expect(parsed.backup.backupVersion).toBe(BACKUP_VERSION);
     expect(parsed.summary.buildings).toBe(3);
     expect(parsed.summary.meetings).toBe(7);
-    expect(parsed.summary.managementPeriods).toBe(5);
+    expect(parsed.summary.managementPeriods).toBe(6); // ۱.۹: + مدیر فعلی ساختمان اول
 
     await newPhone();
     await backupRepository.replaceAll(parsed.backup.data);
@@ -210,7 +210,7 @@ describe('سازگاری با فایل‌های قدیمی (قالب ۱ تا ۸)
     expect(rows.bills.map((b) => b[0])).toEqual(['o1']);
     // جلسه‌ها و دوره‌های مدیریت مثل قبل دست نمی‌خورند
     expect(rows.meetings.length).toBe(5);
-    expect(rows.management_periods.length).toBe(4);
+    expect(rows.management_periods.length).toBe(5);
   });
 });
 

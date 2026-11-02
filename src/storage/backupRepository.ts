@@ -24,7 +24,7 @@ import { readJson, removeKey, writeJson } from './kvStore';
 import { ensureMigrationDone } from './migration';
 import {
   deleteAux, exportCurrentBytes, openDetachedDatabase, readAuxBytes, readAuxText,
-  replaceDatabaseWithBytes, withSqlite, withSqliteWrite, writeAuxBytes, writeAuxText,
+  replaceDatabaseWithBytes, setMeta, withSqlite, withSqliteWrite, writeAuxBytes, writeAuxText,
 } from './sqlite/db';
 import {
   ensureDefaultBuilding, isSqliteMigrationDone, listBuildings, markSqliteMigrationDone,
@@ -32,6 +32,7 @@ import {
 } from './sqlite/domain';
 import { readFullDomain, replaceFullDomain, type FullDomain } from './sqlite/fullBackup';
 import { DEFAULT_BUILDING_ID } from './sqlite/schema';
+import { YEARS_SEEDED_META } from './sqlite/periodsSql';
 
 /** کلید قدیمی نسخهٔ ایمنی (تا ۱.۸.۰ داخل Preferences بود؛ فقط خوانده و پاک می‌شود) */
 const LEGACY_SAFETY_KEY = 'safetyBackup';
@@ -56,6 +57,7 @@ export const PREF_KEY_POLICY: Record<string, 'backup' | 'device' | 'internal'> =
   safetyBackup: 'internal',
   lastBackupAt: 'internal',
   theme: 'device',
+  periodsShowHidden: 'device', // «نمایش سال‌ها/دوره‌های پنهان» همین گوشی
   darkPalette: 'device',
   lightPalette: 'device',
   unitIcon: 'device',
@@ -160,6 +162,8 @@ async function writeBuildingMirrors(buildings: { id: string; units: BuildingSett
 
 /** بازیابی پشتیبان کامل (قالب ۹): همه‌چیز دقیقاً سر جای خودش */
 async function restoreFull(data: BackupData & Required<Pick<BackupData, 'buildings' | 'fundEntries' | 'managementPeriods' | 'meetings'>>): Promise<void> {
+  // پشتیبان قدیمی‌تر از ۱۲ سال‌های هر ساختمان را ندارد → بعد از بازیابی، ساختمانِ بدون سال
+  // در اولین باز شدن از «سال‌های فعالِ» تنظیماتِ بازیابی‌شده پر می‌شود (periodsRepository.ensureSeeded)
   const full: FullDomain = {
     buildings: data.buildings,
     bills: data.bills.map((b) => ({ ...b, buildingId: b.buildingId || DEFAULT_BUILDING_ID })),
@@ -173,6 +177,7 @@ async function restoreFull(data: BackupData & Required<Pick<BackupData, 'buildin
   await atomicRestore(
     (db) => {
       replaceFullDomain(db, full);
+      setMeta(db, YEARS_SEEDED_META, '[]');
       if (!isSqliteMigrationDone(db)) markSqliteMigrationDone(db, full.bills.length, full.units.length);
     },
     async () => {

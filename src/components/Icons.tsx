@@ -383,3 +383,23 @@ export const IconTelegramLogo = ({ size = 44, ...rest }: P) => {
     </svg>
   );
 };
+export const IconCalendarCheck = (p: P) => (
+  <S {...p}>
+    <rect x="3.5" y="4.5" width="17" height="16" rx="2.5" />
+    <path d="M8 2.5v4M16 2.5v4M3.5 10h17" />
+    <path d="m9 15 2 2 4-4" />
+  </S>
+);
+export const IconDownload = (p: P) => (
+  <S {...p}>
+    <path d="M12 4v11M7.5 10.5 12 15l4.5-4.5" />
+    <path d="M4.5 15.5v2.5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-2.5" />
+  </S>
+);
+export const IconEyeOff = (p: P) => (
+  <S {...p}>
+    <path d="M3 3l18 18" />
+    <path d="M10.6 5.1A9.8 9.8 0 0 1 12 5c5 0 8.5 4.5 9.5 7-.4 1-1.2 2.4-2.4 3.7M6.3 6.4C4.3 7.8 3 9.8 2.5 12c1 2.5 4.5 7 9.5 7 1.6 0 3-.4 4.3-1.1" />
+    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+  </S>
+);

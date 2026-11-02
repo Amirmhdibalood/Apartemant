@@ -132,7 +132,9 @@ describe('۱.۸.۰ — جلسه و دوره مدیریت', () => {
     expect(src).toContain('ثبت جلسهٔ جدید');
     expect(src).toContain('ارسال پیامک');
     expect(src).toContain('callUnit');
-    const mgmt = readFileSync('src/components/ManagementSection.tsx', 'utf8');
+    // ۱.۹: مدیر ساختمان در «دوره‌ها»؛ دورهٔ مدیریت حذف نمی‌شود (فقط بستن/پنهان کردن)
+    const periodsSrc = readFileSync('src/screens/PeriodsScreen.tsx', 'utf8');
+    const mgmt = periodsSrc.slice(periodsSrc.indexOf('function ManagerTab'));
     expect(mgmt).not.toContain('removeManagementPeriod');
     expect(mgmt).not.toMatch(/void remove\(/);
     expect(mgmt).not.toMatch(/onClick=\{.*?remove/);

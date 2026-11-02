@@ -322,10 +322,10 @@ describe('پشتیبان قالب ۷: متراژ', () => {
   const make = (mut?: (o: any) => void) => { const o = JSON.parse(serializeBackup(createBackup(sample(), '1.6.5', new Date()))); mut?.(o); return JSON.stringify(o); };
 
   it('نسخه ۸ و رفت‌وبرگشت کامل (متراژ قبض و ساختمان و روش تقسیم)', () => {
-    expect(BACKUP_VERSION).toBe(11);
+    expect(BACKUP_VERSION).toBe(12);
     const r = parseBackup(make());
     if (!r.ok) throw new Error(r.error);
-    expect(r.backup.backupVersion).toBe(11);
+    expect(r.backup.backupVersion).toBe(12);
     expect(r.backup.data.units.map((u) => u.area)).toEqual([100, 50, undefined]);
     expect(r.backup.data.bills[0].splitMethod).toBe('perArea');
     expect(r.backup.data.building!.units.map((u) => u.area)).toEqual([100, 50.5, undefined]);

@@ -6,10 +6,9 @@ import { ExpenseIcon } from '../../components/ExpenseIcon';
 import { IconChart, IconChevronLeft } from '../../components/Icons';
 import { useTheme } from '../../context/ThemeContext';
 import { typeBarColor } from '../../logic/typeColor';
-import { useSettings } from '../../context/SettingsContext';
+import { usePeriods } from '../../hooks/usePeriods';
 import { currentJalali } from '../../logic/date';
 import { formatAmount } from '../../logic/formatting';
-import { recordYearOptions } from '../../logic/years';
 import { useEntryPrefs } from '../../context/EntryPrefsContext';
 import { pickReportYear, yearlyReport } from '../../logic/report';
 import { yearlyDoc } from '../../logic/reportDoc';
@@ -30,14 +29,14 @@ const pct = (p: number) => `${Number.isInteger(p) ? p : p.toFixed(1)}%`;
 /** گزارش هزینه‌های سال: جمع هر نوع هزینه، جمع کل، سهم درصدی و ریز ماه‌به‌ماه */
 export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMonth }: Props) {
   const { prefs } = useEntryPrefs();
-  const { settings } = useSettings();
+  const { visibleYears } = usePeriods();
   const { theme } = useTheme();
   const now = currentJalali();
 
   const billYears = useMemo(() => Array.from(new Set((all ?? []).map((b) => b.bill.year))), [all]);
-  // سال‌های فعال + سال‌هایی که قبض دارند (مثل صفحه سوابق)
-  const years = recordYearOptions(settings.activeYears, billYears);
-  const year = yearProp && years.includes(yearProp) ? yearProp : pickReportYear(years, billYears, now.year);
+  // سال‌های ساختمان (پنهان‌ها فقط با «نمایش سال‌های پنهان»)؛ این گزارش تک‌ساله می‌ماند
+  const years = visibleYears.length ? visibleYears : [now.year];
+  const year = yearProp && years.includes(yearProp) ? yearProp : pickReportYear(years, billYears.filter((y) => years.includes(y)), now.year);
   const report = useMemo(() => yearlyReport(all ?? [], year, prefs.types), [all, year, prefs.types]);
   const withCost = report.byType.filter((t) => t.total > 0);
   const doc = useMemo(() => (all && report.billCount > 0 ? yearlyDoc(report) : null), [all, report]);

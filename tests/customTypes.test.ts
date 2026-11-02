@@ -319,8 +319,8 @@ describe('پشتیبان قالب ۱۱', () => {
     const { b2, a, h, c } = await seed();
     const text = await exportText();
     const json = JSON.parse(text);
-    expect(json.backupVersion).toBe(11);
-    expect(BACKUP_VERSION).toBe(11);
+    expect(json.backupVersion).toBe(12);
+    expect(BACKUP_VERSION).toBe(12);
     const byId = Object.fromEntries(json.data.buildings.map((b: { id: string; billTypes: { id: string }[] }) => [b.id, b.billTypes.map((t) => t.id)]));
     expect(byId[DEFAULT_BUILDING_ID].sort()).toEqual([a.id, h.id].sort());
     expect(byId[b2]).toEqual([c.id]);

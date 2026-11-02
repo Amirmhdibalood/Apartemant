@@ -278,6 +278,41 @@
 :root[data-theme="light"][data-light="paper"] .ct-sheet { box-shadow: 0 -10px 40px rgba(60,50,32,0.25); }
 :root[data-theme="light"][data-light="paper"] .ct-grid button.is-on { border-color: var(--tc); color: var(--tc); background: color-mix(in srgb, var(--tc) 12%, var(--card)); }
 :root[data-theme="light"][data-light="paper"] .ct-colors button.is-on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--c); }
+:root[data-theme="light"][data-light="paper"] .popover { background: #fffdf8; box-shadow: 0 10px 28px rgba(60,50,32,0.18); }
+:root[data-theme="light"][data-light="paper"] .popover.is-up { box-shadow: 0 -10px 28px rgba(60,50,32,0.18); }
+:root[data-theme="light"][data-light="paper"] .option-picker.is-open,
+:root[data-theme="light"][data-light="paper"] .multi-picker.is-open { border-color: var(--primary); }
+:root[data-theme="light"][data-light="paper"] .year-row--all { border-bottom: 1px solid #efeae1; }
+:root[data-theme="light"][data-light="paper"] .year-row--exclusive { border-top: 1px dashed #eae4d9; }
+:root[data-theme="light"][data-light="paper"] .home-card { background: #fffdf8; border: 1px solid #f4f0ea; }
+:root[data-theme="light"][data-light="paper"] .home-card__icon.is-purple { background: #f1ebfe; color: #7c4ae6; }
+:root[data-theme="light"][data-light="paper"] .home-card__icon.is-green { background: #e8f7ef; color: #1c864e; }
+:root[data-theme="light"][data-light="paper"] .home-card__icon.is-blue { background: #ebf3fd; color: #1c60ad; }
+:root[data-theme="light"][data-light="paper"] .home-card__arrow { color: #a0937b; }
+:root[data-theme="light"][data-light="paper"] .bottom-nav__item--home .bottom-nav__icon { background: #fffdf8; color: #625a4c; border: 1px solid #f0ece5; box-shadow: 0 6px 16px rgba(60,50,32,0.16); }
+:root[data-theme="light"][data-light="paper"] .bottom-nav__item--home.is-active .bottom-nav__icon { background: var(--primary); color: #fff; border-color: var(--primary); }
+:root[data-theme="light"][data-light="paper"] .lock-chip { background: #f3f0eb; color: #79695b; }
+:root[data-theme="light"][data-light="paper"] .lock-banner { background: #fff8e6; border: 1px solid #f3dfa6; color: #6b5414; }
+:root[data-theme="light"][data-light="paper"] .lock-banner svg { color: #b8860b; }
+:root[data-theme="light"][data-light="paper"] .lock-banner b { color: #5a4510; }
+:root[data-theme="light"][data-light="paper"] .up-undo.is-locked { color: #746a5a; }
+:root[data-theme="light"][data-light="paper"] .period-info { background: #ebf3fd; border: 1px solid #d1e4f9; color: #123e70; }
+:root[data-theme="light"][data-light="paper"] .period-info.is-warn { background: #fff8e6; border-color: #f3dfa6; color: #6b5414; }
+:root[data-theme="light"][data-light="paper"] .period-card { background: #fffdf8; border: 1.5px solid #efeae1; }
+:root[data-theme="light"][data-light="paper"] .period-card.is-default { border-color: var(--primary); }
+:root[data-theme="light"][data-light="paper"] .period-card.is-closed { background: #f9f7f3; }
+:root[data-theme="light"][data-light="paper"] .period-tick { border: 2px solid #d6d0c5; background: #fffdf8; color: #fff; }
+:root[data-theme="light"][data-light="paper"] .period-tick.is-on { background: var(--primary); border-color: var(--primary); }
+:root[data-theme="light"][data-light="paper"] .period-card__warn { color: #9a6b00; }
+:root[data-theme="light"][data-light="paper"] .p-chip { background: #f3f0eb; color: #79695b; }
+:root[data-theme="light"][data-light="paper"] .p-chip.is-open { background: #e8f7ef; color: #1c864e; }
+:root[data-theme="light"][data-light="paper"] .p-chip.is-closed { background: #fdecec; color: #c53030; }
+:root[data-theme="light"][data-light="paper"] .p-chip.is-default { background: #ebf3fd; color: #1c60ad; }
+:root[data-theme="light"][data-light="paper"] .p-chip.is-hidden { background: #f3f2ef; color: #746a5a; }
+:root[data-theme="light"][data-light="paper"] .period-switch { background: #fffdf8; border: 1px solid #f4f0ea; }
+:root[data-theme="light"][data-light="paper"] .period-switch--top { border-color: #eae4d9; }
+:root[data-theme="light"][data-light="paper"] .date-box.is-disabled { background: #f3f2ef; color: #a0937b; }
+:root[data-theme="light"][data-light="paper"] .date-box.is-disabled .year-picker__value { color: #a0937b; }
 
 /* ---- پالت روشن mint: نعناعی سرد ---- */
 :root[data-theme="light"][data-light="mint"] { --bg: #edf7f4; --card: #fbfefd; --text: #20363c; --text-2: #3d5960; --muted: #5a746c; --border: #e6f0ed; --border-2: #dae9e4; --primary: #0d7686; --primary-press: #0b616e; --primary-soft: #ebfbfd; --success: #1e8751; --success-press: #1c864e; --success-soft: #e8f7ef; --danger: #eb1515; --danger-soft: #fdecec; --warning: #f7c23c; --purple: #8b5cf6; --soft-panel: #eff7f4; --summary: #effafb; --shadow: 0 4px 18px rgba(32,60,51,0.07); --shadow-sm: 0 2px 8px rgba(32,60,51,0.06); }
@@ -557,6 +592,41 @@
 :root[data-theme="light"][data-light="mint"] .ct-sheet { box-shadow: 0 -10px 40px rgba(32,60,51,0.25); }
 :root[data-theme="light"][data-light="mint"] .ct-grid button.is-on { border-color: var(--tc); color: var(--tc); background: color-mix(in srgb, var(--tc) 12%, var(--card)); }
 :root[data-theme="light"][data-light="mint"] .ct-colors button.is-on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--c); }
+:root[data-theme="light"][data-light="mint"] .popover { background: #fbfefd; box-shadow: 0 10px 28px rgba(32,60,51,0.18); }
+:root[data-theme="light"][data-light="mint"] .popover.is-up { box-shadow: 0 -10px 28px rgba(32,60,51,0.18); }
+:root[data-theme="light"][data-light="mint"] .option-picker.is-open,
+:root[data-theme="light"][data-light="mint"] .multi-picker.is-open { border-color: var(--primary); }
+:root[data-theme="light"][data-light="mint"] .year-row--all { border-bottom: 1px solid #e6f0ed; }
+:root[data-theme="light"][data-light="mint"] .year-row--exclusive { border-top: 1px dashed #dae9e4; }
+:root[data-theme="light"][data-light="mint"] .home-card { background: #fbfefd; border: 1px solid #eef6f3; }
+:root[data-theme="light"][data-light="mint"] .home-card__icon.is-purple { background: #f1ebfe; color: #7c4ae6; }
+:root[data-theme="light"][data-light="mint"] .home-card__icon.is-green { background: #e8f7ef; color: #1c864e; }
+:root[data-theme="light"][data-light="mint"] .home-card__icon.is-blue { background: #ebfbfd; color: #0d7686; }
+:root[data-theme="light"][data-light="mint"] .home-card__arrow { color: #7ba095; }
+:root[data-theme="light"][data-light="mint"] .bottom-nav__item--home .bottom-nav__icon { background: #fbfefd; color: #4c625c; border: 1px solid #e9f2ef; box-shadow: 0 6px 16px rgba(32,60,51,0.16); }
+:root[data-theme="light"][data-light="mint"] .bottom-nav__item--home.is-active .bottom-nav__icon { background: var(--primary); color: #fff; border-color: var(--primary); }
+:root[data-theme="light"][data-light="mint"] .lock-chip { background: #eff5f3; color: #5b7379; }
+:root[data-theme="light"][data-light="mint"] .lock-banner { background: #fff8e6; border: 1px solid #f3dfa6; color: #6b5414; }
+:root[data-theme="light"][data-light="mint"] .lock-banner svg { color: #b8860b; }
+:root[data-theme="light"][data-light="mint"] .lock-banner b { color: #5a4510; }
+:root[data-theme="light"][data-light="mint"] .up-undo.is-locked { color: #5a746c; }
+:root[data-theme="light"][data-light="mint"] .period-info { background: #ebfbfd; border: 1px solid #d1f4f9; color: #084a54; }
+:root[data-theme="light"][data-light="mint"] .period-info.is-warn { background: #fff8e6; border-color: #f3dfa6; color: #6b5414; }
+:root[data-theme="light"][data-light="mint"] .period-card { background: #fbfefd; border: 1.5px solid #e6f0ed; }
+:root[data-theme="light"][data-light="mint"] .period-card.is-default { border-color: var(--primary); }
+:root[data-theme="light"][data-light="mint"] .period-card.is-closed { background: #f8fbfa; }
+:root[data-theme="light"][data-light="mint"] .period-tick { border: 2px solid #c6d5d1; background: #fbfefd; color: #fff; }
+:root[data-theme="light"][data-light="mint"] .period-tick.is-on { background: var(--primary); border-color: var(--primary); }
+:root[data-theme="light"][data-light="mint"] .period-card__warn { color: #9a6b00; }
+:root[data-theme="light"][data-light="mint"] .p-chip { background: #eff5f3; color: #5b7379; }
+:root[data-theme="light"][data-light="mint"] .p-chip.is-open { background: #e8f7ef; color: #1c864e; }
+:root[data-theme="light"][data-light="mint"] .p-chip.is-closed { background: #fdecec; color: #c53030; }
+:root[data-theme="light"][data-light="mint"] .p-chip.is-default { background: #ebfbfd; color: #0d7686; }
+:root[data-theme="light"][data-light="mint"] .p-chip.is-hidden { background: #f2f5f5; color: #5a746c; }
+:root[data-theme="light"][data-light="mint"] .period-switch { background: #fbfefd; border: 1px solid #eef6f3; }
+:root[data-theme="light"][data-light="mint"] .period-switch--top { border-color: #dae9e4; }
+:root[data-theme="light"][data-light="mint"] .date-box.is-disabled { background: #f2f5f5; color: #7ba095; }
+:root[data-theme="light"][data-light="mint"] .date-box.is-disabled .year-picker__value { color: #7ba095; }
 
 /* ---- پالت روشن lavender: اسلیت یاسی ---- */
 :root[data-theme="light"][data-light="lavender"] { --bg: #f1effa; --card: #fdfcff; --text: #231f3d; --text-2: #423d60; --muted: #6e6886; --border: #e8e5f1; --border-2: #dddae9; --primary: #5d4fd6; --primary-press: #493ad1; --primary-soft: #edebfd; --success: #1e8751; --success-press: #1c864e; --success-soft: #e8f7ef; --danger: #eb1515; --danger-soft: #fdecec; --warning: #f7c23c; --purple: #8b5cf6; --soft-panel: #f1eff7; --summary: #f0effb; --shadow: 0 4px 18px rgba(38,32,60,0.07); --shadow-sm: 0 2px 8px rgba(38,32,60,0.06); }
@@ -836,6 +906,41 @@
 :root[data-theme="light"][data-light="lavender"] .ct-sheet { box-shadow: 0 -10px 40px rgba(38,32,60,0.25); }
 :root[data-theme="light"][data-light="lavender"] .ct-grid button.is-on { border-color: var(--tc); color: var(--tc); background: color-mix(in srgb, var(--tc) 12%, var(--card)); }
 :root[data-theme="light"][data-light="lavender"] .ct-colors button.is-on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--c); }
+:root[data-theme="light"][data-light="lavender"] .popover { background: #fdfcff; box-shadow: 0 10px 28px rgba(38,32,60,0.18); }
+:root[data-theme="light"][data-light="lavender"] .popover.is-up { box-shadow: 0 -10px 28px rgba(38,32,60,0.18); }
+:root[data-theme="light"][data-light="lavender"] .option-picker.is-open,
+:root[data-theme="light"][data-light="lavender"] .multi-picker.is-open { border-color: var(--primary); }
+:root[data-theme="light"][data-light="lavender"] .year-row--all { border-bottom: 1px solid #e8e5f1; }
+:root[data-theme="light"][data-light="lavender"] .year-row--exclusive { border-top: 1px dashed #dddae9; }
+:root[data-theme="light"][data-light="lavender"] .home-card { background: #fdfcff; border: 1px solid #f0eef6; }
+:root[data-theme="light"][data-light="lavender"] .home-card__icon.is-purple { background: #f1ebfe; color: #7c4ae6; }
+:root[data-theme="light"][data-light="lavender"] .home-card__icon.is-green { background: #e8f7ef; color: #1c864e; }
+:root[data-theme="light"][data-light="lavender"] .home-card__icon.is-blue { background: #edebfd; color: #5d4fd6; }
+:root[data-theme="light"][data-light="lavender"] .home-card__arrow { color: #958eae; }
+:root[data-theme="light"][data-light="lavender"] .bottom-nav__item--home .bottom-nav__icon { background: #fdfcff; color: #605a75; border: 1px solid #ebe9f2; box-shadow: 0 6px 16px rgba(38,32,60,0.16); }
+:root[data-theme="light"][data-light="lavender"] .bottom-nav__item--home.is-active .bottom-nav__icon { background: var(--primary); color: #fff; border-color: var(--primary); }
+:root[data-theme="light"][data-light="lavender"] .lock-chip { background: #f0eff5; color: #5f5b79; }
+:root[data-theme="light"][data-light="lavender"] .lock-banner { background: #fff8e6; border: 1px solid #f3dfa6; color: #6b5414; }
+:root[data-theme="light"][data-light="lavender"] .lock-banner svg { color: #b8860b; }
+:root[data-theme="light"][data-light="lavender"] .lock-banner b { color: #5a4510; }
+:root[data-theme="light"][data-light="lavender"] .up-undo.is-locked { color: #6e6886; }
+:root[data-theme="light"][data-light="lavender"] .period-info { background: #edebfd; border: 1px solid #d5d1f9; color: #382ab4; }
+:root[data-theme="light"][data-light="lavender"] .period-info.is-warn { background: #fff8e6; border-color: #f3dfa6; color: #6b5414; }
+:root[data-theme="light"][data-light="lavender"] .period-card { background: #fdfcff; border: 1.5px solid #e8e5f1; }
+:root[data-theme="light"][data-light="lavender"] .period-card.is-default { border-color: var(--primary); }
+:root[data-theme="light"][data-light="lavender"] .period-card.is-closed { background: #f8f7fb; }
+:root[data-theme="light"][data-light="lavender"] .period-tick { border: 2px solid #c8c5d6; background: #fdfcff; color: #fff; }
+:root[data-theme="light"][data-light="lavender"] .period-tick.is-on { background: var(--primary); border-color: var(--primary); }
+:root[data-theme="light"][data-light="lavender"] .period-card__warn { color: #9a6b00; }
+:root[data-theme="light"][data-light="lavender"] .p-chip { background: #f0eff5; color: #5f5b79; }
+:root[data-theme="light"][data-light="lavender"] .p-chip.is-open { background: #e8f7ef; color: #1c864e; }
+:root[data-theme="light"][data-light="lavender"] .p-chip.is-closed { background: #fdecec; color: #c53030; }
+:root[data-theme="light"][data-light="lavender"] .p-chip.is-default { background: #edebfd; color: #5d4fd6; }
+:root[data-theme="light"][data-light="lavender"] .p-chip.is-hidden { background: #f3f2f6; color: #6e6886; }
+:root[data-theme="light"][data-light="lavender"] .period-switch { background: #fdfcff; border: 1px solid #f0eef6; }
+:root[data-theme="light"][data-light="lavender"] .period-switch--top { border-color: #dddae9; }
+:root[data-theme="light"][data-light="lavender"] .date-box.is-disabled { background: #f3f2f6; color: #958eae; }
+:root[data-theme="light"][data-light="lavender"] .date-box.is-disabled .year-picker__value { color: #958eae; }
 
 /* ---- پالت روشن graycool: خاکستری سرد (کنتراست بالا) ---- */
 :root[data-theme="light"][data-light="graycool"] { --bg: #eceff3; --card: #ffffff; --text: #171c22; --text-2: #283039; --muted: #47505b; --border: #d6d9dc; --border-2: #cccfd3; --primary: #1244b7; --primary-press: #103b9f; --primary-soft: #ebf0fd; --success: #1e8751; --success-press: #1c864e; --success-soft: #e8f7ef; --danger: #eb1515; --danger-soft: #fdecec; --warning: #f7c23c; --purple: #8b5cf6; --soft-panel: #f2f3f4; --summary: #eff2fb; --shadow: 0 4px 18px rgba(32,44,60,0.07); --shadow-sm: 0 2px 8px rgba(32,44,60,0.06); }
@@ -1115,3 +1220,38 @@
 :root[data-theme="light"][data-light="graycool"] .ct-sheet { box-shadow: 0 -10px 40px rgba(32,44,60,0.25); }
 :root[data-theme="light"][data-light="graycool"] .ct-grid button.is-on { border-color: var(--tc); color: var(--tc); background: color-mix(in srgb, var(--tc) 12%, var(--card)); }
 :root[data-theme="light"][data-light="graycool"] .ct-colors button.is-on { box-shadow: 0 0 0 2px var(--card), 0 0 0 4px var(--c); }
+:root[data-theme="light"][data-light="graycool"] .popover { background: #ffffff; box-shadow: 0 10px 28px rgba(32,44,60,0.18); }
+:root[data-theme="light"][data-light="graycool"] .popover.is-up { box-shadow: 0 -10px 28px rgba(32,44,60,0.18); }
+:root[data-theme="light"][data-light="graycool"] .option-picker.is-open,
+:root[data-theme="light"][data-light="graycool"] .multi-picker.is-open { border-color: var(--primary); }
+:root[data-theme="light"][data-light="graycool"] .year-row--all { border-bottom: 1px solid #d6d9dc; }
+:root[data-theme="light"][data-light="graycool"] .year-row--exclusive { border-top: 1px dashed #cccfd3; }
+:root[data-theme="light"][data-light="graycool"] .home-card { background: #ffffff; border: 1px solid #dee0e3; }
+:root[data-theme="light"][data-light="graycool"] .home-card__icon.is-purple { background: #f1ebfe; color: #7c4ae6; }
+:root[data-theme="light"][data-light="graycool"] .home-card__icon.is-green { background: #e8f7ef; color: #1c864e; }
+:root[data-theme="light"][data-light="graycool"] .home-card__icon.is-blue { background: #ebf0fd; color: #1244b7; }
+:root[data-theme="light"][data-light="graycool"] .home-card__arrow { color: #64758c; }
+:root[data-theme="light"][data-light="graycool"] .bottom-nav__item--home .bottom-nav__icon { background: #ffffff; color: #39404a; border: 1px solid #d9dbde; box-shadow: 0 6px 16px rgba(32,44,60,0.16); }
+:root[data-theme="light"][data-light="graycool"] .bottom-nav__item--home.is-active .bottom-nav__icon { background: var(--primary); color: #fff; border-color: var(--primary); }
+:root[data-theme="light"][data-light="graycool"] .lock-chip { background: #dee0e2; color: #38404b; }
+:root[data-theme="light"][data-light="graycool"] .lock-banner { background: #fff8e6; border: 1px solid #f3dfa6; color: #6b5414; }
+:root[data-theme="light"][data-light="graycool"] .lock-banner svg { color: #b8860b; }
+:root[data-theme="light"][data-light="graycool"] .lock-banner b { color: #5a4510; }
+:root[data-theme="light"][data-light="graycool"] .up-undo.is-locked { color: #47505b; }
+:root[data-theme="light"][data-light="graycool"] .period-info { background: #ebf0fd; border: 1px solid #d1ddf9; color: #0c2c77; }
+:root[data-theme="light"][data-light="graycool"] .period-info.is-warn { background: #fff8e6; border-color: #f3dfa6; color: #6b5414; }
+:root[data-theme="light"][data-light="graycool"] .period-card { background: #ffffff; border: 1.5px solid #d6d9dc; }
+:root[data-theme="light"][data-light="graycool"] .period-card.is-default { border-color: var(--primary); }
+:root[data-theme="light"][data-light="graycool"] .period-card.is-closed { background: #f9f9f9; }
+:root[data-theme="light"][data-light="graycool"] .period-tick { border: 2px solid #b9bbbf; background: #ffffff; color: #fff; }
+:root[data-theme="light"][data-light="graycool"] .period-tick.is-on { background: var(--primary); border-color: var(--primary); }
+:root[data-theme="light"][data-light="graycool"] .period-card__warn { color: #9a6b00; }
+:root[data-theme="light"][data-light="graycool"] .p-chip { background: #dee0e2; color: #38404b; }
+:root[data-theme="light"][data-light="graycool"] .p-chip.is-open { background: #e8f7ef; color: #1c864e; }
+:root[data-theme="light"][data-light="graycool"] .p-chip.is-closed { background: #fdecec; color: #c53030; }
+:root[data-theme="light"][data-light="graycool"] .p-chip.is-default { background: #ebf0fd; color: #1244b7; }
+:root[data-theme="light"][data-light="graycool"] .p-chip.is-hidden { background: #f4f4f4; color: #47505b; }
+:root[data-theme="light"][data-light="graycool"] .period-switch { background: #ffffff; border: 1px solid #dee0e3; }
+:root[data-theme="light"][data-light="graycool"] .period-switch--top { border-color: #cccfd3; }
+:root[data-theme="light"][data-light="graycool"] .date-box.is-disabled { background: #f4f4f4; color: #64758c; }
+:root[data-theme="light"][data-light="graycool"] .date-box.is-disabled .year-picker__value { color: #64758c; }

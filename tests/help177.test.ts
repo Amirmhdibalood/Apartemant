@@ -18,10 +18,10 @@ const textsOf = (t: HelpTopic): string[] => [
 const ALL = HELP_TOPICS.flatMap((t) => textsOf(t).map((text) => ({ id: t.id, text })));
 
 describe('۱.۷.۷ — ساختار آموزش', () => {
-  it('شناسه‌ها یکتا، گروه‌ها معتبر و ۳۷ موضوع', () => {
+  it('شناسه‌ها یکتا، گروه‌ها معتبر و ۴۰ موضوع (۱.۹: دوره‌ها، قفل قبض‌ها، فهرست‌های انتخاب)', () => {
     const ids = HELP_TOPICS.map((t) => t.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids.length).toBe(37);
+    expect(ids.length).toBe(40);
     const groups = HELP_GROUPS.map((g) => g.id);
     for (const t of HELP_TOPICS) expect(groups).toContain(t.group);
     for (const g of HELP_GROUPS) expect(HELP_TOPICS.some((t) => t.group === g.id)).toBe(true);
@@ -70,6 +70,7 @@ describe('۱.۷.۷ — پوشش: هر صفحه، گزارش و بخش تنظیم
   const samples: Route[] = [
     { name: 'newBill' }, { name: 'result' }, { name: 'details', billId: 'x' }, { name: 'records' }, { name: 'unitHistory', unitNumber: 1 },
     { name: 'unitPay', unitNumber: 1 }, { name: 'settings' }, { name: 'support' }, { name: 'report' },
+    { name: 'periods' }, { name: 'periods', tab: 'manager' }, { name: 'meetings' }, { name: 'backup' },
     ...REPORTS.map((r) => ({ name: 'report', tab: r.id }) as Route),
   ];
   it('helpTopicForRoute برای همهٔ مسیرها یک موضوع واقعی می‌دهد (خانه و آموزش = فهرست)', () => {
@@ -102,6 +103,9 @@ describe('۱.۷.۷ — پوشش: هر صفحه، گزارش و بخش تنظیم
     expect(routeForTarget({ kind: 'settings', section: 'backup' })).toEqual({ name: 'settings', focus: 'backup' });
     expect(routeForTarget({ kind: 'support', tab: 'contact' })).toEqual({ name: 'support', tab: 'contact' });
     expect(routeForTarget({ kind: 'records' })).toEqual({ name: 'records' });
+    expect(routeForTarget({ kind: 'periods', tab: 'manager' })).toEqual({ name: 'periods', tab: 'manager' });
+    expect(routeForTarget({ kind: 'meetings' })).toEqual({ name: 'meetings' });
+    expect(routeForTarget({ kind: 'backup' })).toEqual({ name: 'backup' });
   });
 });
 
@@ -243,5 +247,49 @@ describe('۱.۷.۸ — نام دکمه‌ها در همهٔ متن‌ها', () =
     expect(home.steps.join(' ')).toMatch(/دکمهٔ «آموزش»/);
     expect(home.steps.join(' ')).toMatch(/راهنمای این بخش/);
     expect(home.steps.join(' ')).toMatch(/دکمهٔ «پشتیبانی»/);
+  });
+});
+
+describe('۱.۹.۰ — آموزش و سؤال‌های رایج برای دوره‌ها، قفل، صفحهٔ اصلی و فیلترهای چندتایی', () => {
+  const joined = () => ALL.map((x) => x.text).join('\n');
+  it('مسیرهای قدیمی تنظیمات (سال‌ها، دورهٔ مدیریت، جلسه) دیگر در متن‌ها نیست', () => {
+    for (const bad of ['تنظیمات ← سال‌ها', 'تنظیمات ← دورهٔ مدیریت', 'تنظیمات ← جلسه', 'سال‌های فعال تنظیمات', 'سال مالی']) expect(joined(), bad).not.toContain(bad);
+  });
+  it('هیچ‌جای برنامه واژهٔ ممنوعِ «دوره + مالی» نیست (متن، کد، نام‌گذاری)', () => {
+    const walk = (d: string): string[] => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(`${d}/${e.name}`) : [`${d}/${e.name}`]));
+    for (const f of walk('src').filter((x) => /\.(ts|tsx|css)$/.test(x))) {
+      const src = readFileSync(f, 'utf8');
+      expect(src, f).not.toMatch(new RegExp(['دور[هة]\\s*[\u0654]?[\u200c\\s]*(ی\\s*)?' + 'مالی', 'fiscal', 'financialYear'].join('|'), 'i'));
+    }
+  });
+  it('موضوع‌های تازه و جابه‌جاشده مقصد درست دارند', () => {
+    expect(topicById('periods')?.open?.target).toEqual({ kind: 'periods' });
+    expect(topicById('years')?.open?.target).toEqual({ kind: 'periods', tab: 'years' });
+    expect(topicById('management')?.open?.target).toEqual({ kind: 'periods', tab: 'manager' });
+    expect(topicById('meetings')?.open?.target).toEqual({ kind: 'meetings' });
+    expect(topicById('backup')?.open?.target).toEqual({ kind: 'backup' });
+    expect(helpTopicForRoute({ name: 'periods', tab: 'manager' })).toBe('management');
+    expect(helpTopicForRoute({ name: 'periods' })).toBe('years');
+  });
+  it('تاریخ شروع و پایان سال، قفل، نوار پایین و انتخاب چندتایی توضیح داده شده‌اند', () => {
+    const years = textsOf(topicById('years')!).join(' ');
+    expect(years).toContain('۱ فروردین');
+    expect(years).toMatch(/آخرین روز اسفند/);
+    expect(years).toMatch(/۳۰/);
+    const home = topicById('home')!.steps.join(' ');
+    expect(home).toMatch(/«سوابق»، «گزارش‌ها»، «خانه» \(دکمهٔ وسط و برجسته\)، «آموزش» و «تنظیمات»/);
+    for (const c of ['«دوره‌ها»', '«جلسه»', '«پشتیبان‌گیری»']) expect(home).toContain(c);
+    const lock = textsOf(topicById('lock')!).join(' ');
+    for (const w of ['ویرایش', 'حذف', 'پرداخت شد', 'مهلت', 'لغو این پرداخت', 'پرداخت واحدها']) expect(lock).toContain(w);
+    expect(textsOf(topicById('records')!).join(' ')).toContain('۲ ماه (مهر، آبان)');
+    expect(textsOf(topicById('monthly')!).join(' ')).toMatch(/چند ماه/);
+    expect(textsOf(topicById('pickers')!).join(' ')).toMatch(/روز، ماه و سال/);
+  });
+  it('سؤال‌های رایج تازه پیدا می‌شوند', () => {
+    const faq = faqItems(WITH_SUPPORT).map((x) => x.q);
+    for (const q of ['صفحهٔ «دوره‌ها» کجاست؟', 'چرا قبضم قفل شده؟', 'سال را بستم؛ قبض‌هایش چه می‌شوند؟', 'می‌شود قبض‌های دو ماه را با هم دید؟', 'جمع دو یا سه ماه را با هم می‌خواهم.', 'تاریخ شروع و پایان سال را می‌شود عوض کرد؟', 'دکمه‌های «سوابق»، «گزارش‌ها» و «آموزش» از صفحهٔ اصلی کجا رفتند؟']) expect(faq, q).toContain(q);
+    expect(searchFaq('قفل', WITH_SUPPORT).some((x) => x.topicId === 'lock')).toBe(true);
+    expect(searchTopics('بستن سال', WITH_SUPPORT)[0]?.id).toBe('years');
+    expect(searchTopics('مدیر ساختمان', WITH_SUPPORT)[0]?.id).toBe('management');
   });
 });

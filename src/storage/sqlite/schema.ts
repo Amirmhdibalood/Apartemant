@@ -1,5 +1,9 @@
-/** SQLite DDL for Apartemant domain DB (schema version 7 = per-building custom bill types). */
-export const SQLITE_SCHEMA_VERSION = 7;
+/**
+ * SQLite DDL for Apartemant domain DB.
+ * 7 = per-building custom bill types; 8 = سال‌های هر ساختمان (building_years)، مدیر از واحدها،
+ * کلید «مدیر ساختمان» هر ساختمان و دورهٔ مدیریتِ هر قبض (bills.mgmt_period_id).
+ */
+export const SQLITE_SCHEMA_VERSION = 8;
 
 /** پیش‌فرض قبض‌های واریزی به صندوق (JSON مرتب‌شده با EXPENSE_TYPE_ORDER) */
 export const DEFAULT_FUND_TYPES_JSON = '["building"]';
@@ -20,7 +24,17 @@ CREATE TABLE IF NOT EXISTS buildings (
   fund_enabled INTEGER NOT NULL DEFAULT 0,
   fund_types TEXT NOT NULL DEFAULT '["building"]',
   created_at TEXT NOT NULL,
-  archived_at TEXT
+  archived_at TEXT,
+  mgmt_enabled INTEGER NOT NULL DEFAULT 0,
+  default_year INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS building_years (
+  building_id TEXT NOT NULL REFERENCES buildings(id) ON DELETE CASCADE,
+  year INTEGER NOT NULL,
+  closed_at TEXT,
+  hidden INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY(building_id, year)
 );
 
 CREATE TABLE IF NOT EXISTS building_unit_templates (
@@ -50,7 +64,8 @@ CREATE TABLE IF NOT EXISTS bills (
   bill_paid INTEGER NOT NULL DEFAULT 0,
   bill_paid_date TEXT,
   due_date TEXT,
-  deleted_at TEXT
+  deleted_at TEXT,
+  mgmt_period_id TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_bills_building_ym ON bills(building_id, year, month);
 CREATE INDEX IF NOT EXISTS idx_bills_deleted ON bills(deleted_at);
@@ -105,7 +120,9 @@ CREATE TABLE IF NOT EXISTS management_periods (
   start_date TEXT NOT NULL,
   end_date TEXT NOT NULL,
   ended_early_at TEXT,
-  notes TEXT
+  notes TEXT,
+  manager_unit INTEGER,
+  hidden INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS idx_mgmt_building ON management_periods(building_id);
 

@@ -27,10 +27,18 @@ let state: { theme: 'light' | 'dark'; palette: 'navy' | 'warm'; lightPalette: Li
 vi.mock('../src/context/ThemeContext', () => ({
   useTheme: () => ({ ...state, toggle: () => undefined, setTheme: () => undefined, setPalette: () => undefined, setLightPalette: () => undefined }),
 }));
-const { ThemePicker } = await import('../src/components/ThemePicker');
+const { DARK_ROWS, LIGHT_ROWS, PaletteRows, ThemePicker } = await import('../src/components/ThemePicker');
 
 const NEW_IDS = LIGHT_PALETTE_ORDER.filter((id) => id !== 'sky');
 const read = (f: string) => readFileSync(f, 'utf8');
+
+/** ۱.۹: فهرست پالت‌ها شناور (Popover) است؛ سرها از ThemePicker و ردیف‌ها از PaletteRows (همان داده و همان قاعدهٔ فعال‌بودن) */
+const renderPicker = (st: { theme: 'light' | 'dark'; palette: string; lightPalette?: string }) => {
+  const dark = st.theme === 'dark';
+  return renderToStaticMarkup(createElement(ThemePicker))
+    + renderToStaticMarkup(createElement(PaletteRows, { label: 'پالت‌های تاریک', rows: DARK_ROWS, active: dark, activeId: st.palette, onPick: () => undefined }))
+    + renderToStaticMarkup(createElement(PaletteRows, { label: 'پالت‌های روشن', rows: LIGHT_ROWS, active: !dark, activeId: st.lightPalette ?? 'sky', onPick: () => undefined }));
+};
 
 describe('پالت‌های روشن: داده', () => {
   it('۵ پالت به ترتیب؛ «آسمانی» پیش‌فرض و همانی؛ نام‌ها طبق مصوب', () => {
@@ -234,7 +242,7 @@ describe('ذخیره‌سازی و پشتیبان', () => {
 });
 
 describe('انتخابگر «تم»: روشن مثل تاریک بازمی‌شود', () => {
-  const render = (s: typeof state) => { state = s; return renderToStaticMarkup(createElement(ThemePicker)); };
+  const render = (s: typeof state) => { state = s; return renderPicker(s); };
   it('بدون «به‌زودی»؛ ۵ ردیف رادیویی روشن با نام، توضیح و پیش‌نمایش؛ «پیش‌فرض» فقط برای آسمانی', () => {
     const html = render({ theme: 'light', palette: 'navy', lightPalette: 'sky' });
     expect(html).not.toContain('به‌زودی');
@@ -248,7 +256,7 @@ describe('انتخابگر «تم»: روشن مثل تاریک بازمی‌ش�
       expect(light).toContain(`background:${lightSwatches(id)[0]}`);
     }
     expect(html.match(/aria-expanded="false"/g)).toHaveLength(2); // هر دو سر بازشونده، پیش‌فرض بسته
-    expect(html.match(/class="tp-body"[^>]*hidden/g)).toHaveLength(2);
+    expect(renderToStaticMarkup(createElement(ThemePicker))).not.toContain('tp-body');
   });
   it('فقط پالت روشن فعلی (در حالت روشن) تیک دارد؛ در حالت تاریک هیچ پالت روشنی تیک ندارد', () => {
     const mint = render({ theme: 'light', palette: 'warm', lightPalette: 'mint' });

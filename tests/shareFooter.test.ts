@@ -101,7 +101,7 @@ describe('آموزش و سؤال‌های رایج — ویژگی‌های تا�
     const faq = faqItems(WITH_SUPPORT).map((x) => x.q);
     for (const q of [
       'ساختمانی را چطور حذف کنم؟', 'نام ساختمان را چطور عوض کنم؟', 'چند نوع قبض سفارشی می‌توانم بسازم؟',
-      'چرا «ثبت قبض جدید» می‌گوید دورهٔ مدیریت باز وجود ندارد؟', 'حاضر، غایب و خالی چه فرقی دارند؟',
+      'چرا «ثبت قبض جدید» می‌گوید مدیر فعالی نیست؟', 'حاضر، غایب و خالی چه فرقی دارند؟',
       'دکمهٔ تماس یا پیامک را نمی‌بینم.', 'پشتیبانی که با نسخهٔ قدیمی برنامه گرفته‌ام بازیابی می‌شود؟',
       '«تماس با ما» کجاست؟', 'لینک دانلود برنامه را چطور برای همسایه‌ها بفرستم؟', 'پایین تصویر قبض چه نوشته شده؟',
     ]) expect(faq, q).toContain(q);
@@ -109,6 +109,6 @@ describe('آموزش و سؤال‌های رایج — ویژگی‌های تا�
     expect(searchTopics('پیامک گروهی', WITH_SUPPORT)[0]?.id).toBe('phones');
     expect(searchTopics('نسخه ایمنی', WITH_SUPPORT)[0]?.id).toBe('backup');
     expect(searchTopics('لینک دانلود', WITH_SUPPORT)[0]?.id).toBe('shareapp');
-    expect(searchFaq('دوره مدیریت باز', WITH_SUPPORT).some((x) => x.topicId === 'management')).toBe(true);
+    expect(searchFaq('مدیر فعالی نیست', WITH_SUPPORT).some((x) => x.topicId === 'management')).toBe(true);
   });
 });

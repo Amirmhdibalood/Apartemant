@@ -21,6 +21,7 @@
 import type { Database, SqlJsStatic, SqlValue } from 'sql.js';
 import { Capacitor } from '@capacitor/core';
 import { SCHEMA_SQL, SQLITE_SCHEMA_VERSION } from './schema';
+import { migrateSchema8Data } from './periodsSql';
 
 const DB_FILE = 'apartemant.db';
 const JOURNAL_FILE = 'apartemant.db.journal';
@@ -349,24 +350,38 @@ function schemaFingerprint(database: Database): string {
   return String(r[0]?.values[0]?.[0] ?? '');
 }
 
-function applySchema(database: Database): void {
+/** ALTER that may already have run: true = the column was added now (an older DB). */
+function addColumn(database: Database, sql: string): boolean {
+  try {
+    database.run(sql);
+    return true;
+  } catch {
+    return false; /* already exists */
+  }
+}
+
+/**
+ * DDL + additive ALTERs. Returns true when an existing pre-v8 DB was upgraded and its data still needs
+ * `migrateSchema8Data` (run after journal replay so replayed old-format rows get migrated too).
+ */
+function applySchema(database: Database): boolean {
   database.run(SCHEMA_SQL);
   // ستون‌های افزوده بعد از ایجاد اولیه (IF NOT EXISTS روی CREATE جدول کافی نیست)
-  try {
-    database.run('ALTER TABLE building_unit_templates ADD COLUMN phone TEXT');
-  } catch {
-    /* already exists */
-  }
-  try {
-    // قبض‌های واریزی به صندوق هر ساختمان (۱.۸ / طرح ۶)؛ ساختمان‌های موجود = فقط شارژ ساختمان
-    database.run(`ALTER TABLE buildings ADD COLUMN fund_types TEXT NOT NULL DEFAULT '["building"]'`);
-  } catch {
-    /* already exists */
-  }
+  addColumn(database, 'ALTER TABLE building_unit_templates ADD COLUMN phone TEXT');
+  // قبض‌های واریزی به صندوق هر ساختمان (۱.۸ / طرح ۶)؛ ساختمان‌های موجود = فقط شارژ ساختمان
+  addColumn(database, `ALTER TABLE buildings ADD COLUMN fund_types TEXT NOT NULL DEFAULT '["building"]'`);
+  // شِمای ۸: سال‌ها و دوره‌های مدیریت هر ساختمان
+  addColumn(database, 'ALTER TABLE buildings ADD COLUMN mgmt_enabled INTEGER NOT NULL DEFAULT 0');
+  addColumn(database, 'ALTER TABLE buildings ADD COLUMN default_year INTEGER');
+  addColumn(database, 'ALTER TABLE management_periods ADD COLUMN manager_unit INTEGER');
+  addColumn(database, 'ALTER TABLE management_periods ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0');
+  const upgraded8 = addColumn(database, 'ALTER TABLE bills ADD COLUMN mgmt_period_id TEXT');
+  database.run('CREATE INDEX IF NOT EXISTS idx_bills_mgmt ON bills(mgmt_period_id)');
   const ver = getMeta(database, 'schemaVersion');
   if (ver !== String(SQLITE_SCHEMA_VERSION)) {
     setMeta(database, 'schemaVersion', String(SQLITE_SCHEMA_VERSION));
   }
+  return upgraded8;
 }
 
 export function getMeta(database: Database, key: string): string | null {
@@ -541,10 +556,11 @@ export async function openSqlite(): Promise<Database> {
     if (!fromSnapshot) await be.quarantine?.().catch(() => undefined);
     const g = fromSnapshot ? Number(getMetaSafe(database, GEN_KEY) ?? 0) || 0 : 0;
     const before = fromSnapshot ? schemaFingerprint(database) : '';
-    applySchema(database);
+    const upgraded8 = applySchema(database);
     const schemaChanged = schemaFingerprint(database) !== before;
     const journal = fromSnapshot ? await be.readJournal() : '';
     stats.replayedOps = replayJournal(database, journal, g);
+    if (upgraded8) untracked(() => migrateSchema8Data(database));
     gen = g;
     writeGen(database, gen);
     dirty = new Map();
@@ -682,7 +698,7 @@ export async function deleteAux(name: string): Promise<void> { await backend().d
 export async function openDetachedDatabase(bytes: Uint8Array): Promise<Database> {
   const sql = await loadSqlJs();
   const d = new sql.Database(bytes);
-  applySchema(d);
+  if (applySchema(d)) migrateSchema8Data(d);
   return d;
 }
 
@@ -698,7 +714,7 @@ export async function replaceDatabaseWithBytes(bytes: Uint8Array): Promise<void>
   const sql = await loadSqlJs();
   await persistChain.catch(() => undefined);
   const next = new sql.Database(bytes);
-  applySchema(next);
+  if (applySchema(next)) migrateSchema8Data(next);
   writeGen(next, gen);
   const prev = db;
   db = next;

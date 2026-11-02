@@ -4,20 +4,15 @@ import { Switch } from '../components/Switch';
 import { IconAlertTriangle } from '../components/Icons';
 import { useSettings } from '../context/SettingsContext';
 import { useFeedback } from '../context/FeedbackContext';
-import { YearPicker } from '../components/YearPicker';
 import { BackupSection } from '../components/BackupSection';
 import { BuildingSection } from '../components/BuildingSection';
 import { MultiBuildingBar } from '../components/MultiBuildingBar';
 import { FundSection } from '../components/FundSection';
-import { ManagementSection } from '../components/ManagementSection';
-import { MeetingsSection } from '../components/MeetingsSection';
 import { ShareAppSection } from '../components/ShareAppSection';
 import { buildingRepository } from '../storage/buildingRepository';
 import { useEffect, useState } from 'react';
 import { ACCORDION_TOPIC } from '../logic/help';
-import { selectableYears, toggleYear } from '../logic/years';
 import { APP_VERSION_FA, DEVELOPER_EMAIL, DEVELOPER_NAME } from '../appVersion';
-import { Errors } from '../logic/errors';
 import { useNotif } from '../context/NotifContext';
 import { NOTIF_MODES } from '../logic/notifMode';
 import { useAreaMode } from '../context/AreaModeContext';
@@ -43,7 +38,7 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
   focus?: string;
 }) {
   const { settings, updateSettings } = useSettings();
-  const { showErrors, toast } = useFeedback();
+  const { toast } = useFeedback();
   const { mode, setMode } = useNotif();
   const { areaMode, setAreaMode } = useAreaMode();
   const { unitIcon, areaIcon, setUnitIcon, setAreaIcon } = useIconPrefs();
@@ -51,7 +46,6 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
   const { prefs, setTypeOn, setMethodOn } = entry;
   const builtinPrefs = entry.builtinPrefs ?? prefs;
   const { prefs: reportPrefs, setReportOn } = useReportPrefs();
-  const years = selectableYears();
   const [restoreKey, setRestoreKey] = useState(0);
   const [buildingKey, setBuildingKey] = useState(0);
   const [multiEnabled, setMultiEnabled] = useState(false);
@@ -73,31 +67,15 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
     return () => window.clearTimeout(t);
   }, [focus]);
 
-  const onYear = (y: number) => {
-    const next = toggleYear(settings.activeYears, y);
-    if (next === null) {
-      showErrors(Errors.minOneYear());
-      return;
-    }
-    updateSettings((s) => ({ ...s, activeYears: next }));
-  };
-
   return (
     <>
       <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} onSupport={onSupport} />
       <main className="screen screen--settings">
-        <Accordion id="years" onTopic={help('years')} title="سال‌ها">
-          <p className="card__hint">
-            فهرست را باز کنید و سال‌های مورد نیاز را فعال یا غیرفعال کنید. فقط سال‌های فعال در کشوی سال صفحه «ثبت قبض جدید» و «سوابق» نمایش داده می‌شوند. حداقل یک سال باید فعال بماند.
-          </p>
-          <YearPicker years={years} active={settings.activeYears} onToggle={onYear} />
-        </Accordion>
-
         <Accordion
           id="building"
           onTopic={help('building')}
           title="ساختمان‌ها"
-          titleHint="با روشن کردن، مدیریت چند ساختمان جدا (واحد، قبض، صندوق و دورهٔ مدیریت هرکدام) فعال می‌شود."
+          titleHint="با روشن کردن، مدیریت چند ساختمان جدا (واحد، قبض، صندوق، سال‌ها و مدیر ساختمان هرکدام) فعال می‌شود."
           trailing={(
             <Switch
               id="sw-multi-building"
@@ -119,14 +97,6 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
 
         <Accordion id="fund" onTopic={help('fund')} title="صندوق ساختمان">
           <FundSection reloadKey={restoreKey + buildingKey} />
-        </Accordion>
-
-        <Accordion id="management" onTopic={help('management')} title="دورهٔ مدیریت">
-          <ManagementSection reloadKey={restoreKey + buildingKey} />
-        </Accordion>
-
-        <Accordion id="meetings" onTopic={help('meetings')} title="جلسه">
-          <MeetingsSection reloadKey={restoreKey + buildingKey} />
         </Accordion>
 
         <Accordion id="share-app" onTopic={help('share-app')} title="اشتراک‌گذاری نرم‌افزار">

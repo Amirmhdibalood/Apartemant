@@ -4,14 +4,15 @@ import { MONTHS } from '../models/constants';
 import { AppHeader } from '../components/AppHeader';
 import { SelectField } from '../components/SelectField';
 import { JalaliDateField } from '../components/JalaliDateField';
-import { addJalaliDays, dateYearOptions, todayJalali } from '../logic/jalali';
+import { addJalaliDays, dateYearOptions, jalaliDiffDays, parseJalaliKey, todayJalali, type JalaliDate } from '../logic/jalali';
+import { toPersianDigits } from '../logic/formatting';
 import { DEFAULT_DUE_OFFSET_DAYS } from '../logic/billStatus';
 import { useEntryPrefs } from '../context/EntryPrefsContext';
 import { resolveMethod } from '../logic/entryPrefs';
 import { ExpenseTypePicker } from '../components/ExpenseTypePicker';
 import { AmountInput } from '../components/AmountInput';
 import { UnitsEditor } from '../components/UnitsEditor';
-import { useSettings } from '../context/SettingsContext';
+import { usePeriods } from '../hooks/usePeriods';
 import { useFeedback } from '../context/FeedbackContext';
 import { validateDraft } from '../logic/validation';
 import { Errors } from '../logic/errors';
@@ -36,7 +37,6 @@ interface Props {
 
 /** ۲، ۳ و ۴. ثبت / ویرایش قبض (یک فرم مشترک) */
 export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) {
-  const { settings } = useSettings();
   const { showErrors, confirmDanger, toast } = useFeedback();
   const set = (patch: Partial<BillDraft>) => setDraft({ ...draft, ...patch });
   const { prefs } = useEntryPrefs();
@@ -97,11 +97,10 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
     }
   };
 
-  // فقط سال‌های فعال (+ سال قبض در حال ویرایش، اگر غیرفعال شده باشد)
+  // ۱.۹: فقط سال‌های باز ساختمان (سال بسته در فرم قبض نمی‌آید)؛ سال قبض در حال ویرایش همیشه هست
   const today = todayJalali();
-  const years = Array.from(new Set([...settings.activeYears, draft.year])).filter(
-    (y) => settings.activeYears.includes(y) || (draft.editingBillId !== null && y === draft.year),
-  ).sort((a, b) => a - b);
+  const { openYears: open } = usePeriods();
+  const years = Array.from(new Set([...(open.length ? open : [draft.year]), ...(draft.editingBillId !== null ? [draft.year] : [])])).sort((a, b) => a - b);
 
   const submit = () => {
     const res = validateDraft(draft);
@@ -186,6 +185,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
           defaultDate={addJalaliDays(today, DEFAULT_DUE_OFFSET_DAYS)}
           years={dateYearOptions(draft.year, today.year, today.year + 1)}
           addLabel="افزودن مهلت پرداخت"
+          note={dueNote(draft.dueDate ?? null, today)}
         />
 
         <div className="field">
@@ -270,4 +270,13 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
       </div>
     </>
   );
+}
+
+/** «۷ روز دیگر» / «امروز» / «۳ روز گذشته» زیر فیلد مهلت پرداخت */
+function dueNote(key: string | null, today: JalaliDate): string | undefined {
+  const d = parseJalaliKey(key);
+  if (!d) return undefined;
+  const n = jalaliDiffDays(today, d);
+  if (n === 0) return 'امروز';
+  return n > 0 ? `${toPersianDigits(n)} روز دیگر` : `${toPersianDigits(-n)} روز گذشته`;
 }

@@ -49,6 +49,9 @@ export function helpTopicForRoute(route: Route): string | undefined {
     case 'unitHistory': return 'history';
     case 'unitPay': return 'debtpay';
     case 'settings': return 'settings';
+    case 'periods': return route.tab === 'manager' ? 'management' : 'years';
+    case 'meetings': return 'meetings';
+    case 'backup': return 'backup';
     case 'support': return 'support';
     case 'tutorial': return undefined;
     case 'report':
@@ -67,11 +70,8 @@ export function helpTopicForRoute(route: Route): string | undefined {
 
 /** بخش‌های آکاردئونی تنظیمات → موضوع */
 export const ACCORDION_TOPIC: Record<string, string> = {
-  years: 'years',
   building: 'buildings',
   fund: 'fund',
-  management: 'management',
-  meetings: 'meetings',
   'share-app': 'shareapp',
   'entry-prefs': 'prefs',
   'report-prefs': 'prefs',
@@ -88,6 +88,9 @@ export function routeForTarget(t: HelpTarget): Route {
     case 'records': return { name: 'records' };
     case 'reports': return t.report ? { name: 'report', tab: t.report } : { name: 'report' };
     case 'settings': return t.section ? { name: 'settings', focus: t.section } : { name: 'settings' };
+    case 'periods': return t.tab ? { name: 'periods', tab: t.tab } : { name: 'periods' };
+    case 'meetings': return { name: 'meetings' };
+    case 'backup': return { name: 'backup' };
     case 'support': return { name: 'support', tab: t.tab };
   }
 }

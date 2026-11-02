@@ -15,6 +15,7 @@ import { withSqlite } from '../../src/storage/sqlite/db';
 import { listSqliteTables } from '../../src/storage/sqlite/fullBackup';
 import { DEFAULT_BUILDING_ID } from '../../src/storage/sqlite/schema';
 import { billTypeRepository } from '../../src/storage/billTypeRepository';
+import { periodsRepository } from '../../src/storage/periodsRepository';
 import type { CustomColorId, CustomIconId } from '../../src/logic/billTypes';
 
 export interface BuildingSpec {
@@ -131,6 +132,15 @@ export async function seedScenario(specs: BuildingSpec[], seed = 7): Promise<str
         managerLabel: `مدیر ${p + 1} ${sp.name}`, startDate: `${1403 + p}-01-01`, endDate: `${1403 + p}-12-29`,
         notes: p % 2 ? 'یادداشت دوره' : null, endPreviousEarly: p > 0,
       }, id);
+    }
+    // ۱.۹: سال‌های ساختمان (بسته/پنهان/پیش‌فرض) و مدیر ساختمان (کلید + مدیر از واحدها)
+    await periodsRepository.addYear(1403, id);
+    await periodsRepository.closeYear(1403, id, new Date('2025-03-25T08:00:00Z'));
+    if (i % 2 === 0) await periodsRepository.setYearHidden(1403, true, id);
+    await periodsRepository.setDefaultYear(1405, id);
+    if (i === 0) {
+      await periodsRepository.setMgmtEnabled(true, id);
+      await periodsRepository.addManager({ managerUnit: 1, alias: i % 2 ? '' : 'مدیر فعلی', startDate: '1405-02-01', endDate: null }, id); // دورهٔ باز قبلی (اگر باشد) خودکار ۱۴۰۵/۰۱/۳۱ بسته می‌شود
     }
     const nMeetings = sp.meetings ?? 2;
     for (let m = 0; m < nMeetings; m++) {

@@ -1,6 +1,6 @@
 /** تعریف مسیرهای برنامه (ناوبری ساده مبتنی بر Stack، بدون وابستگی خارجی) */
 import type { ExpenseType } from './models/types';
-import type { StatusFilter } from './logic/billFilter';
+import type { StatusPick } from './logic/multiFilter';
 import type { ReportId } from './logic/reportCatalog';
 
 export type Route =
@@ -11,8 +11,14 @@ export type Route =
   | { name: 'settings'; focus?: string }
   /** پشتیبانی (۱.۷.۷): زبانهٔ «سؤال‌های رایج» یا «تماس با ما» */
   | { name: 'support'; tab?: 'faq' | 'contact' }
-  /** سوابق: month / type نبودن یا null = «همه»؛ status نبودن = «همه» (بدون حذف‌شده‌ها) */
-  | { name: 'records'; year?: number; month?: number | null; type?: ExpenseType | null; status?: StatusFilter }
+  /** سوابق (۱.۹ چندتایی): years نبودن = سال پیش‌فرض؛ [] یا نبودنِ بقیه = «همه»؛ statuses خالی = بدون حذف‌شده‌ها */
+  | { name: 'records'; years?: number[]; months?: number[]; types?: ExpenseType[]; statuses?: StatusPick[] }
+  /** «دوره‌ها» (۱.۹): سال‌ها و مدیر ساختمان */
+  | { name: 'periods'; tab?: 'years' | 'manager' }
+  /** جلسه‌ها (۱.۹: از تنظیمات به صفحهٔ خودش آمد) */
+  | { name: 'meetings' }
+  /** پشتیبان‌گیری (۱.۹: کارت صفحهٔ اصلی؛ همان بخش تنظیمات) */
+  | { name: 'backup' }
   | { name: 'report'; tab?: ReportTab; year?: number; type?: ExpenseType | null }
   | { name: 'unitHistory'; unitNumber: number }
   /** پرداخت بدهی یک واحد (از ۱.۷.۳؛ از «بدهکاران») */
@@ -27,4 +33,4 @@ export type RouteName = Route['name'];
 export type ReportTab = ReportId;
 
 /** صفحاتی که نوار پایین (Bottom Navigation) در آن‌ها نمایش داده می‌شود */
-export const TAB_ROUTES: RouteName[] = ['home', 'records', 'report', 'settings'];
+export const TAB_ROUTES: RouteName[] = ['home', 'records', 'report', 'tutorial', 'settings'];

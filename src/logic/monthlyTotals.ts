@@ -40,7 +40,10 @@ export interface MonthlyUnit {
 
 export interface MonthlyTotals {
   year: number;
+  /** اولین ماه انتخاب‌شده (سازگاری با گزارش تک‌ماهه) */
   month: number;
+  /** ماه‌های انتخاب‌شده (۱.۹: چندتایی؛ مرتب) */
+  months: number[];
   bills: MonthlyBillRef[];
   /** جمع مبلغ قبض‌ها به تفکیک نوع (فقط انواع دارای قبض) */
   byType: { type: ExpenseType; total: number; count: number }[];
@@ -57,10 +60,12 @@ export interface MonthlyTotals {
 
 const typeIndex = (t: ExpenseType) => typeOrderIndex(t);
 
-export function monthlyTotals(all: BillWithUnits[], year: number, month: number, types?: ExpenseType[]): MonthlyTotals {
+/** `month`: یک ماه یا چند ماه (۱.۹)؛ جمع‌ها فقط از قبض‌های همان ماه‌ها حساب می‌شوند */
+export function monthlyTotals(all: BillWithUnits[], year: number, month: number | readonly number[], types?: ExpenseType[]): MonthlyTotals {
+  const months = [...new Set(typeof month === 'number' ? [month] : month)].sort((a, b) => a - b);
   const own = all
-    .filter((x) => !isBillDeleted(x.bill) && x.bill.year === year && x.bill.month === month && (!types || types.includes(x.bill.expenseType)))
-    .sort((a, b) => typeIndex(a.bill.expenseType) - typeIndex(b.bill.expenseType) || a.bill.createdAt.localeCompare(b.bill.createdAt));
+    .filter((x) => !isBillDeleted(x.bill) && x.bill.year === year && months.includes(x.bill.month) && (!types || types.includes(x.bill.expenseType)))
+    .sort((a, b) => a.bill.month - b.bill.month || typeIndex(a.bill.expenseType) - typeIndex(b.bill.expenseType) || a.bill.createdAt.localeCompare(b.bill.createdAt));
 
   const bills: MonthlyBillRef[] = own.map(({ bill }) => ({ billId: bill.id, expenseType: bill.expenseType, totalAmount: bill.totalAmount }));
   const typeMap = new Map<ExpenseType, { total: number; count: number }>();
@@ -99,7 +104,7 @@ export function monthlyTotals(all: BillWithUnits[], year: number, month: number,
 
   const live = units.filter((u) => !u.vacant);
   return {
-    year, month, bills,
+    year, month: months[0] ?? 1, months, bills,
     byType: [...typeMap.entries()].map(([type, v]) => ({ type, ...v })),
     units,
     grandTotal: live.reduce((s, u) => s + u.total, 0),

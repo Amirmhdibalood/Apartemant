@@ -1,4 +1,5 @@
-import { useId, useState, type ReactNode } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
+import { Popover } from './Popover';
 import { IconCheck, IconChevronDown, IconMoon, IconSun } from './Icons';
 import { useTheme } from '../context/ThemeContext';
 import { paletteSwatches } from '../logic/darkColor';
@@ -30,9 +31,32 @@ function Strip({ sw }: { sw: string[] }) {
   );
 }
 
-interface PalRow { id: string; name: string; desc: string; sw: string[]; isDefault: boolean }
+export interface PalRow { id: string; name: string; desc: string; sw: string[]; isDefault: boolean }
 
-/** یک حالت (تاریک/روشن): سرِ بازشونده با رادیو + فهرست پالت‌ها (۵ ردیف رادیویی با پیش‌نمایش کوچک) */
+/** ردیف‌های رادیویی پالت (داخل فهرست شناور) */
+export function PaletteRows({ label, rows, active, activeId, onPick }: {
+  label: string; rows: PalRow[]; active: boolean; activeId: string; onPick: (id: string) => void;
+}) {
+  return (
+    <div className="tp-body" role="radiogroup" aria-label={label}>
+      {rows.map((p) => {
+        const on = active && activeId === p.id;
+        return (
+          <button key={p.id} type="button" role="radio" aria-checked={on} className={'tp-pal' + (on ? ' is-active' : '')} onClick={() => onPick(p.id)}>
+            <Mini sw={p.sw} />
+            <span className="tp-pal__txt">
+              <span className="tp-pal__name">{p.name}{p.isDefault && <span className="tp-def">پیش‌فرض</span>}</span>
+              <span className="tp-pal__desc">{p.desc}</span>
+            </span>
+            <span className="tp-check" aria-hidden="true"><IconCheck size={14} strokeWidth={3.4} /></span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** یک حالت (تاریک/روشن): سر با رادیو + فهرست شناور پالت‌ها (ردیف‌های رادیویی با پیش‌نمایش کوچک) */
 function ModeBlock({ icon, title, current, active, subtitle, strip, label, rows, activeId, onPick }: {
   icon: ReactNode; title: string; current: boolean; active: boolean; subtitle: string; strip: string[]; label: string;
   rows: PalRow[]; activeId: string; onPick: (id: string) => void;
@@ -40,39 +64,29 @@ function ModeBlock({ icon, title, current, active, subtitle, strip, label, rows,
   const [open, setOpen] = useState(false);
   const uid = useId();
   const bodyId = `${uid}-pals`;
+  const anchorRef = useRef<HTMLButtonElement>(null);
   return (
     <div className={'tp-mode' + (current ? ' is-current' : '') + (open ? ' is-open' : '')}>
-      <button type="button" className="tp-mode__head" aria-expanded={open} aria-controls={bodyId} onClick={() => setOpen((v) => !v)}>
+      <button ref={anchorRef} type="button" className="tp-mode__head" aria-expanded={open} aria-controls={bodyId} aria-haspopup="listbox" onClick={() => setOpen((v) => !v)}>
         <span className="tp-radio" aria-hidden="true" />
         <span className="tp-ico" aria-hidden="true">{icon}</span>
         <span className="tp-txt">
           <span className="tp-title">{title}{active && <span className="tp-cur">فعال</span>}</span>
           <span className="tp-sub">{subtitle}</span>
         </span>
-        {!open && <Strip sw={strip} />}
+        <Strip sw={strip} />
         <IconChevronDown size={22} className="tp-chev" />
       </button>
-      <div id={bodyId} className="tp-body" role="radiogroup" aria-label={label} hidden={!open}>
-        {rows.map((p) => {
-          const on = active && activeId === p.id;
-          return (
-            <button key={p.id} type="button" role="radio" aria-checked={on} className={'tp-pal' + (on ? ' is-active' : '')} onClick={() => onPick(p.id)}>
-              <Mini sw={p.sw} />
-              <span className="tp-pal__txt">
-                <span className="tp-pal__name">{p.name}{p.isDefault && <span className="tp-def">پیش‌فرض</span>}</span>
-                <span className="tp-pal__desc">{p.desc}</span>
-              </span>
-              <span className="tp-check" aria-hidden="true"><IconCheck size={14} strokeWidth={3.4} /></span>
-            </button>
-          );
-        })}
-      </div>
+      {/* ۱.۹: فهرست پالت‌ها شناور است (بدون جابه‌جایی صفحه)؛ با انتخاب، لمس بیرون یا لمس دوبارهٔ سر بسته می‌شود */}
+      <Popover open={open} anchorRef={anchorRef} onClose={() => setOpen(false)} id={bodyId} className="tp-pop">
+        <PaletteRows label={label} rows={rows} active={active} activeId={activeId} onPick={(id) => { onPick(id); setOpen(false); }} />
+      </Popover>
     </div>
   );
 }
 
-const DARK_ROWS: PalRow[] = DARK_PALETTE_ORDER.map((id) => ({ id, name: DARK_PALETTES[id].name, desc: DARK_PALETTES[id].desc, sw: paletteSwatches(id), isDefault: id === 'navy' }));
-const LIGHT_ROWS: PalRow[] = LIGHT_PALETTE_ORDER.map((id) => ({ id, name: LIGHT_PALETTES[id].name, desc: LIGHT_PALETTES[id].desc, sw: lightSwatches(id), isDefault: id === DEFAULT_LIGHT_PALETTE }));
+export const DARK_ROWS: PalRow[] = DARK_PALETTE_ORDER.map((id) => ({ id, name: DARK_PALETTES[id].name, desc: DARK_PALETTES[id].desc, sw: paletteSwatches(id), isDefault: id === 'navy' }));
+export const LIGHT_ROWS: PalRow[] = LIGHT_PALETTE_ORDER.map((id) => ({ id, name: LIGHT_PALETTES[id].name, desc: LIGHT_PALETTES[id].desc, sw: lightSwatches(id), isDefault: id === DEFAULT_LIGHT_PALETTE }));
 
 /**
  * گروه «تم» در تنظیمات ← تنظیمات ظاهری: دو حالت بازشونده، «تاریک» (۴ پالت) و «روشن» (۵ پالت؛ «آسمانی» پیش‌فرض).

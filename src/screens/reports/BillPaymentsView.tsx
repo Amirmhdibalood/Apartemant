@@ -1,12 +1,11 @@
 import { useMemo, useState } from 'react';
 import type { BillWithUnits, ExpenseType } from '../../models/types';
 import { CURRENCY, monthName } from '../../models/constants';
-import { SelectField } from '../../components/SelectField';
+import { MultiOptionPicker } from '../../components/MultiOptionPicker';
+import { usePeriods } from '../../hooks/usePeriods';
 import { ExpenseIcon } from '../../components/ExpenseIcon';
 import { IconCalendar, IconCheck, IconChevronLeft, IconX } from '../../components/Icons';
-import { useSettings } from '../../context/SettingsContext';
 import { formatAmount, toPersianDigits } from '../../logic/formatting';
-import { recordYearOptions } from '../../logic/years';
 import { pickReportYear } from '../../logic/report';
 import { typeFilterOptions } from '../../logic/entryPrefs';
 import { useEntryPrefs } from '../../context/EntryPrefsContext';
@@ -26,39 +25,39 @@ interface Props {
 
 /** گزارش «پرداخت قبض‌ها»: مهلت پرداخت، تاریخ پرداخت و به‌موقع/با تأخیر بودن پرداخت خودِ قبض‌ها */
 export function BillPaymentsView({ all, year: yearProp, type = null, onChange, onOpenBill }: Props) {
-  const { settings } = useSettings();
+  const { visibleYears } = usePeriods();
   const { prefs } = useEntryPrefs();
-  const typeOptions = typeFilterOptions(prefs);
+  const typeOptions = typeFilterOptions(prefs).filter((o) => o.value !== null) as { value: ExpenseType; label: string }[];
   const [status, setStatus] = useState<PaymentStatusFilter>('all');
   const today = todayJalali();
   const billYears = useMemo(() => Array.from(new Set((all ?? []).map((b) => b.bill.year))), [all]);
-  const years = recordYearOptions(settings.activeYears, billYears);
-  const year = yearProp && years.includes(yearProp) ? yearProp : pickReportYear(years, billYears, today.year);
-  const report = useMemo(() => billPaymentReport(all ?? [], year, type, today), [all, year, type, today.year, today.month, today.day]);
+  const years = visibleYears.length ? visibleYears : [today.year];
+  const initialYear = yearProp && years.includes(yearProp) ? yearProp : pickReportYear(years, billYears.filter((y) => years.includes(y)), today.year);
+  // ۱.۹: سال و نوع چندتایی؛ خالی = همه (سال‌های پنهان فقط با «نمایش سال‌های پنهان»)
+  const [yearSel, setYearSel] = useState<number[] | null>(null);
+  const [typeSel, setTypeSel] = useState<ExpenseType[] | null>(null);
+  const selYears = (yearSel ?? [initialYear]).filter((y) => years.includes(y));
+  const selTypes = (typeSel ?? (type ? [type] : [])).filter((t) => prefs.types.includes(t));
+  const year = selYears.length ? selYears : years;
+  void onChange;
+  const report = useMemo(() => billPaymentReport(all ?? [], year, selTypes, today), [all, year.join(), selTypes.join(), today.year, today.month, today.day]); // eslint-disable-line react-hooks/exhaustive-deps
   const s = report.summary;
   const shown = useMemo(() => filterPaymentRows(report.rows, status), [report.rows, status]);
-  const doc = useMemo(() => (all && report.rows.length > 0 ? billPaymentsDoc(shown, s, year, type) : null), [all, report.rows.length, shown, s, year, type]);
+  const doc = useMemo(() => (all && report.rows.length > 0 ? billPaymentsDoc(shown, s, selYears, selTypes) : null), [all, report.rows.length, shown, s, selYears.join(), selTypes.join()]); // eslint-disable-line react-hooks/exhaustive-deps
   const tap = (x: PaymentStatusFilter) => setStatus((cur) => toggleStatusFilter(cur, x));
-  const typeIndex = Math.max(0, typeOptions.findIndex((o) => o.value === type));
 
   return (
     <>
       <div className="filters">
-        <SelectField id="bp-year" label="سال" value={year} options={years.map((y) => ({ value: y, label: String(y) }))} onChange={(y) => onChange(y, type)} />
-        <SelectField
-          id="bp-type"
-          label="نوع هزینه"
-          value={typeIndex}
-          options={typeOptions.map((o, i) => ({ value: i, label: o.label }))}
-          onChange={(i) => onChange(year, typeOptions[i]?.value ?? null)}
-        />
+        <MultiOptionPicker id="bp-year" label="سال" unit="سال" value={selYears} options={[...years].reverse().map((y) => ({ value: y, label: String(y) }))} onChange={(v) => setYearSel(v)} />
+        <MultiOptionPicker id="bp-type" label="نوع هزینه" unit="نوع" value={selTypes} options={typeOptions} onChange={(v) => setTypeSel(v)} />
       </div>
 
       {all && report.rows.length === 0 && (
         <div className="empty-state">
           <IconCalendar size={40} />
           <p>
-            برای سال {year}{type ? ` و قبض «${typeInfo(type).label}»` : ''} هنوز قبضی ثبت نشده است.
+            برای {selYears.length ? `سال ${selYears.map((y) => toPersianDigits(y)).join('، ')}` : 'سال‌های انتخاب‌شده'}{selTypes.length ? ` و قبض ${selTypes.map((t) => `«${typeInfo(t).label}»`).join('، ')}` : ''} هنوز قبضی ثبت نشده است.
             برای بهره‌گیری کامل از این گزارش، هنگام ثبت قبض «مهلت پرداخت» را تعیین کنید و پس از پرداخت، تیک «پرداخت شد» را بزنید.
           </p>
         </div>

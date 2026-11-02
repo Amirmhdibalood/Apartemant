@@ -13,6 +13,8 @@ import { fundTypesToJson, parseFundTypesJson } from '../../logic/fundTypes';
 import { migrateBill } from '../../logic/billPaid';
 import { unitPayments } from '../../logic/payments';
 import { newId } from '../../logic/id';
+import type { BuildingYear } from '../../logic/periods';
+import { backfillBillPeriods, periodFromRow, readYearRows } from './periodsSql';
 import { DEFAULT_BUILDING_ID } from './schema';
 import { ident, requestCheckpoint } from './db';
 import {
@@ -32,6 +34,7 @@ import {
 export const BACKUP_TABLE_COVERAGE: Record<string, string> = {
   app_meta: 'internal',
   buildings: 'data.buildings[]',
+  building_years: 'data.buildings[].years[]',
   building_unit_templates: 'data.buildings[].units[]',
   bills: 'data.bills[] (+buildingId)',
   bill_units: 'data.units[]',
@@ -49,14 +52,15 @@ export const BACKUP_TABLE_COVERAGE: Record<string, string> = {
  * 'regenerated' = rebuilt on restore (row ids of child tables, derived building_id).
  */
 export const BACKUP_COLUMN_COVERAGE: Record<string, readonly string[]> = {
-  buildings: ['id', 'name', 'fund_enabled', 'fund_types', 'created_at', 'archived_at'],
+  buildings: ['id', 'name', 'fund_enabled', 'fund_types', 'created_at', 'archived_at', 'mgmt_enabled', 'default_year'],
+  building_years: ['building_id', 'year', 'closed_at', 'hidden'],
   building_unit_templates: ['id:regenerated', 'building_id', 'unit_number', 'alias', 'default_persons', 'vacant', 'area', 'phone'],
   bills: ['id', 'building_id', 'year', 'month', 'expense_type', 'bill_number', 'description', 'total_amount', 'created_at',
-    'is_fully_settled', 'split_method', 'bill_paid', 'bill_paid_date', 'due_date', 'deleted_at'],
+    'is_fully_settled', 'split_method', 'bill_paid', 'bill_paid_date', 'due_date', 'deleted_at', 'mgmt_period_id'],
   bill_units: ['id', 'bill_id', 'building_id:regenerated', 'unit_number', 'person_count', 'alias', 'vacant', 'area', 'share_amount', 'is_settled'],
   payments: ['id', 'bill_unit_id', 'bill_id', 'building_id:regenerated', 'amount', 'paid_at', 'batch_id'],
   fund_entries: ['id', 'building_id', 'kind', 'amount', 'reason', 'related_bill_id', 'related_payment_id', 'note', 'created_at'],
-  management_periods: ['id', 'building_id', 'manager_label', 'start_date', 'end_date', 'ended_early_at', 'notes'],
+  management_periods: ['id', 'building_id', 'manager_label', 'start_date', 'end_date', 'ended_early_at', 'notes', 'manager_unit', 'hidden'],
   meetings: ['id', 'building_id', 'meeting_date', 'weekday', 'hour', 'minute', 'place', 'summary', 'created_at'],
   meeting_attendance: ['id:regenerated', 'meeting_id', 'unit_number', 'unit_alias', 'status'],
   bill_types: ['id', 'building_id', 'name', 'icon', 'color', 'sort_order', 'hidden', 'created_at'],
@@ -74,6 +78,12 @@ export interface FullBuilding {
   units: BuildingUnit[];
   /** نوع‌های قبض سفارشی این ساختمان (قالب ۱۱؛ همیشه کامل نوشته می‌شود) */
   billTypes: BackupBillType[];
+  /** کلید «مدیر ساختمان» (قالب ۱۲؛ قالب‌های قدیمی‌تر = روشن، چون کاربر قبلی است) */
+  mgmtEnabled: boolean;
+  /** سال پیش‌فرض فرم قبض (قالب ۱۲) */
+  defaultYear: number | null;
+  /** سال‌های این ساختمان: بسته/پنهان (قالب ۱۲) */
+  years: BuildingYear[];
 }
 
 export interface FullDomain {
@@ -111,6 +121,12 @@ export function readFullDomain(db: Database): FullDomain {
     list.push({ id: t.id, name: t.name, icon: t.icon, color: t.color, sortOrder: t.sortOrder, hidden: t.hidden, createdAt: t.createdAt });
     typesByBuilding.set(t.buildingId, list);
   }
+  const yearsByBuilding = new Map<string, BuildingYear[]>();
+  for (const y of readYearRows(db)) {
+    const list = yearsByBuilding.get(y.buildingId) ?? [];
+    list.push({ year: y.year, closedAt: y.closedAt, hidden: y.hidden });
+    yearsByBuilding.set(y.buildingId, list);
+  }
   const buildings: FullBuilding[] = rows(db, 'SELECT * FROM buildings ORDER BY created_at, id').map((r) => ({
     id: String(r.id),
     name: String(r.name),
@@ -120,6 +136,9 @@ export function readFullDomain(db: Database): FullDomain {
     archivedAt: str(r.archived_at),
     units: readUnitTemplates(db, String(r.id))?.units ?? [],
     billTypes: typesByBuilding.get(String(r.id)) ?? [],
+    mgmtEnabled: Number(r.mgmt_enabled) === 1,
+    defaultYear: r.default_year == null ? null : Number(r.default_year),
+    years: yearsByBuilding.get(String(r.id)) ?? [],
   }));
   const bills = readAllBills(db);
   const units = readAllUnits(db);
@@ -134,15 +153,7 @@ export function readFullDomain(db: Database): FullDomain {
     note: str(r.note),
     createdAt: String(r.created_at),
   }));
-  const managementPeriods: ManagementPeriodRow[] = rows(db, 'SELECT * FROM management_periods ORDER BY start_date, id').map((r) => ({
-    id: String(r.id),
-    buildingId: String(r.building_id),
-    managerLabel: String(r.manager_label),
-    startDate: String(r.start_date),
-    endDate: String(r.end_date),
-    endedEarlyAt: str(r.ended_early_at),
-    notes: str(r.notes),
-  }));
+  const managementPeriods: ManagementPeriodRow[] = rows(db, 'SELECT * FROM management_periods ORDER BY start_date, id').map(periodFromRow);
   const att = new Map<string, MeetingAttendanceRow[]>();
   for (const r of rows(db, 'SELECT meeting_id, unit_number, unit_alias, status FROM meeting_attendance ORDER BY meeting_id, unit_number')) {
     const s = r.status;
@@ -169,7 +180,7 @@ export function readFullDomain(db: Database): FullDomain {
 
 /** Child tables first so deletes never trip a foreign key. */
 const WIPE_ORDER = [
-  'meeting_attendance', 'meetings', 'bill_types', 'management_periods', 'fund_entries',
+  'meeting_attendance', 'meetings', 'bill_types', 'management_periods', 'fund_entries', 'building_years',
   'payments', 'bill_units', 'bills', 'building_unit_templates', 'buildings',
 ];
 
@@ -189,10 +200,24 @@ export function replaceFullDomain(db: Database, full: FullDomain): void {
   inTransaction(db, () => {
     for (const t of WIPE_ORDER) db.run(`DELETE FROM ${ident(t)}`);
 
-    withStmt(db, 'INSERT INTO buildings(id, name, fund_enabled, fund_types, created_at, archived_at) VALUES (?,?,?,?,?,?)', (s) => {
-      for (const b of full.buildings) s.run([b.id, b.name, b01(b.fundEnabled), fundTypesToJson(b.fundTypes ?? ['building']), b.createdAt, b.archivedAt ?? null]);
+    withStmt(db, `INSERT INTO buildings(id, name, fund_enabled, fund_types, created_at, archived_at, mgmt_enabled, default_year)
+      VALUES (?,?,?,?,?,?,?,?)`, (s) => {
+      for (const b of full.buildings) {
+        s.run([b.id, b.name, b01(b.fundEnabled), fundTypesToJson(b.fundTypes ?? ['building']), b.createdAt, b.archivedAt ?? null,
+          b01(b.mgmtEnabled), b.defaultYear ?? null]);
+      }
     });
     ensureDefaultBuilding(db);
+    withStmt(db, 'INSERT INTO building_years(building_id, year, closed_at, hidden) VALUES (?,?,?,?)', (s) => {
+      for (const b of full.buildings) {
+        const seen = new Set<number>();
+        for (const y of b.years ?? []) {
+          if (seen.has(y.year)) continue;
+          seen.add(y.year);
+          s.run([b.id, y.year, y.closedAt ?? null, b01(!!y.closedAt && y.hidden)]);
+        }
+      }
+    });
 
     const customByBuilding = new Map<string, Set<string>>();
     withStmt(db, 'INSERT INTO bill_types(id, building_id, name, icon, color, sort_order, hidden, created_at) VALUES (?,?,?,?,?,?,?,?)', (s) => {
@@ -216,9 +241,10 @@ export function replaceFullDomain(db: Database, full: FullDomain): void {
     });
 
     const billBuilding = new Map<string, string>();
+    const unassigned = new Set<string>(); // پشتیبان قدیمی‌تر از ۱۲: دوره بر اساس تاریخ ثبت
     withStmt(db, `INSERT INTO bills(id, building_id, year, month, expense_type, bill_number, description, total_amount,
-        created_at, is_fully_settled, split_method, bill_paid, bill_paid_date, due_date, deleted_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, (s) => {
+        created_at, is_fully_settled, split_method, bill_paid, bill_paid_date, due_date, deleted_at, mgmt_period_id)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`, (s) => {
       for (const raw of full.bills) {
         const b = migrateBill(raw);
         const bid = raw.buildingId || DEFAULT_BUILDING_ID;
@@ -228,8 +254,9 @@ export function replaceFullDomain(db: Database, full: FullDomain): void {
         s.run([
           b.id, bid, b.year, b.month, type, b.billNumber, b.description, b.totalAmount,
           b.createdAt, b01(b.isFullySettled), b.splitMethod ?? null, b01(b.billPaid), b.billPaidDate ?? null,
-          b.dueDate ?? null, b.deletedAt ?? null,
+          b.dueDate ?? null, b.deletedAt ?? null, b.mgmtPeriodId ?? null,
         ]);
+        if (b.mgmtPeriodId === undefined) unassigned.add(b.id);
       }
     });
 
@@ -251,12 +278,14 @@ export function replaceFullDomain(db: Database, full: FullDomain): void {
       }
     });
 
-    withStmt(db, `INSERT INTO management_periods(id, building_id, manager_label, start_date, end_date, ended_early_at, notes)
-      VALUES (?,?,?,?,?,?,?)`, (s) => {
+    withStmt(db, `INSERT INTO management_periods(id, building_id, manager_label, start_date, end_date, ended_early_at, notes, manager_unit, hidden)
+      VALUES (?,?,?,?,?,?,?,?,?)`, (s) => {
       for (const p of full.managementPeriods) {
-        s.run([p.id, p.buildingId, p.managerLabel, p.startDate, p.endDate, p.endedEarlyAt ?? null, p.notes ?? null]);
+        s.run([p.id, p.buildingId, p.managerLabel, p.startDate, p.endDate ?? '', p.endedEarlyAt ?? null, p.notes ?? null,
+          p.managerUnit ?? null, b01(p.hidden)]);
       }
     });
+    if (unassigned.size) backfillBillPeriods(db, unassigned);
 
     withStmt(db, `INSERT INTO meetings(id, building_id, meeting_date, weekday, hour, minute, place, summary, created_at)
       VALUES (?,?,?,?,?,?,?,?,?)`, (sm) => withStmt(db, `INSERT INTO meeting_attendance(id, meeting_id, unit_number, unit_alias, status)

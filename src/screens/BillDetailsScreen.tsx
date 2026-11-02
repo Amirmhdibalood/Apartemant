@@ -29,6 +29,8 @@ import { addJalaliDays, dateYearOptions, formatJalaliSlash, parseJalaliKey, toda
 import { formatJalaliDateTimeFa } from '../logic/date';
 import { classifyBillPayment } from '../logic/billPaymentReport';
 import { typeInfo } from '../logic/billTypes';
+import { UNLOCKED, lockMessage, lockShortLabel, managerDisplayName, type BillLock } from '../logic/periods';
+import { periodsRepository } from '../storage/periodsRepository';
 
 interface Props {
   billId: string;
@@ -42,9 +44,18 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
   const [data, setData] = useState<BillWithUnits | null | undefined>(undefined);
   const [payUnit, setPayUnit] = useState<Unit | null>(null);
   const [dueEdit, setDueEdit] = useState<string | null | undefined>(undefined);
+  // ۱.۹: قفل سال بسته / دورهٔ مدیریت بسته (از SQLite)
+  const [lock, setLock] = useState<BillLock>(UNLOCKED);
 
   useEffect(() => {
     billRepository.getById(billId).then(setData);
+  }, [billId]);
+  useEffect(() => {
+    let alive = true;
+    const load = () => { void periodsRepository.billLock(billId).then((l) => { if (alive) setLock(l); }).catch(() => undefined); };
+    load();
+    const off = periodsRepository.onChange(load);
+    return () => { alive = false; off(); };
   }, [billId]);
 
   if (data === undefined) return <><AppHeader title="جزئیات قبض" onBack={onBack} /><main className="screen" /></>;
@@ -76,6 +87,14 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
   const due = parseJalaliKey(bill.dueDate);
   const paidDate = parseJalaliKey(bill.billPaidDate);
   const years = dateYearOptions(bill.year, today.year, today.year + 1);
+  const periodLocked = lock.locked;
+  const lockMsg = lockMessage(lock, bill.year);
+  /** قبض قفل (سال/دورهٔ بسته): پیام و توقف */
+  const blockedByPeriod = (): boolean => {
+    if (!periodLocked) return false;
+    showErrors(Errors.backupInvalid(lockMsg));
+    return true;
+  };
 
   /** ذخیره تغییرات خودِ قبض (پرداخت شد، مهلت، ...) */
   const saveBill = async (nextBill: Bill, message?: string) => {
@@ -115,21 +134,26 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
   };
 
   const edit = () => {
+    if (blockedByPeriod()) return;
     if (locked) { showLocked(); return; }
     onEdit(draftFromBill(data));
   };
 
   /** «پرداخت شد»: مدیر ساختمان خودِ قبض را پرداخت کرده است (تاریخ پیش‌فرض امروز، قابل ویرایش) */
-  const toggleBillPaid = (paid: boolean) =>
+  const toggleBillPaid = (paid: boolean) => {
+    if (blockedByPeriod()) return;
     void saveBill(setBillPaid(bill, paid, today), paid ? BillPaidMessages.markedPaid : BillPaidMessages.markedUnpaid);
+  };
 
   const saveDue = async () => {
     const value = dueEdit ?? null;
     setDueEdit(undefined);
+    if (blockedByPeriod()) return;
     await saveBill(setBillDueDate(bill, value), value ? 'مهلت پرداخت ذخیره شد.' : 'مهلت پرداخت حذف شد.');
   };
 
   const remove = async () => {
+    if (blockedByPeriod()) return;
     if (!deletable) { toast(BillPaidMessages.deleteBlocked); return; }
     const ok = await confirmDanger({
       title: 'حذف قبض',
@@ -149,6 +173,7 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
   };
 
   const restore = async () => {
+    if (blockedByPeriod()) return;
     try {
       await billRepository.restore(bill.id);
       setData(await billRepository.getById(bill.id));
@@ -159,6 +184,7 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
   };
 
   const purge = async () => {
+    if (blockedByPeriod()) return;
     const ok = await confirmDanger({
       title: 'حذف دائمی',
       text: 'این قبض و همه واحدها و پرداخت‌های آن برای همیشه پاک می‌شود. این عمل قابل بازگشت نیست.',
@@ -196,6 +222,16 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
           </section>
         )}
 
+        {periodLocked && (
+          <section className="lock-banner" role="status">
+            <IconLock size={20} />
+            <div>
+              <b>{lockShortLabel(lock, bill.year)}</b>
+              <p>{lockMsg}</p>
+            </div>
+          </section>
+        )}
+
         <section className={`summary-card tone-${tone}`}>
           <div className="summary-card__body">
             <h2 className="summary-card__title">{type.label}</h2>
@@ -218,12 +254,15 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
               <span className="kv__k">مهلت پرداخت:</span>
               {due ? <b className="num">{formatJalaliSlash(due)}</b> : <span className="kv__none">تعیین نشده</span>}
               {due && !billPaid && !deleted && dueInfo && <span className={'due-chip' + (tone === 'due' ? ' is-due' : '')}>{dueInfo}</span>}
-              {!deleted && (
+              {!deleted && !periodLocked && (
                 <button type="button" className="link-btn" onClick={() => setDueEdit(bill.dueDate ?? null)}>
                   {due ? 'تغییر' : 'تعیین'}
                 </button>
               )}
             </div>
+            {lock.period && (
+              <div className="kv"><span className="kv__k">مدیر ساختمان:</span><span>{managerDisplayName(lock.period)}</span></div>
+            )}
             {bill.description && (
               <div className="kv kv--desc"><span className="kv__k">توضیحات:</span><span>{bill.description}</span></div>
             )}
@@ -234,13 +273,15 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
         {!deleted && (
           <section className={'bill-paid-card' + (billPaid ? ' is-paid' : '')} aria-label="پرداخت قبض">
             <Checkbox
-              className="bill-paid-card__check"
+              className={'bill-paid-card__check' + (periodLocked ? ' is-locked' : '')}
               checked={billPaid}
               onChange={toggleBillPaid}
               label="پرداخت شد"
               ariaLabel="قبض پرداخت شد"
             />
-            {billPaid ? (
+            {billPaid && periodLocked ? (
+              <p className="bill-paid-card__hint">تاریخ پرداخت قبض: <b className="num">{paidDate ? formatJalaliSlash(paidDate) : 'نامشخص'}</b></p>
+            ) : billPaid ? (
               <>
                 <JalaliDateField
                   id="paidDate"
@@ -342,22 +383,22 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
 
             <button
               type="button"
-              className={'btn btn--soft btn--block' + (locked ? ' is-disabled' : '')}
-              aria-disabled={locked}
+              className={'btn btn--soft btn--block' + (locked || periodLocked ? ' is-disabled' : '')}
+              aria-disabled={locked || periodLocked}
               onClick={edit}
             >
-              {locked ? <IconLock size={18} /> : <IconEdit size={18} />}
+              {locked || periodLocked ? <IconLock size={18} /> : <IconEdit size={18} />}
               <span>ویرایش</span>
             </button>
 
             <button
               type="button"
-              className={'btn btn--text-danger btn--block' + (deletable ? '' : ' is-disabled')}
-              aria-disabled={!deletable}
+              className={'btn btn--text-danger btn--block' + (deletable && !periodLocked ? '' : ' is-disabled')}
+              aria-disabled={!deletable || periodLocked}
               aria-describedby={deletable ? undefined : 'delete-blocked-note'}
               onClick={() => void remove()}
             >
-              {deletable ? <IconTrash size={17} /> : <IconLock size={17} />}
+              {deletable && !periodLocked ? <IconTrash size={17} /> : <IconLock size={17} />}
               <span>حذف قبض</span>
             </button>
             {!deletable && <p id="delete-blocked-note" className="delete-blocked-note">{BillPaidMessages.deleteBlocked}</p>}
@@ -372,7 +413,7 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
           const next = addPayment(u, amount);
           void saveUnit(next, next.isSettled ? `${unitLabel(u.unitNumber, u.alias)} تسویه شد.` : 'پرداخت ثبت شد.');
         }}
-        onClear={(u) => void saveUnit(clearPayments(u), `پرداخت‌های ${unitLabel(u.unitNumber, u.alias)} حذف شد.`)}
+        onClear={(u) => { if (blockedByPeriod()) return; void saveUnit(clearPayments(u), `پرداخت‌های ${unitLabel(u.unitNumber, u.alias)} حذف شد.`); }}
       />
       <Dialog open={dueEdit !== undefined} onClose={() => setDueEdit(undefined)} labelledBy="due-title">
         <div className="dialog__icon dialog__icon--restore"><IconCalendar size={28} /></div>

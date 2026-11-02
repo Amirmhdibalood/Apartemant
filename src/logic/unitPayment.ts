@@ -180,6 +180,15 @@ export function undoBatch(bills: BillWithUnits[], batchId: string): BillChange[]
   return out;
 }
 
+/** ۱.۹: پیام لغو پرداختی که به قبض قفل (سال بسته / دورهٔ مدیریت بسته) خورده */
+export const BATCH_LOCKED_MESSAGE = 'این پرداخت به قبضی از سال بسته یا دورهٔ مدیریت بسته خورده و دیگر لغو نمی‌شود.';
+
+/** آیا لغو این دسته پرداخت، قبضِ قفلی را تغییر می‌دهد؟ */
+export function batchTouchesLocked(bills: BillWithUnits[], batchId: string, locked: ReadonlySet<string>): boolean {
+  if (locked.size === 0) return false;
+  return undoBatch(bills, batchId).some((c) => locked.has(c.bill.id));
+}
+
 export interface UnitBatch {
   batchId: string;
   /** زمان ثبت (ISO) یا null */

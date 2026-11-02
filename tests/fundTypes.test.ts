@@ -128,8 +128,8 @@ describe('پشتیبان قالب ۱۰', () => {
     await buildingRepository.setFundTypes([], b2);
     const text = serializeBackup(createBackup(await backupRepository.collect(), '1.8.0'));
     const json = JSON.parse(text);
-    expect(json.backupVersion).toBe(11);
-    expect(BACKUP_VERSION).toBe(11);
+    expect(json.backupVersion).toBe(12);
+    expect(BACKUP_VERSION).toBe(12);
     expect(json.data.buildings.map((b: { fundTypes: string[] }) => b.fundTypes)).toEqual([['water', 'gas'], []]);
 
     prefs().clear(); billRepository._resetCache(); await resetIdbForTests(); await resetSqliteForTests();

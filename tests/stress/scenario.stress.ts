@@ -48,7 +48,7 @@ function save(name: string, data: unknown) {
 
 const BUILDINGS: BuildingSpec[] = [
   { name: 'برج ۵ واحدی', units: 5, bills: 40, fund: true, periods: 3, meetings: 4 },
-  { name: 'مجتمع ۲۰ واحدی', units: 20, bills: 60, fund: true, meetings: 6 },
+  { name: 'مجتمع ۲۰ واحدی', units: 20, bills: 60, fund: true, meetings: 6, customTypes: [{ name: 'آسانسور', icon: 'elevator', color: 'indigo' }, { name: 'نگهبانی', icon: 'shield', color: 'green', hidden: true }] },
   { name: 'شهرک ۱۰۰ واحدی', units: 100, bills: 80, fund: true, periods: 2, meetings: 3 },
   { name: 'ساختمان بایگانی', units: 20, bills: 15, archived: true, periods: 1, meetings: 1 },
 ];
@@ -249,4 +249,146 @@ describe.each(SIZES)('scenario timings: %i bills × 100 units (+ 2 small buildin
     save(`timings-${nBills}x100`, m);
     console.table(m);
   }, 30 * 60_000);
+});
+
+/* ─── ۱.۹.۰: سال‌ها و مدیر ساختمان (قفل)، مهاجرت schema 7 → 8 در مقیاس، فیلترهای چندتایی ─── */
+import { exportCurrentBytes, openDetachedDatabase, replaceDatabaseWithBytes, withSqlite } from '../../src/storage/sqlite/db';
+import { periodsRepository, todayKeyNow } from '../../src/storage/periodsRepository';
+import { billLockState, closedYearSet, periodForCreatedAt } from '../../src/logic/periods';
+import { filterBillsMulti, normalizeStatuses, type StatusPick } from '../../src/logic/multiFilter';
+import { monthlyTotals } from '../../src/logic/monthlyTotals';
+import { billPaymentReport, classifyBillPayment } from '../../src/logic/billPaymentReport';
+import { todayJalali } from '../../src/logic/jalali';
+import { EXPENSE_TYPE_ORDER } from '../../src/models/constants';
+import type { BillWithUnits, ExpenseType } from '../../src/models/types';
+
+async function toSchema7(): Promise<Uint8Array> {
+  const d = await openDetachedDatabase(await exportCurrentBytes());
+  d.run('DROP INDEX IF EXISTS idx_bills_mgmt');
+  d.run('ALTER TABLE bills DROP COLUMN mgmt_period_id');
+  d.run('ALTER TABLE buildings DROP COLUMN mgmt_enabled');
+  d.run('ALTER TABLE buildings DROP COLUMN default_year');
+  d.run('ALTER TABLE management_periods DROP COLUMN manager_unit');
+  d.run('ALTER TABLE management_periods DROP COLUMN hidden');
+  d.run('DROP TABLE building_years');
+  const out = d.export();
+  d.close();
+  return out;
+}
+const periodIds = () => withSqlite((db) => new Map((db.exec('SELECT id, mgmt_period_id FROM bills')[0]?.values ?? []).map((r) => [String(r[0]), r[1] == null ? null : String(r[1])])));
+interface RawBill { id: string; buildingId: string; year: number; createdAt: string; periodId: string | null }
+const rawBills = () => withSqlite((db): RawBill[] => (db.exec('SELECT id, building_id, year, created_at, mgmt_period_id FROM bills')[0]?.values ?? [])
+  .map((r) => ({ id: String(r[0]), buildingId: String(r[1]), year: Number(r[2]), createdAt: String(r[3]), periodId: r[4] == null ? null : String(r[4]) })));
+async function expectedLocked(buildingId: string): Promise<string[]> {
+  const ctx = await periodsRepository.lockContext(buildingId);
+  return (await rawBills()).filter((b) => b.buildingId === buildingId)
+    .filter((b) => billLockState({ year: b.year, mgmtPeriodId: b.periodId }, ctx).locked)
+    .map((b) => b.id).sort();
+}
+
+describe.each(SIZES.slice(0, 1))('scenario 1.9: years & manager lock, schema-7 migration, multi-select filters (%i bills)', (nBills) => {
+  it('old install (schema 7) upgrades: switch ON, every bill → period by created_at, lock identical after restart and backup/restore', async () => {
+    await wipe();
+    const m: Record<string, number | string> = { bills: nBills };
+    const ids = await seedScenario([
+      { name: 'اصلی', units: 20, bills: 0, fund: true, periods: 0 },
+      { name: 'دوم', units: 8, bills: 40, periods: 2 },
+    ], 41);
+    // دوره‌های اصلی (نسخهٔ قبل از ۱.۹: نام آزاد، بدون واحد) — ۱۴۰۳ کامل، ۱۴۰۴ تا نیمه، از ۱۴۰۵ باز
+    await periodsRepository.setMgmtEnabled(false, ids[0]);
+    await buildingRepository.addManagementPeriod({ managerLabel: 'مدیر ۱۴۰۳', startDate: '1403-01-01', endDate: '1403-12-30', notes: null, endPreviousEarly: false }, ids[0]);
+    await buildingRepository.addManagementPeriod({ managerLabel: 'مدیر ۱۴۰۴', startDate: '1404-01-01', endDate: '1404-06-31', notes: null, endPreviousEarly: false }, ids[0]);
+    const big = makeBills(DEFAULT_BUILDING_ID, 'lk', nBills, 20, 9).map((x) => ({ ...x, bill: { ...x.bill, mgmtPeriodId: null } }));
+    for (let i = 0; i < big.length; i += 500) await billRepository.upsertMany(big.slice(i, i + 500));
+    await billRepository.flush();
+
+    // ← تصویر schema 7 و باز کردن دوباره (مهاجرت داده)
+    const v7 = await toSchema7();
+    [, m.migrateMs] = await time(() => replaceDatabaseWithBytes(v7));
+    billRepository._resetCache();
+    for (const id of ids) expect((await periodsRepository.getState(id)).mgmtEnabled).toBe(true);
+    const state = await periodsRepository.getState(ids[0]);
+    const got = await periodIds();
+    let assigned = 0;
+    const raws = await rawBills();
+    for (const id of ids) {
+      const ps = (await periodsRepository.getState(id)).periods;
+      for (const b of raws.filter((x) => x.buildingId === id)) {
+        const want = periodForCreatedAt(ps, b.createdAt)?.id ?? null;
+        expect(b.periodId, b.id).toBe(want);
+        if (want) assigned++;
+      }
+    }
+    void state;
+    expect(assigned).toBeGreaterThan(0);
+    m.assignedBills = assigned;
+
+    // قفل: سال ۱۴۰۳ بسته (seed)، دورهٔ ۱۴۰۳ و ۱۴۰۴ تمام‌شده
+    const want = await expectedLocked(ids[0]);
+    const [lockedNow, tLock] = await time(() => periodsRepository.lockedIds(ids[0]));
+    m.lockedIdsMs = tLock;
+    m.lockedBills = lockedNow.size;
+    expect([...lockedNow].sort()).toEqual(want);
+    expect(want.length).toBeGreaterThan(0);
+    expect(want.length).toBeLessThan(nBills);
+    // بستن یک سال دیگر قفل را بیشتر می‌کند و دوباره با منطق خالص یکی است
+    await periodsRepository.closeYear(1404, ids[0]);
+    const want2 = await expectedLocked(ids[0]);
+    expect(want2.length).toBeGreaterThan(want.length);
+    expect([...(await periodsRepository.lockedIds(ids[0]))].sort()).toEqual(want2);
+    expect(closedYearSet((await periodsRepository.getState(ids[0])).years).has(1404)).toBe(true);
+
+    // راه‌اندازی دوباره (ژورنال) و پشتیبان → پاک کردن → بازیابی: همان قفل و همان دوره‌ها
+    const digest = await digestAllTables();
+    await restart();
+    expect(await digestAllTables()).toEqual(digest);
+    expect([...(await periodsRepository.lockedIds(ids[0]))].sort()).toEqual(want2);
+    const text = await exportText();
+    expect(JSON.parse(text).backupVersion).toBe(12);
+    const parsed = parseBackup(text);
+    if (!parsed.ok) throw new Error(parsed.error);
+    await wipe();
+    await backupRepository.replaceAll(parsed.backup.data);
+    expect(await digestAllTables()).toEqual(digest);
+    expect([...(await periodsRepository.lockedIds(ids[0]))].sort()).toEqual(want2);
+    expect(await periodIds()).toEqual(got);
+    void todayKeyNow;
+    save(`v19-lock-${nBills}`, m);
+    console.table(m);
+  }, 30 * 60_000);
+
+  it('multi-select filters: counts and totals always equal the filtered set (random filters)', () => {
+    const all = makeBills(DEFAULT_BUILDING_ID, 'mf', nBills, 12, 13) as BillWithUnits[];
+    const r = rng(99);
+    const pick = <T,>(xs: readonly T[]): T[] => xs.filter(() => r() < 0.35);
+    const years = [...new Set(all.map((x) => x.bill.year))];
+    const today = todayJalali();
+    for (let k = 0; k < 60; k++) {
+      const f = {
+        years: pick(years), months: pick([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+        types: pick(EXPENSE_TYPE_ORDER as readonly ExpenseType[]), statuses: normalizeStatuses(pick(['paid', 'unpaid', 'deleted'] as StatusPick[])),
+      };
+      const got = filterBillsMulti(all, f);
+      const want = all.filter(({ bill: b }) => {
+        if (f.statuses.includes('deleted')) { if (!b.deletedAt) return false; } else if (b.deletedAt) return false;
+        if (f.statuses.length === 1 && f.statuses[0] === 'paid' && !b.billPaid) return false;
+        if (f.statuses.length === 1 && f.statuses[0] === 'unpaid' && b.billPaid) return false;
+        return (f.years.length === 0 || f.years.includes(b.year)) && (f.months.length === 0 || f.months.includes(b.month)) && (f.types.length === 0 || f.types.includes(b.expenseType));
+      });
+      expect(got.map((x) => x.bill.id).sort()).toEqual(want.map((x) => x.bill.id).sort());
+
+      const year = years[k % years.length];
+      const months = f.months.length ? f.months : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+      const mt = monthlyTotals(all, year, months, f.types.length ? f.types : undefined);
+      const live = all.filter(({ bill: b }) => !b.deletedAt && b.year === year && months.includes(b.month) && (f.types.length === 0 || f.types.includes(b.expenseType)));
+      expect(mt.billsTotal).toBe(live.reduce((s, x) => s + x.bill.totalAmount, 0));
+      expect(mt.bills.length).toBe(live.length);
+      expect(mt.grandTotal).toBe(mt.billsTotal);
+
+      const bp = billPaymentReport(all, f.years, f.types, today);
+      const bpWant = all.filter(({ bill: b }) => (f.years.length === 0 || f.years.includes(b.year)) && (f.types.length === 0 || f.types.includes(b.expenseType)))
+        .map(({ bill: b }) => classifyBillPayment(b, today)).filter(Boolean);
+      expect(bp.rows.length).toBe(bpWant.length);
+    }
+  });
 });

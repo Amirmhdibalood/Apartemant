@@ -3,6 +3,7 @@
  *   Preferences (legacy) → IndexedDB (1.7.9) → SQLite (1.8.0+)
  * SQLite is the canonical domain store after this module succeeds.
  */
+import { setMgmtEnabled } from './sqlite/periodsSql';
 import { Preferences } from '@capacitor/preferences';
 import type { Bill, BuildingSettings, Unit } from '../models/types';
 import { migrateBill } from '../logic/billPaid';
@@ -139,6 +140,8 @@ export async function ensureMigrated(): Promise<{ bills: Bill[]; units: Unit[]; 
     replaceAllDomain(db, DEFAULT_BUILDING_ID, source.bills, source.units);
     if (building) replaceUnitTemplates(db, DEFAULT_BUILDING_ID, building as BuildingSettings);
     markSqliteMigrationDone(db, source.bills.length, source.units.length);
+    // ۱.۹: کاربر قدیمی (دادهٔ IndexedDB دارد) ← کلید «مدیر ساختمان» روشن، مثل ارتقای SQLite
+    if (source.bills.length > 0) setMgmtEnabled(db, DEFAULT_BUILDING_ID, true);
   });
 
   // Verify flag stuck (guards against lost meta)

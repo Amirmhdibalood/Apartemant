@@ -1,46 +1,45 @@
 /**
- * شرط‌های شروع «ثبت قبض جدید»: سال مالی فعال (سال جاری در سال‌های فعال)
- * و دورهٔ مدیریت باز برای ساختمان فعال.
+ * شرط‌های شروع «ثبت قبض جدید»: دست‌کم یک سالِ باز در «دوره‌ها ← سال‌ها» برای ساختمان فعال،
+ * و اگر کلید «مدیر ساختمان» روشن است، مدیرِ فعال (دورهٔ مدیریتِ بازی که امروز را پوشش می‌دهد).
  */
-import type { ManagementPeriodRow } from '../storage/sqlite/domain';
+import type { MgmtPeriod } from './periods';
+import { activePeriod, isPeriodActive } from './periods';
 import type { AppError } from './errors';
-import { toPersianDigits } from './formatting';
 
-export function isOpenManagementPeriod(p: ManagementPeriodRow, todayKey: string): boolean {
-  if (p.endedEarlyAt) return false;
-  return p.startDate <= todayKey && todayKey <= p.endDate;
+export function isOpenManagementPeriod(p: Pick<MgmtPeriod, 'startDate' | 'endDate' | 'endedEarlyAt'>, todayKey: string): boolean {
+  return isPeriodActive(p, todayKey);
 }
 
-export function hasOpenManagementPeriod(periods: ManagementPeriodRow[], todayKey: string): boolean {
-  return periods.some((p) => isOpenManagementPeriod(p, todayKey));
+export function hasOpenManagementPeriod(periods: readonly MgmtPeriod[], todayKey: string): boolean {
+  return activePeriod(periods, todayKey) !== null;
 }
 
-/** سال جاری شمسی در فهرست سال‌های فعال تنظیمات هست؟ */
-export function isCurrentFinancialYearOpen(activeYears: number[], currentYear: number): boolean {
-  return activeYears.includes(currentYear);
+/** سالی برای ثبت قبض باز است؟ (در فهرست سال‌ها هست و بسته نشده) */
+export function isYearOpen(openYears: readonly number[], year: number): boolean {
+  return openYears.includes(year);
 }
 
 export function newBillBlockers(opts: {
-  activeYears: number[];
-  currentYear: number;
-  periods: ManagementPeriodRow[];
+  /** سال‌های باز ساختمان فعال */
+  openYears: readonly number[];
+  mgmtEnabled: boolean;
+  periods: readonly MgmtPeriod[];
   todayKey: string;
 }): AppError[] {
   const out: AppError[] = [];
-  if (!isCurrentFinancialYearOpen(opts.activeYears, opts.currentYear)) {
+  if (opts.openYears.length === 0) {
     out.push({
       code: 'BACKUP_INVALID',
       title: 'ثبت قبض ممکن نیست',
-      message:
-        `سال مالی جاری (${toPersianDigits(opts.currentYear)}) در «تنظیمات ← سال‌ها» فعال نیست. سال را روشن کنید یا اگر دوره مالی تمام شده، سال مناسب را فعال کنید.`,
+      message: 'برای این ساختمان هیچ سال بازی نیست. از «دوره‌ها ← سال‌ها» با «افزودن سال» سال جاری را اضافه کنید.',
     });
   }
-  if (!hasOpenManagementPeriod(opts.periods, opts.todayKey)) {
+  if (opts.mgmtEnabled && !hasOpenManagementPeriod(opts.periods, opts.todayKey)) {
     out.push({
       code: 'BACKUP_INVALID',
       title: 'ثبت قبض ممکن نیست',
       message:
-        'برای این ساختمان دورهٔ مدیریت باز وجود ندارد (تمام شده، زودتر بسته شده، یا هنوز ثبت نشده). از «تنظیمات ← دورهٔ مدیریت» دورهٔ جاری را ثبت کنید.',
+        'برای این ساختمان مدیر فعالی ثبت نشده است (دورهٔ قبلی بسته شده یا هنوز مدیری ثبت نشده). از «دوره‌ها ← مدیر ساختمان» مدیر جدید را ثبت کنید یا کلید «مدیر ساختمان» را خاموش کنید.',
     });
   }
   return out;

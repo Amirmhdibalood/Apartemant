@@ -104,7 +104,7 @@ describe('بازیابی: اعتبارسنجی و رفت‌وبرگشت', () => 
     const e = errorOf(text((o) => { o.backupVersion = BACKUP_VERSION + 1; }));
     expect(e).toContain('نسخه جدیدتری');
     expect(e).toContain(String(BACKUP_VERSION + 1).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[+d]));
-    expect(BACKUP_VERSION).toBe(11);
+    expect(BACKUP_VERSION).toBe(12);
   });
 
   it('نسخه نامعتبر قالب', () => {
@@ -299,7 +299,8 @@ describe('مخزن پشتیبان (گرفتن و بازیابی کامل داد�
     const after = await backupRepository.collect();
     // SQLite materializes payments[]; legacy settled units without payments get a synthetic row on import.
     // از قالب ۹ هر قبض ساختمانش را هم دارد (قالب قدیمی = ساختمان پیش‌فرض)
-    expect(after.bills.map(({ buildingId, ...b }) => { expect(buildingId).toBe('building-default'); return b; })).toEqual(d.bills);
+    // ۱.۹: هر قبض دورهٔ مدیریتش را هم دارد (این‌جا کلید مدیر خاموش است → null)
+    expect(after.bills.map(({ buildingId, mgmtPeriodId, ...b }) => { expect(buildingId).toBe('building-default'); expect(mgmtPeriodId).toBeNull(); return b; })).toEqual(d.bills);
     expect(after.settings).toEqual(d.settings);
     expect(after.building).toEqual(d.building);
     expect(after.units).toHaveLength(d.units.length);
@@ -359,7 +360,7 @@ describe('مخزن پشتیبان (گرفتن و بازیابی کامل داد�
     expect(safety?.data.bills).toHaveLength(2);
     await backupRepository.replaceAll(safety!.data);
     const back = await backupRepository.collect();
-    expect(back.bills.map(({ buildingId: _b, ...b }) => b)).toEqual(d.bills);
+    expect(back.bills.map(({ buildingId: _b, mgmtPeriodId: _m, ...b }) => b)).toEqual(d.bills);
     expect(back.units.map((u) => u.id)).toEqual(d.units.map((u) => u.id));
     expect(back.settings).toEqual(d.settings);
     expect(back.building).toEqual(d.building);

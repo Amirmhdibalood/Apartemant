@@ -15,8 +15,6 @@ vi.mock('../src/components/AppHeader', () => ({ AppHeader: () => null }));
 vi.mock('../src/components/BuildingSection', () => ({ BuildingSection: () => createElement('div', { className: 'building-card' }, 'محتوای ساختمان') }));
 vi.mock('../src/components/MultiBuildingBar', () => ({ MultiBuildingBar: () => null }));
 vi.mock('../src/components/FundSection', () => ({ FundSection: () => createElement('div', { className: 'fund-card' }, 'صندوق') }));
-vi.mock('../src/components/ManagementSection', () => ({ ManagementSection: () => createElement('div', { className: 'mgmt-card' }, 'مدیریت') }));
-vi.mock('../src/components/MeetingsSection', () => ({ MeetingsSection: () => createElement('div', { className: 'meet-card' }, 'جلسه') }));
 vi.mock('../src/components/ShareAppSection', () => ({ ShareAppSection: () => createElement('div', { className: 'share-app-card' }, 'اشتراک') }));
 vi.mock('../src/storage/buildingRepository', () => ({ buildingRepository: { isMultiEnabled: async () => false, setMultiEnabled: async () => undefined, onActiveChange: () => () => undefined } }));
 vi.mock('../src/components/BackupSection', () => ({ BackupSection: () => createElement('div', { className: 'backup-card' }, 'محتوای پشتیبان') }));
@@ -27,8 +25,10 @@ const h2s = [...html.matchAll(/class="acc__label"[^>]*>([^<]*)/g)].map((m) => m[
 const h3s = [...html.matchAll(/<h3[^>]*>(.*?)<\/h3>/g)].map((m) => m[1]);
 
 describe('ترتیب و یکدستی صفحهٔ تنظیمات', () => {
-  it('ترتیب بخش‌ها: سال‌ها ← ساختمان‌ها ← صندوق ← دوره مدیریت ← جلسه ← اشتراک ← انواع قبض ← گزارش‌ها ← ظاهر ← هشدارها ← پشتیبان', () => {
-    expect(h2s).toEqual(['سال‌ها', 'ساختمان‌ها', 'صندوق ساختمان', 'دورهٔ مدیریت', 'جلسه', 'اشتراک‌گذاری نرم‌افزار', 'انواع قبض و روش‌های محاسبه', 'نمایش گزارش‌ها', 'تنظیمات ظاهری', 'هشدارها', 'پشتیبان‌گیری و بازیابی']);
+  it('ترتیب بخش‌ها: ساختمان‌ها ← صندوق ← اشتراک ← انواع قبض ← گزارش‌ها ← ظاهر ← هشدارها ← پشتیبان (۱.۹: سال‌ها و مدیر ساختمان در «دوره‌ها»، جلسه در صفحهٔ اصلی)', () => {
+    expect(h2s).toEqual(['ساختمان‌ها', 'صندوق ساختمان', 'اشتراک‌گذاری نرم‌افزار', 'انواع قبض و روش‌های محاسبه', 'نمایش گزارش‌ها', 'تنظیمات ظاهری', 'هشدارها', 'پشتیبان‌گیری و بازیابی']);
+    expect(html).not.toContain('دورهٔ مدیریت');
+    expect(html).not.toContain(['دوره', 'مالی'].join(' '));
   });
   it('«تنظیمات ظاهری» پنج زیرگروه دارد: تم (اول)، نحوه نمایش متراژ، نماد واحد، نماد متراژ، نحوه نمایش اعلان‌ها', () => {
     const a = html.indexOf('data-acc="appearance"');
@@ -53,14 +53,14 @@ describe('ترتیب و یکدستی صفحهٔ تنظیمات', () => {
   });
 
   it('هر بخش آکاردئون و پیش‌فرض بسته‌اند؛ دکمهٔ عنوان داخل h2 با aria-expanded/aria-controls و ناحیهٔ region', () => {
-    expect(html.match(/class="card settings-card acc[ "]/g)).toHaveLength(11);
-    expect(html.match(/class="acc__head" aria-expanded="false"/g)).toHaveLength(11);
+    expect(html.match(/class="card settings-card acc[ "]/g)).toHaveLength(8);
+    expect(html.match(/class="acc__head" aria-expanded="false"/g)).toHaveLength(8);
     expect(html).not.toContain('aria-expanded="true"');
     expect(html).not.toContain('acc is-open');
     for (const m of html.matchAll(/<h2 class="acc__title[^"]*" id="([^"]+)"><button[^>]*aria-controls="([^"]+)"/g)) {
       expect(html).toContain(`id="${m[2]}" class="acc__body" role="region" aria-labelledby="${m[1]}"`);
     }
-    expect(html.match(/acc__chevron/g)).toHaveLength(11);
+    expect(html.match(/acc__chevron/g)).toHaveLength(8);
   });
   it('نسخه بیرون از آکاردئون و همیشه دیده می‌شود؛ نام و ایمیل سازنده فعلاً پنهان است (TODO: نام مستعار و ایمیل کاری بعداً جایگزین شود)', () => {
     const tail = html.slice(html.lastIndexOf('</section>'));
@@ -71,15 +71,15 @@ describe('ترتیب و یکدستی صفحهٔ تنظیمات', () => {
   it('حالت باز/بسته فقط در حافظهٔ نشست: ثبت، خواندن و بازنشانی', async () => {
     const { isAccordionOpen, setAccordionOpen, resetAccordionState } = await import('../src/logic/accordionState');
     resetAccordionState();
-    expect(isAccordionOpen('years')).toBe(false);
-    setAccordionOpen('years', true);
-    expect(isAccordionOpen('years')).toBe(true);
+    expect(isAccordionOpen('fund')).toBe(false);
+    setAccordionOpen('fund', true);
+    expect(isAccordionOpen('fund')).toBe(true);
     // رندر دوباره (مثل برگشتن از تب دیگر) بخش باز را باز نشان می‌دهد
     const again = renderToStaticMarkup(createElement(SettingsScreen, { onBack: () => undefined, canGoBack: true }));
     expect(again.match(/class="acc__head" aria-expanded="true"/g)).toHaveLength(1);
     expect(again).toContain('acc is-open');
-    setAccordionOpen('years', false);
-    expect(isAccordionOpen('years')).toBe(false);
+    setAccordionOpen('fund', false);
+    expect(isAccordionOpen('fund')).toBe(false);
     resetAccordionState();
   });
   it('هیچ ذخیره‌سازی ماندگاری برای آکاردئون نیست', () => {

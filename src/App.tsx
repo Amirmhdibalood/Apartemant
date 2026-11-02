@@ -6,7 +6,12 @@ import type { Route } from './navigation';
 import { TAB_ROUTES } from './navigation';
 import { BottomNav, type TabId } from './components/BottomNav';
 import { useSettings } from './context/SettingsContext';
-import { currentJalali, pickDefaultYear } from './logic/date';
+import { currentJalali } from './logic/date';
+import { defaultBillYear, openYears } from './logic/periods';
+import { periodsRepository } from './storage/periodsRepository';
+import { PeriodsScreen } from './screens/PeriodsScreen';
+import { MeetingsScreen } from './screens/MeetingsScreen';
+import { BackupScreen } from './screens/BackupScreen';
 import { emptyDraft } from './logic/billFactory';
 import { buildingRepository } from './storage/buildingRepository';
 import { HomeScreen } from './screens/HomeScreen';
@@ -33,7 +38,7 @@ import { formatJalaliKey, todayJalali } from './logic/jalali';
 import { newBillBlockers } from './logic/billGate';
 
 export default function App() {
-  const { settings, loaded } = useSettings();
+  const { loaded } = useSettings();
   const { showErrors } = useFeedback();
   const [stack, setStack] = useState<Route[]>([{ name: 'home' }]);
   const [draft, setDraft] = useState<BillDraft | null>(null);
@@ -54,6 +59,7 @@ export default function App() {
     if (!Capacitor.isNativePlatform()) return;
     const sub = CapApp.addListener('backButton', () => {
       if (document.querySelector('.intro')) return;
+      if (document.querySelector('.popover')) { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return; }
       if (document.querySelector('.pv')) { window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })); return; }
       if (notifRef.current.open) { notifRef.current.setOpen(false); return; }
       if (document.querySelector('.dialog-backdrop')) {
@@ -92,13 +98,12 @@ export default function App() {
 
   const startNewBill = async () => {
     const now = currentJalali();
-    const today = todayJalali();
-    const todayKey = formatJalaliKey(today);
-    const periods = await buildingRepository.listManagementPeriods().catch(() => []);
+    const todayKey = formatJalaliKey(todayJalali());
+    const state = await periodsRepository.getState().catch(() => null);
     const blockers = newBillBlockers({
-      activeYears: settings.activeYears,
-      currentYear: now.year,
-      periods,
+      openYears: state ? openYears(state.years) : [],
+      mgmtEnabled: state?.mgmtEnabled ?? false,
+      periods: state?.periods ?? [],
       todayKey,
     });
     if (blockers.length) {
@@ -107,7 +112,8 @@ export default function App() {
     }
     // واحدها (تعداد، اسم مستعار و نفرات پیش‌فرض) از تنظیمات «ساختمان» وارد می‌شوند
     const building = await buildingRepository.get().catch(() => null);
-    setDraft(emptyDraft(pickDefaultYear(settings.activeYears, now.year), now.month, building));
+    const year = (state && defaultBillYear(state.years, state.defaultYear, now.year)) ?? now.year;
+    setDraft(emptyDraft(year, now.month, building));
     push({ name: 'newBill' });
   };
 
@@ -137,7 +143,7 @@ export default function App() {
       screen = (
         <HomeScreen
           onNewBill={startNewBill}
-          onOpen={(t) => onTab(t)}
+          onOpen={(t) => push({ name: t })}
           alerts={notif.visible}
           mode={notif.mode}
           onShowAll={() => notif.setOpen(true)}
@@ -166,7 +172,7 @@ export default function App() {
           onSaved={(saved) => {
             setDraft(null);
             // پس از ذخیره، به سوابق همان سال/ماه می‌رویم
-            resetTo({ name: 'records', year: saved.bill.year, month: saved.bill.month });
+            resetTo({ name: 'records', years: [saved.bill.year], months: [saved.bill.month] });
             setJustSaved(saved);
           }}
         />
@@ -175,11 +181,11 @@ export default function App() {
     case 'records':
       screen = (
         <RecordsScreen
-          year={route.year}
-          month={route.month}
-          type={route.type}
-          status={route.status}
-          onFilterChange={(f) => replaceTop({ name: 'records', year: f.year, month: f.month, type: f.type, status: f.status })}
+          years={route.years}
+          months={route.months}
+          types={route.types}
+          statuses={route.statuses}
+          onFilterChange={(f) => replaceTop({ name: 'records', years: f.years, months: f.months, types: f.types, statuses: f.statuses })}
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onBack={stack.length > 1 && stack[stack.length - 2].name === 'report' ? back : undefined}
           onSupport={openSupport}
@@ -195,7 +201,7 @@ export default function App() {
           onChange={(tab, year, type) => replaceTop({ name: 'report', tab, year, type })}
           onOpenReport={(id) => push({ name: 'report', tab: id })}
           onBack={back}
-          onOpenMonth={(year, month) => push({ name: 'records', year, month })}
+          onOpenMonth={(year, months) => push({ name: 'records', years: [year], months: Array.isArray(months) ? months : [months] })}
           onOpenBill={(billId) => push({ name: 'details', billId })}
           onOpenUnit={(unitNumber) => push({ name: 'unitHistory', unitNumber })}
           onPayUnit={(unitNumber) => push({ name: 'unitPay', unitNumber })}
@@ -248,6 +254,15 @@ export default function App() {
       break;
     case 'support':
       screen = <SupportScreen key={route.tab ?? 'faq'} initialTab={route.tab} onBack={back} onOpenTopic={openTopic} />;
+      break;
+    case 'periods':
+      screen = <PeriodsScreen tab={route.tab} onTab={(tab) => replaceTop({ name: 'periods', tab })} onBack={back} />;
+      break;
+    case 'meetings':
+      screen = <MeetingsScreen onBack={back} />;
+      break;
+    case 'backup':
+      screen = <BackupScreen onBack={back} />;
       break;
     case 'settings':
       screen = <SettingsScreen onBack={back} canGoBack={stack.length > 1} onSupport={openSupport} onOpenTopic={openTopic} focus={route.focus} />;

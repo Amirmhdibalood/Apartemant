@@ -2,6 +2,7 @@
  * مدل «سند گزارش» (از ۱.۷.۰) — توصیف خالص و قابل تست از محتوای هر گزارش برای خروجی تصویر (PNG/JPEG) و PDF.
  * رسم روی canvas در services/reportImage.tsx انجام می‌شود. همهٔ متن‌ها فارسی و با ارقام فارسی‌اند.
  */
+import { multiSummary } from './multiFilter';
 import type { BillWithUnits, ExpenseType } from '../models/types';
 import { CURRENCY, MONTHS, monthName } from '../models/constants';
 import { faAmount, APP_NAME_FA } from './billImage';
@@ -54,6 +55,9 @@ export interface ReportDoc {
 }
 
 const period = (y: number, m: number) => `${monthName(m)} ${fa(y)}`;
+/** «مهر ۱۴۰۵» یا «۲ ماه (مهر، آبان) ۱۴۰۵» */
+const monthsPeriod = (t: MonthlyTotals) => (t.months.length > 1 ? `${multiSummary(t.months.map(monthName), 'ماه')} ${fa(t.year)}` : period(t.year, t.month));
+const monthsFile = (t: MonthlyTotals) => (t.months.length > 1 ? t.months.map((m) => String(m).padStart(2, '0')).join('-') : String(t.month).padStart(2, '0'));
 const money = (n: number) => `${faAmount(n)} ${CURRENCY}`;
 
 export function yearlyDoc(r: YearlyReport): ReportDoc {
@@ -93,9 +97,13 @@ export function debtorsDoc(r: DebtorsReport): ReportDoc {
 const toneOf = (t: BillPaymentRow['timing']): DocTone => (t === 'late' || t === 'overdue' ? 'danger' : isPaidTiming(t) ? 'ok' : 'info');
 const dateText = (d: { year: number; month: number; day: number } | null) => (d ? `${fa(d.year)}/${fa(String(d.month).padStart(2, '0'))}/${fa(String(d.day).padStart(2, '0'))}` : '—');
 
-export function billPaymentsDoc(rows: BillPaymentRow[], s: BillPaymentSummary, year: number, type: ExpenseType | null): ReportDoc {
+export function billPaymentsDoc(rows: BillPaymentRow[], s: BillPaymentSummary, year: number | readonly number[], type: ExpenseType | null | readonly ExpenseType[]): ReportDoc {
+  const years = typeof year === 'number' ? [year] : [...year];
+  const types = type === null ? [] : typeof type === 'string' ? [type] : [...type];
+  const yearText = years.length === 0 ? 'همهٔ سال‌ها' : years.length === 1 ? `سال ${fa(years[0])}` : `سال‌های ${years.map((y) => fa(y)).join('، ')}`;
+  const typeText = types.length ? ` — ${types.map((t) => typeInfo(t).label).join('، ')}` : '';
   const blocks: DocBlock[] = [
-    { k: 'summary', label: `پرداخت قبض‌ها — سال ${fa(year)}${type ? ` — ${typeInfo(type).label}` : ''}`, value: fa(s.total), unit: 'قبض',
+    { k: 'summary', label: `پرداخت قبض‌ها — ${yearText}${typeText}`, value: fa(s.total), unit: 'قبض',
       meta: [`پرداخت‌شده ${fa(s.paid)}`, `پرداخت‌نشده ${fa(s.unpaid)}`],
       lines: [{ label: 'به‌موقع', value: fa(s.onTime) }, { label: 'با تأخیر', value: fa(s.late) }, { label: 'پرداخت‌نشده', value: fa(s.unpaid) }] },
     { k: 'rows', rows: rows.map((r) => ({
@@ -105,7 +113,7 @@ export function billPaymentsDoc(rows: BillPaymentRow[], s: BillPaymentSummary, y
     })) },
   ];
   if (rows.length === 0) blocks.push({ k: 'note', text: 'قبضی ثبت نشده است.' });
-  return { id: 'billPayments', title: 'پرداخت قبض‌ها', subtitle: `سال ${fa(year)}`, fileBase: `payments-${year}`, blocks };
+  return { id: 'billPayments', title: 'پرداخت قبض‌ها', subtitle: yearText, fileBase: `payments-${years.join('-') || 'all'}`, blocks };
 }
 
 const unitTag = (u: MonthlyUnit): DocRow['tag'] =>
@@ -116,7 +124,7 @@ const unitTag = (u: MonthlyUnit): DocRow['tag'] =>
 
 function monthlySummary(t: MonthlyTotals): DocBlock {
   return {
-    k: 'summary', label: `جمع قبض‌های ${period(t.year, t.month)}`, value: faAmount(t.grandTotal), unit: CURRENCY,
+    k: 'summary', label: t.months.length > 1 ? `جمع ${fa(t.months.length)} ماه (${t.months.map(monthName).join('، ')}) ${fa(t.year)}` : `جمع قبض‌های ${period(t.year, t.month)}`, value: faAmount(t.grandTotal), unit: CURRENCY,
     meta: [`${fa(t.bills.length)} قبض`, `${fa(t.occupiedCount)} واحد`, ...(t.vacantCount ? [`${fa(t.vacantCount)} خالی`] : [])],
     lines: [{ label: 'پرداخت‌شده', value: faAmount(t.paidTotal) }, { label: 'قابل پرداخت', value: faAmount(t.remainingTotal) }],
   };
@@ -136,7 +144,7 @@ export function monthlyDoc(t: MonthlyTotals): ReportDoc {
       footer: { label: 'جمع کل قابل پرداخت', value: money(t.remainingTotal), note: t.paidTotal > 0 ? `از مجموع ${faAmount(t.grandTotal)} • پرداخت‌شده ${faAmount(t.paidTotal)}` : undefined },
     });
   }
-  return { id: 'monthly', title: 'جمع قبض‌های ماه', subtitle: period(t.year, t.month), fileBase: `monthly-${t.year}-${String(t.month).padStart(2, '0')}`, blocks };
+  return { id: 'monthly', title: 'جمع قبض‌های ماه', subtitle: monthsPeriod(t), fileBase: `monthly-${t.year}-${monthsFile(t)}`, blocks };
 }
 
 export function monthlyDetailDoc(t: MonthlyTotals): ReportDoc {
@@ -152,7 +160,7 @@ export function monthlyDetailDoc(t: MonthlyTotals): ReportDoc {
     });
   }
   if (t.units.length) blocks.push({ k: 'rows', rows: [], footer: { label: 'جمع کل قابل پرداخت', value: money(t.remainingTotal), note: t.paidTotal > 0 ? `از مجموع ${faAmount(t.grandTotal)} • پرداخت‌شده ${faAmount(t.paidTotal)}` : undefined } });
-  return { id: 'monthlyDetail', title: 'جمع قبض‌های ماه با جزئیات', subtitle: period(t.year, t.month), fileBase: `monthly-detail-${t.year}-${String(t.month).padStart(2, '0')}`, blocks };
+  return { id: 'monthlyDetail', title: 'جمع قبض‌های ماه با جزئیات', subtitle: monthsPeriod(t), fileBase: `monthly-detail-${t.year}-${monthsFile(t)}`, blocks };
 }
 
 export function chartDoc(kind: ChartKind, year: number, type: ExpenseType | null, series: ChartSeries, shares: { shares: TypeShare[]; total: number }): ReportDoc {
