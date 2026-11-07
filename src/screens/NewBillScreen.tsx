@@ -97,10 +97,11 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
     }
   };
 
-  // ۱.۹: فقط سال‌های باز ساختمان (سال بسته در فرم قبض نمی‌آید)؛ سال قبض در حال ویرایش همیشه هست
+  // ۱.۹.۱: همهٔ سال‌های ساختمان (سال پنهان هم قابل انتخاب است، با یادآوری کوچک)؛ سال قبض فعلی همیشه هست
   const today = todayJalali();
-  const { openYears: open } = usePeriods();
-  const years = Array.from(new Set([...(open.length ? open : [draft.year]), ...(draft.editingBillId !== null ? [draft.year] : [])])).sort((a, b) => a - b);
+  const { billYears, hiddenYears } = usePeriods();
+  const years = Array.from(new Set([...billYears, draft.year])).sort((a, b) => a - b);
+  const yearHidden = hiddenYears.includes(draft.year);
 
   const submit = () => {
     const res = validateDraft(draft);
@@ -122,6 +123,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
           options={years.map((y) => ({ value: y, label: String(y) }))}
           onChange={(year) => set({ year })}
         />
+        {yearHidden && <p className="field__hint year-hidden-hint">سال {toPersianDigits(draft.year)} پنهان است؛ قبض ثبت می‌شود ولی تا سال را از «دوره‌ها ← سال‌ها» نمایان نکنید، در فیلترهای «سوابق» و «گزارش‌ها» نمی‌آید.</p>}
         <SelectField
           id="month"
           label="ماه"

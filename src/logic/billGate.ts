@@ -1,6 +1,6 @@
 /**
- * شرط‌های شروع «ثبت قبض جدید»: دست‌کم یک سالِ باز در «دوره‌ها ← سال‌ها» برای ساختمان فعال،
- * و اگر کلید «مدیر ساختمان» روشن است، مدیرِ فعال (دورهٔ مدیریتِ بازی که امروز را پوشش می‌دهد).
+ * شرط شروع «ثبت قبض جدید»: اگر کلید «مدیر ساختمان» روشن است، مدیرِ فعال (دورهٔ مدیریتِ بازی که امروز را پوشش می‌دهد).
+ * (از ۱.۹.۱ سال جاری همیشه خودکار وجود دارد؛ شرط سال لازم نیست.)
  */
 import type { MgmtPeriod } from './periods';
 import { activePeriod, isPeriodActive } from './periods';
@@ -14,26 +14,12 @@ export function hasOpenManagementPeriod(periods: readonly MgmtPeriod[], todayKey
   return activePeriod(periods, todayKey) !== null;
 }
 
-/** سالی برای ثبت قبض باز است؟ (در فهرست سال‌ها هست و بسته نشده) */
-export function isYearOpen(openYears: readonly number[], year: number): boolean {
-  return openYears.includes(year);
-}
-
 export function newBillBlockers(opts: {
-  /** سال‌های باز ساختمان فعال */
-  openYears: readonly number[];
   mgmtEnabled: boolean;
   periods: readonly MgmtPeriod[];
   todayKey: string;
 }): AppError[] {
   const out: AppError[] = [];
-  if (opts.openYears.length === 0) {
-    out.push({
-      code: 'BACKUP_INVALID',
-      title: 'ثبت قبض ممکن نیست',
-      message: 'برای این ساختمان هیچ سال بازی نیست. از «دوره‌ها ← سال‌ها» با «افزودن سال» سال جاری را اضافه کنید.',
-    });
-  }
   if (opts.mgmtEnabled && !hasOpenManagementPeriod(opts.periods, opts.todayKey)) {
     out.push({
       code: 'BACKUP_INVALID',

@@ -1,10 +1,10 @@
 /**
  * سال‌ها و دوره‌های مدیریت هر ساختمان (از ۱.۹ / شِمای ۸).
  *
- * - هر سال از ۱ فروردین تا آخرین روز اسفند (۲۹ یا ۳۰) است؛ «بستن سال» برگشت ندارد.
+ * - هر سال از ۱ فروردین تا آخرین روز اسفند (۲۹ یا ۳۰) است و خودکار ساخته می‌شود؛ فقط پنهان/نمایش دارد.
  * - دورهٔ مدیریت: مدیر از واحدها (با نام نمایشی اختیاری)، شروع و پایان (پایان می‌تواند خالی = بدون پایان باشد).
  *   دورهٔ بسته (زودتر بسته شده یا تاریخ پایانش گذشته) دوباره باز نمی‌شود.
- * - قبض قفل است اگر سالش بسته باشد یا دورهٔ مدیریتی که به آن وصل است بسته باشد.
+ * - قبض فقط وقتی قفل است که دورهٔ مدیریتی که به آن وصل است بسته باشد (سال قفل نمی‌کند).
  *   قفل یعنی ویرایش، حذف، تیک «پرداخت شد» و تغییر مهلت ممکن نیست؛ پرداخت واحدها همچنان ثبت می‌شود.
  */
 import { jalaliIsoDate } from './date';
@@ -13,11 +13,16 @@ import { addJalaliDays, formatJalaliKey, jalaliMonthLength, parseJalaliKey } fro
 
 /* ─── سال‌ها ─── */
 
+/**
+ * سال‌های هر ساختمان (از ۱.۹.۱): خودکار. سال جاری همیشه هست (اول فروردین خودش ساخته می‌شود)،
+ * فقط «سال بعد» را می‌شود زودتر اضافه کرد و تنها کار روی هر سال «پنهان / نمایش» است.
+ * سال بسته نمی‌شود و قبض را قفل نمی‌کند (قفل فقط از دورهٔ مدیریتِ بسته می‌آید).
+ */
 export interface BuildingYear {
   year: number;
-  /** ISO زمان بستن سال؛ null = باز */
+  /** فقط برای سازگاری با پشتیبان ۱.۹.۰؛ از ۱.۹.۱ همیشه null است (بستن سال حذف شده) */
   closedAt: string | null;
-  /** پنهان از فهرست‌ها و فیلترها (فقط سال بسته) */
+  /** پنهان از فیلترهای سوابق و گزارش‌ها (فقط سال‌های گذشته) */
   hidden: boolean;
 }
 
@@ -41,42 +46,53 @@ export function yearRangeLines(year: number): { start: string; end: string } {
   return { start: `تاریخ شروع: ${keyToSlash(yearStartKey(year))}`, end: `تاریخ پایان: ${keyToSlash(yearEndKey(year))}` };
 }
 
-/** پایان سال گذشته و هنوز بسته نشده → پیشنهاد «بستن سال» */
-export function yearShouldBeClosed(y: BuildingYear, todayKey: string): boolean {
-  return !y.closedAt && yearEndKey(y.year) < todayKey;
+/** سال جاری و سال بعد (اگر زودتر اضافه شده) پنهان نمی‌شوند */
+export function canHideYear(year: number, currentYear: number): boolean {
+  return year < currentYear;
 }
 
-export function closedYearSet(years: readonly BuildingYear[]): Set<number> {
-  return new Set(years.filter((y) => y.closedAt).map((y) => y.year));
+/** سالی که دکمهٔ «افزودن سال» اضافه می‌کند (فقط سال بعد)؛ null = سال بعد از قبل در فهرست است */
+export function nextAddableYear(years: readonly Pick<BuildingYear, 'year'>[], currentYear: number): number | null {
+  const next = currentYear + 1;
+  return years.some((y) => y.year === next) ? null : next;
 }
 
-export function openYears(years: readonly BuildingYear[]): number[] {
-  return years.filter((y) => !y.closedAt).map((y) => y.year).sort((a, b) => a - b);
+/** سال‌هایی که در فیلترهای سوابق و گزارش‌ها دیده می‌شوند (پنهان‌ها نه) — صعودی */
+export function visibleYears(years: readonly BuildingYear[]): number[] {
+  return years.filter((y) => !y.hidden).map((y) => y.year).sort((a, b) => a - b);
 }
 
-/** سال‌هایی که در فیلترها/گزارش‌ها دیده می‌شوند (پنهان‌ها فقط وقتی «نمایش سال‌های پنهان» روشن است) */
-export function visibleYears(years: readonly BuildingYear[], showHidden: boolean): number[] {
-  return years.filter((y) => showHidden || !y.hidden).map((y) => y.year).sort((a, b) => a - b);
+/** سال‌های قابل انتخاب در فرم قبض (همهٔ سال‌های فهرست، پنهان‌ها هم) — صعودی */
+export function selectableBillYears(years: readonly BuildingYear[]): number[] {
+  return years.map((y) => y.year).sort((a, b) => a - b);
 }
 
-/** سال پیش‌فرض فرم قبض: سال پیش‌فرض (اگر باز)، وگرنه امسال (اگر باز)، وگرنه نزدیک‌ترین سال باز */
-export function defaultBillYear(years: readonly BuildingYear[], defaultYear: number | null, currentYear: number): number | null {
-  const open = openYears(years);
-  if (open.length === 0) return null;
-  if (defaultYear != null && open.includes(defaultYear)) return defaultYear;
-  if (open.includes(currentYear)) return currentYear;
-  return [...open].sort((a, b) => Math.abs(a - currentYear) - Math.abs(b - currentYear) || b - a)[0];
+/** سال قبض تازه: سال جاری (سال تاریخ امروز) */
+export function defaultBillYear(currentYear: number): number {
+  return currentYear;
 }
 
 /**
- * فهرست سال‌های ساختمان = ردیف‌های ذخیره‌شده ∪ سال‌های دارای قبض (باز، نمایان).
- * مرتب نزولی (جدیدترین بالا).
+ * فهرست سال‌های ساختمان = سال‌های دارای قبض ∪ سال‌های ذخیره‌شده ∪ سال جاری،
+ * از اولین سالِ دارای قبض (یا سال جاری) به بعد؛ سال ذخیره‌شدهٔ خالی دورتر از «سال بعد» هم نمی‌آید.
+ * سال جاری و بعد از آن هیچ‌وقت پنهان نیستند. مرتب نزولی (جدیدترین بالا).
  */
-export function mergeBuildingYears(rows: readonly BuildingYear[], billYears: Iterable<number>): BuildingYear[] {
+export function mergeBuildingYears(rows: readonly BuildingYear[], billYears: Iterable<number>, currentYear: number): BuildingYear[] {
+  const withBills = new Set<number>(billYears);
+  const first = Math.min(currentYear, ...withBills);
   const map = new Map<number, BuildingYear>();
-  for (const r of rows) map.set(r.year, { ...r, hidden: !!r.closedAt && r.hidden });
-  for (const y of billYears) if (!map.has(y)) map.set(y, { year: y, closedAt: null, hidden: false });
+  for (const r of rows) {
+    if (!withBills.has(r.year) && (r.year < first || r.year > currentYear + 1)) continue;
+    map.set(r.year, { year: r.year, closedAt: null, hidden: r.hidden && canHideYear(r.year, currentYear) });
+  }
+  for (const y of withBills) if (!map.has(y)) map.set(y, { year: y, closedAt: null, hidden: false });
+  if (!map.has(currentYear)) map.set(currentYear, { year: currentYear, closedAt: null, hidden: false });
   return [...map.values()].sort((a, b) => b.year - a.year);
+}
+
+/** ردیف‌های ذخیره‌شده‌ای که باید پاک شوند: سال خالیِ قبل از سال جاری یا بعد از «سال بعد» */
+export function staleYearRows(rows: readonly Pick<BuildingYear, 'year'>[], anyBillYears: ReadonlySet<number>, currentYear: number): number[] {
+  return rows.filter((r) => !anyBillYears.has(r.year) && (r.year < currentYear || r.year > currentYear + 1)).map((r) => r.year);
 }
 
 /* ─── دوره‌های مدیریت ─── */
@@ -223,7 +239,7 @@ export function validatePeriodEdit(
 
 /* ─── قفل قبض ─── */
 
-export type LockReason = 'year' | 'manager';
+export type LockReason = 'manager';
 
 export interface BillLock {
   locked: boolean;
@@ -233,32 +249,29 @@ export interface BillLock {
 }
 
 export interface LockContext {
-  closedYears: ReadonlySet<number>;
   periods: readonly MgmtPeriod[];
   todayKey: string;
 }
 
+/** قفل قبض فقط از دورهٔ مدیریتِ بسته می‌آید */
 export function billLockState(bill: { year: number; mgmtPeriodId?: string | null }, ctx: LockContext): BillLock {
   const period = bill.mgmtPeriodId ? ctx.periods.find((p) => p.id === bill.mgmtPeriodId) ?? null : null;
-  if (ctx.closedYears.has(bill.year)) return { locked: true, reason: 'year', period };
   if (period && isPeriodClosed(period, ctx.todayKey)) return { locked: true, reason: 'manager', period };
   return { locked: false, reason: null, period };
 }
 
 export const UNLOCKED: BillLock = { locked: false, reason: null, period: null };
 
-export function lockMessage(lock: BillLock, year: number): string {
-  if (lock.reason === 'year') {
-    return `سال ${toPersianDigits(year)} بسته شده است؛ این قبض دیگر قابل ویرایش، حذف یا تغییر وضعیت نیست. ثبت پرداخت واحدها همچنان ممکن است.`;
-  }
+export function lockMessage(lock: BillLock, year?: number): string {
+  void year;
   if (lock.reason === 'manager' && lock.period) {
     return `دورهٔ مدیریت «${managerDisplayName(lock.period)}» بسته شده است؛ این قبض دیگر قابل ویرایش، حذف یا تغییر وضعیت نیست. ثبت پرداخت واحدها همچنان ممکن است.`;
   }
   return '';
 }
 
-export function lockShortLabel(lock: BillLock, year: number): string {
-  if (lock.reason === 'year') return `سال ${toPersianDigits(year)} بسته است`;
+export function lockShortLabel(lock: BillLock, year?: number): string {
+  void year;
   if (lock.reason === 'manager' && lock.period) return `دورهٔ ${managerDisplayName(lock.period)} بسته است`;
   return '';
 }

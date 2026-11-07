@@ -1,15 +1,14 @@
 /**
  * «دوره‌ها» (۱.۹، از کارت صفحهٔ اصلی): زبانه‌های «سال‌ها» و «مدیر ساختمان» برای ساختمان فعال.
- * بستن سال و بستن دورهٔ مدیریت برگشت ندارد؛ قبض‌های سال بسته یا دورهٔ بسته قفل می‌شوند
+ * سال‌ها (۱.۹.۱) خودکارند و فقط پنهان/نمایش دارند. بستن دورهٔ مدیریت برگشت ندارد و قبض‌های دورهٔ بسته قفل می‌شوند
  * (ویرایش، حذف، تیک «پرداخت شد» و مهلت پرداخت)، ولی ثبت پرداخت واحدها همچنان ممکن است.
  */
 import { useEffect, useState } from 'react';
 import { AppHeader } from '../components/AppHeader';
 import { Switch } from '../components/Switch';
-import { Dialog } from '../components/Dialog';
 import { OptionPicker } from '../components/OptionPicker';
 import { JalaliDateField } from '../components/JalaliDateField';
-import { IconAlertTriangle, IconCalendarCheck, IconCheck, IconEyeOff, IconLock, IconPlus, IconUser } from '../components/Icons';
+import { IconAlertTriangle, IconCalendarCheck, IconCheck, IconChevronDown, IconEye, IconEyeOff, IconLock, IconPlus, IconUser } from '../components/Icons';
 import { useFeedback } from '../context/FeedbackContext';
 import { usePeriods } from '../hooks/usePeriods';
 import { periodsRepository, todayKeyNow, PeriodRuleError, type YearInfo } from '../storage/periodsRepository';
@@ -19,8 +18,8 @@ import { toPersianDigits } from '../logic/formatting';
 import { todayJalali, parseJalaliKey } from '../logic/jalali';
 import { unitLabel } from '../logic/building';
 import {
-  activePeriod, defaultBillYear, effectiveEnd, hasOpenEnd, isPeriodActive, isPeriodClosed, isoToJalaliKey, keyToSlash,
-  managerDisplayName, yearRangeLines, yearShouldBeClosed, type MgmtPeriod,
+  activePeriod, effectiveEnd, hasOpenEnd, isPeriodActive, isPeriodClosed, keyToSlash,
+  managerDisplayName, nextAddableYear, yearRangeLines, type MgmtPeriod,
 } from '../logic/periods';
 import type { BuildingSettings } from '../models/types';
 
@@ -52,127 +51,99 @@ export function PeriodsScreen({ tab = 'years', onTab, onBack }: Props) {
 /* ─── سال‌ها ─── */
 
 function YearsTab() {
-  const { state, show } = usePeriods();
-  const { toast, showErrors, confirmDanger } = useFeedback();
-  const [adding, setAdding] = useState(false);
+  const { state } = usePeriods();
+  const { toast, showErrors } = useFeedback();
+  const [hiddenOpen, setHiddenOpen] = useState(false);
   if (!state) return null;
-  const today = todayKeyNow();
-  const current = todayJalali().year;
-  const def = defaultBillYear(state.years, state.defaultYear, current);
-  const list = state.years.filter((y) => show.years || !y.hidden);
-  const hiddenCount = state.years.filter((y) => y.hidden).length;
+  const current = state.currentYear;
+  const shown = state.years.filter((y) => !y.hidden);
+  const hidden = state.years.filter((y) => y.hidden);
+  const next = nextAddableYear(state.years, current);
 
-  const run = async (fn: () => Promise<void>, ok: string) => {
+  const run = async (fn: () => Promise<unknown>, ok: string) => {
     try { await fn(); toast(ok); } catch (e) {
       showErrors(e instanceof PeriodRuleError ? Errors.backupInvalid(e.message) : Errors.storageFailed());
     }
   };
-  const close = async (y: YearInfo) => {
-    if (!(await confirmDanger({
-      title: `بستن سال ${fa(y.year)}`,
-      text: `بعد از بستن، قبض‌های سال ${fa(y.year)} دیگر قابل ویرایش، حذف یا تغییر وضعیت نیستند و این سال در فرم قبض نمی‌آید. پرداخت واحدها همچنان ثبت می‌شود.\nبستن سال برگشت ندارد.`,
-      confirmLabel: 'بستن سال',
-    }))) return;
-    await run(() => periodsRepository.closeYear(y.year), `سال ${fa(y.year)} بسته شد.`);
-  };
+  const toggle = (y: YearInfo) => void run(
+    () => periodsRepository.setYearHidden(y.year, !y.hidden),
+    y.hidden ? `سال ${fa(y.year)} دوباره نمایان شد.` : `سال ${fa(y.year)} پنهان شد.`,
+  );
 
   return (
     <section className="periods">
       <div className="period-info">
         <IconCalendarCheck size={22} />
         <div>
-          <strong>{def != null ? `سال پیش‌فرض: ${fa(def)}` : 'سال بازی نیست'}</strong>
-          <p>{def != null ? 'فرم قبض تازه با این سال باز می‌شود.' : 'برای ثبت قبض، با «افزودن سال» یک سال باز اضافه کنید.'}</p>
+          <strong>سال جاری: {fa(current)}</strong>
+          <p>سال‌ها خودکار ساخته می‌شوند. هر سال از ۱ فروردین تا آخر اسفند است و سال بعد، اول فروردین خودش اضافه می‌شود.</p>
         </div>
       </div>
-      <p className="card__hint">دایرهٔ کنار سال را بزنید تا پیش‌فرض شود. سال بسته قفل است و در فرم قبض نمی‌آید.</p>
+      <p className="card__hint">سالی که لازم ندارید را پنهان کنید تا در فیلترهای «سوابق» و «گزارش‌ها» نیاید. قبض‌هایش پاک نمی‌شود و هر وقت بخواهید دوباره نمایانش می‌کنید.</p>
       <ul className="period-list">
-        {list.map((y) => {
-          const isDef = def === y.year && !y.closedAt;
-          const lines = yearRangeLines(y.year);
-          return (
-            <li key={y.year} className={'period-card' + (isDef ? ' is-default' : '') + (y.closedAt ? ' is-closed' : '') + (y.hidden ? ' is-hidden' : '')}>
-              <button
-                type="button"
-                className={'period-tick' + (isDef ? ' is-on' : '')}
-                role="radio"
-                aria-checked={isDef}
-                aria-label={`سال پیش‌فرض ${fa(y.year)}`}
-                disabled={!!y.closedAt}
-                onClick={() => void run(() => periodsRepository.setDefaultYear(y.year), `سال ${fa(y.year)} پیش‌فرض شد.`)}
-              >
-                {isDef && <IconCheck size={15} strokeWidth={3} />}
-              </button>
-              <div className="period-card__body">
-                <div className="period-card__title">
-                  <strong className="num">{fa(y.year)}</strong>
-                  {y.closedAt ? <span className="p-chip is-closed"><IconLock size={11} /> بسته</span> : <span className="p-chip is-open">باز</span>}
-                  {isDef && <span className="p-chip is-default">پیش‌فرض</span>}
-                  {y.hidden && <span className="p-chip is-hidden"><IconEyeOff size={11} /> پنهان</span>}
-                </div>
-                <p className="period-card__line">{y.billCount > 0 ? `${fa(y.billCount)} قبض` : 'هنوز قبضی ندارد'}{y.closedAt ? ` · بسته شده در ${keyToSlash(isoToJalaliKey(y.closedAt) ?? '')}` : ''}</p>
-                <p className="period-card__line">{lines.start}</p>
-                <p className="period-card__line">{lines.end}</p>
-                {yearShouldBeClosed(y, today) && (
-                  <p className="period-card__warn"><IconAlertTriangle size={14} /> پایان این سال گذشته است؛ اگر کار قبض‌هایش تمام شده، سال را ببندید.</p>
-                )}
-                <div className="period-card__actions">
-                  {!y.closedAt && <button type="button" className="btn btn--ghost btn--sm" onClick={() => void close(y)}>بستن سال</button>}
-                  {!y.closedAt && !y.hasAnyBill && (
-                    <button type="button" className="btn btn--ghost btn--sm" onClick={() => void run(() => periodsRepository.removeYear(y.year), `سال ${fa(y.year)} از فهرست برداشته شد.`)}>برداشتن از فهرست</button>
-                  )}
-                  {y.closedAt && (
-                    <button type="button" className="btn btn--ghost btn--sm" onClick={() => void run(() => periodsRepository.setYearHidden(y.year, !y.hidden), y.hidden ? 'سال دوباره نمایش داده می‌شود.' : 'سال پنهان شد.')}>
-                      {y.hidden ? 'نمایش در فهرست‌ها' : 'پنهان کردن'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </li>
-          );
-        })}
+        {shown.map((y) => <YearCard key={y.year} y={y} current={current} onToggle={toggle} />)}
       </ul>
-      <button type="button" className="btn btn--primary btn--block" onClick={() => setAdding(true)}><IconPlus size={20} /> افزودن سال</button>
-      <div className="period-switch">
-        <div>
-          <strong>نمایش سال‌های پنهان</strong>
-          <p>سال پنهان پاک نمی‌شود؛ فقط در فهرست‌ها و فیلترها دیده نمی‌شود. قبض‌ها و گزارش‌هایش سر جایش است.{hiddenCount > 0 ? ` (${fa(hiddenCount)} سال پنهان)` : ''}</p>
+      {hidden.length > 0 && (
+        <div className={'hidden-years' + (hiddenOpen ? ' is-open' : '')}>
+          <button type="button" className="hidden-years__head" aria-expanded={hiddenOpen} onClick={() => setHiddenOpen((v) => !v)}>
+            <IconEyeOff size={20} />
+            <strong>سال‌های پنهان</strong>
+            <span className="hidden-years__count">{fa(hidden.length)} سال</span>
+            <IconChevronDown size={20} className="hidden-years__chev" />
+          </button>
+          {hiddenOpen && (
+            <ul className="period-list hidden-years__list">
+              {hidden.map((y) => <YearCard key={y.year} y={y} current={current} onToggle={toggle} />)}
+            </ul>
+          )}
         </div>
-        <Switch id="show-hidden-years" label="نمایش سال‌های پنهان" checked={show.years} onChange={(v) => void periodsRepository.setShowHidden({ years: v })} />
-      </div>
-      <AddYearDialog
-        open={adding}
-        existing={state.years.map((y) => y.year)}
-        onClose={() => setAdding(false)}
-        onAdd={(year) => { setAdding(false); void run(() => periodsRepository.addYear(year), `سال ${fa(year)} اضافه شد.`); }}
-      />
+      )}
+      {next != null && (
+        <div className="year-add">
+          <button type="button" className="year-add__btn" onClick={() => void run(() => periodsRepository.addNextYear(), `سال ${fa(next)} اضافه شد.`)}>
+            <IconPlus size={20} /> افزودن سال {fa(next)}
+          </button>
+          <p className="year-add__hint">فقط سال بعد اضافه می‌شود (برای ثبت قبض‌های پیش از نوروز).<br />اگر هم نزنید، ۱ فروردین {fa(next)} خودش ساخته می‌شود.</p>
+        </div>
+      )}
     </section>
   );
 }
 
-function AddYearDialog({ open, existing, onClose, onAdd }: { open: boolean; existing: number[]; onClose: () => void; onAdd: (y: number) => void }) {
-  const current = todayJalali().year;
-  const options = Array.from({ length: 16 }, (_, i) => current + 3 - i).filter((y) => !existing.includes(y));
-  const [year, setYear] = useState<number>(options[0] ?? current);
-  useEffect(() => { if (open) setYear(options.includes(current) ? current : options[0] ?? current); }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+function YearCard({ y, current, onToggle }: { y: YearInfo; current: number; onToggle: (y: YearInfo) => void }) {
+  const lines = yearRangeLines(y.year);
+  const chip = y.year === current ? <span className="p-chip is-default">امسال</span>
+    : y.year > current ? <span className="p-chip is-open">سال بعد</span>
+      : <span className="p-chip">تمام‌شده</span>;
   return (
-    <Dialog open={open} onClose={onClose} labelledBy="add-year-title">
-      <h2 id="add-year-title" className="dialog__title">افزودن سال</h2>
-      {options.length === 0 ? (
-        <p className="dialog__text">همهٔ سال‌های نزدیک در فهرست هستند.</p>
-      ) : (
-        <>
-          <p className="dialog__text">هر سال از ۱ فروردین تا آخر اسفند است.</p>
-          <div className="field">
-            <OptionPicker id="add-year" label="سال" value={year} options={options.map((y) => ({ value: y, label: String(y) }))} onChange={(v) => setYear(v as number)} />
-          </div>
-        </>
-      )}
-      <div className="dialog__actions dialog__actions--two">
-        <button type="button" className="btn btn--primary" disabled={options.length === 0} onClick={() => onAdd(year)}>افزودن</button>
-        <button type="button" className="btn btn--muted" onClick={onClose}>انصراف</button>
+    <li className={'period-card year-card' + (y.isCurrent ? ' is-current' : '') + (y.hidden ? ' is-hidden' : '')}>
+      <div className="period-card__body">
+        <div className="period-card__title">
+          <strong className="num">{fa(y.year)}</strong>
+          {chip}
+          {y.hidden && <span className="p-chip is-hidden">پنهان</span>}
+        </div>
+        <p className="period-card__line">{y.billCount > 0 ? `${fa(y.billCount)} قبض` : 'هنوز قبضی ندارد'}</p>
+        <p className="period-card__line">{lines.start}</p>
+        <p className="period-card__line">{lines.end}</p>
       </div>
-    </Dialog>
+      {y.canHide ? (
+        <button
+          type="button"
+          className={'year-eye' + (y.hidden ? ' is-show' : '')}
+          aria-label={y.hidden ? `نمایش سال ${fa(y.year)}` : `پنهان کردن سال ${fa(y.year)}`}
+          onClick={() => onToggle(y)}
+        >
+          {y.hidden ? <IconEye size={20} /> : <IconEyeOff size={20} />}
+          <span>{y.hidden ? 'نمایش' : 'پنهان کن'}</span>
+        </button>
+      ) : (
+        <span className="year-eye is-fixed" aria-label="همیشه نمایان">
+          <IconEye size={20} />
+          <span>همیشه<br />نمایان</span>
+        </span>
+      )}
+    </li>
   );
 }
 

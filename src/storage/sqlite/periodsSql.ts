@@ -56,15 +56,6 @@ export function setMgmtEnabled(db: Database, buildingId: string, enabled: boolea
   db.run('UPDATE buildings SET mgmt_enabled = ? WHERE id = ?', [enabled ? 1 : 0, buildingId]);
 }
 
-export function getDefaultYear(db: Database, buildingId: string): number | null {
-  const r = all(db, 'SELECT default_year FROM buildings WHERE id = ?', [buildingId])[0];
-  return r?.default_year == null ? null : Number(r.default_year);
-}
-
-export function setDefaultYear(db: Database, buildingId: string, year: number | null): void {
-  db.run('UPDATE buildings SET default_year = ? WHERE id = ?', [year, buildingId]);
-}
-
 export function readYearRows(db: Database, buildingId?: string): Array<BuildingYear & { buildingId: string }> {
   const rows = buildingId
     ? all(db, 'SELECT * FROM building_years WHERE building_id = ? ORDER BY year DESC', [buildingId])
@@ -72,7 +63,7 @@ export function readYearRows(db: Database, buildingId?: string): Array<BuildingY
   return rows.map((r) => ({
     buildingId: String(r.building_id),
     year: Number(r.year),
-    closedAt: (r.closed_at as string | null) ?? null,
+    closedAt: null, // بستن سال از ۱.۹.۱ حذف شده
     hidden: Number(r.hidden) === 1,
   }));
 }
@@ -85,16 +76,26 @@ export function billYearCounts(db: Database, buildingId: string): Map<number, nu
   return m;
 }
 
-/** همهٔ قبض‌ها (حتی حذف‌شده) یک سال — برای قاعدهٔ «برداشتن از فهرست» */
-export function billCountForYear(db: Database, buildingId: string, year: number): number {
-  return Number(all(db, 'SELECT count(*) AS n FROM bills WHERE building_id = ? AND year = ?', [buildingId, year])[0]?.n ?? 0);
+/** سال‌هایی که هر قبضی (حذف‌شده هم) دارند */
+export function anyBillYears(db: Database, buildingId: string): Set<number> {
+  return new Set(all(db, 'SELECT DISTINCT year FROM bills WHERE building_id = ?', [buildingId]).map((r) => Number(r.year)));
+}
+
+/** ردیفی از بستن سال (۱.۹.۰) مانده؟ */
+export function hasClosedYearRows(db: Database, buildingId: string): boolean {
+  return all(db, 'SELECT 1 AS x FROM building_years WHERE building_id = ? AND closed_at IS NOT NULL LIMIT 1', [buildingId]).length > 0;
+}
+
+/** مهاجرت ۱.۹.۱: بستن سال حذف شد → زمان بستن پاک می‌شود (پنهان بودن می‌ماند) */
+export function clearClosedYears(db: Database, buildingId: string): void {
+  db.run('UPDATE building_years SET closed_at = NULL WHERE building_id = ? AND closed_at IS NOT NULL', [buildingId]);
 }
 
 export function upsertYearRow(db: Database, buildingId: string, y: BuildingYear): void {
   db.run(
     `INSERT INTO building_years(building_id, year, closed_at, hidden) VALUES (?,?,?,?)
-     ON CONFLICT(building_id, year) DO UPDATE SET closed_at = excluded.closed_at, hidden = excluded.hidden`,
-    [buildingId, y.year, y.closedAt, y.hidden ? 1 : 0],
+     ON CONFLICT(building_id, year) DO UPDATE SET closed_at = NULL, hidden = excluded.hidden`,
+    [buildingId, y.year, null, y.hidden ? 1 : 0],
   );
 }
 
@@ -154,18 +155,14 @@ export function migrateSchema8Data(db: Database): void {
   backfillBillPeriods(db);
 }
 
-/** id قبض‌های قفل این ساختمان (سال بسته یا دورهٔ بسته) */
+/** id قبض‌های قفل این ساختمان (فقط دورهٔ مدیریتِ بسته) */
 export function lockedBillIds(db: Database, buildingId: string, todayKey: string, isClosed: (p: MgmtPeriod) => boolean): Set<string> {
-  const closedYears = new Set(readYearRows(db, buildingId).filter((y) => y.closedAt).map((y) => y.year));
   const closedPeriods = new Set(readPeriods(db, buildingId).filter(isClosed).map((p) => p.id));
   void todayKey;
   const out = new Set<string>();
-  if (closedYears.size === 0 && closedPeriods.size === 0) return out;
-  for (const r of all(db, 'SELECT id, year, mgmt_period_id FROM bills WHERE building_id = ?', [buildingId])) {
-    if (closedYears.has(Number(r.year)) || (r.mgmt_period_id != null && closedPeriods.has(String(r.mgmt_period_id)))) out.add(String(r.id));
+  if (closedPeriods.size === 0) return out;
+  for (const r of all(db, 'SELECT id, mgmt_period_id FROM bills WHERE building_id = ? AND mgmt_period_id IS NOT NULL', [buildingId])) {
+    if (closedPeriods.has(String(r.mgmt_period_id))) out.add(String(r.id));
   }
   return out;
 }
-
-/** کلید app_meta (نه kvStore): ساختمان‌هایی که سال‌هایشان یک بار از «سال‌های فعال» پر شده */
-export const YEARS_SEEDED_META = 'yearsSeeded';

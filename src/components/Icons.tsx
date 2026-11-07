@@ -403,3 +403,9 @@ export const IconEyeOff = (p: P) => (
     <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
   </S>
 );
+export const IconEye = (p: P) => (
+  <S {...p}>
+    <path d="M2.5 12c1-2.5 4.5-7 9.5-7s8.5 4.5 9.5 7c-1 2.5-4.5 7-9.5 7s-8.5-4.5-9.5-7z" />
+    <circle cx="12" cy="12" r="3" />
+  </S>
+);

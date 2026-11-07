@@ -133,11 +133,8 @@ export async function seedScenario(specs: BuildingSpec[], seed = 7): Promise<str
         notes: p % 2 ? 'یادداشت دوره' : null, endPreviousEarly: p > 0,
       }, id);
     }
-    // ۱.۹: سال‌های ساختمان (بسته/پنهان/پیش‌فرض) و مدیر ساختمان (کلید + مدیر از واحدها)
-    await periodsRepository.addYear(1403, id);
-    await periodsRepository.closeYear(1403, id, new Date('2025-03-25T08:00:00Z'));
+    // ۱.۹.۱: سال‌ها خودکارند (فقط پنهان/نمایش) و مدیر ساختمان (کلید + مدیر از واحدها)
     if (i % 2 === 0) await periodsRepository.setYearHidden(1403, true, id);
-    await periodsRepository.setDefaultYear(1405, id);
     if (i === 0) {
       await periodsRepository.setMgmtEnabled(true, id);
       await periodsRepository.addManager({ managerUnit: 1, alias: i % 2 ? '' : 'مدیر فعلی', startDate: '1405-02-01', endDate: null }, id); // دورهٔ باز قبلی (اگر باشد) خودکار ۱۴۰۵/۰۱/۳۱ بسته می‌شود

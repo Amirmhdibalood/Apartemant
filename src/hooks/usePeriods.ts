@@ -2,22 +2,24 @@ import { useCallback, useEffect, useState } from 'react';
 import { periodsRepository, type PeriodsState, type ShowHiddenPrefs } from '../storage/periodsRepository';
 import { billRepository } from '../storage/billRepository';
 import { buildingRepository } from '../storage/buildingRepository';
-import { openYears } from '../logic/periods';
+import { selectableBillYears, visibleYears as visibleOf } from '../logic/periods';
 
 export interface UsePeriods {
   state: PeriodsState | null;
   show: ShowHiddenPrefs;
-  /** سال‌های فیلترها و گزارش‌ها (پنهان‌ها فقط با «نمایش سال‌های پنهان») — صعودی */
+  /** سال‌های فیلترها و گزارش‌ها (سال پنهان نه) — صعودی */
   visibleYears: number[];
-  /** سال‌های باز (قابل انتخاب در فرم قبض) — صعودی */
-  openYears: number[];
+  /** سال‌های قابل انتخاب در فرم قبض (پنهان‌ها هم) — صعودی */
+  billYears: number[];
+  /** سال‌های پنهان ساختمان فعال */
+  hiddenYears: number[];
   reload: () => void;
 }
 
 /** سال‌ها/دوره‌های ساختمان فعال؛ با تغییر دوره‌ها، قبض‌ها یا ساختمان فعال تازه می‌شود */
 export function usePeriods(): UsePeriods {
   const [state, setState] = useState<PeriodsState | null>(null);
-  const [show, setShow] = useState<ShowHiddenPrefs>({ years: false, managers: false });
+  const [show, setShow] = useState<ShowHiddenPrefs>({ managers: false });
   const [tick, setTick] = useState(0);
   const reload = useCallback(() => setTick((t) => t + 1), []);
 
@@ -34,6 +36,12 @@ export function usePeriods(): UsePeriods {
     return () => { offs.forEach((o) => o()); };
   }, [reload]);
 
-  const visibleYears = state ? state.years.filter((y) => show.years || !y.hidden).map((y) => y.year).sort((a, b) => a - b) : [];
-  return { state, show, visibleYears, openYears: state ? openYears(state.years) : [], reload };
+  return {
+    state,
+    show,
+    visibleYears: state ? visibleOf(state.years) : [],
+    billYears: state ? selectableBillYears(state.years) : [],
+    hiddenYears: state ? state.years.filter((y) => y.hidden).map((y) => y.year) : [],
+    reload,
+  };
 }

@@ -54,7 +54,7 @@ export function UnitHistoryScreen({ unitNumber, onBack, onOpenBill }: Props) {
   const { confirmDanger, toast, showErrors } = useFeedback();
   // پرداخت‌های ثبت‌شده با «پرداخت بدهی» (قابل لغو) — از همهٔ قبض‌ها، حتی نوع خاموش
   const batches = useMemo(() => listUnitBatches(allRaw ?? [], unitNumber), [allRaw, unitNumber]);
-  // ۱.۹: پرداختی که به قبضِ سال بسته یا دورهٔ بسته خورده، لغو نمی‌شود (قفل)
+  // ۱.۹: پرداختی که به قبضِ دورهٔ مدیریت بسته خورده، لغو نمی‌شود (قفل)
   const [locked, setLocked] = useState<Set<string>>(new Set());
   useEffect(() => {
     let alive = true;

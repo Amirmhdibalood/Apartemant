@@ -34,7 +34,7 @@ export function YearlyReportView({ all, year: yearProp, onYearChange, onOpenMont
   const now = currentJalali();
 
   const billYears = useMemo(() => Array.from(new Set((all ?? []).map((b) => b.bill.year))), [all]);
-  // سال‌های ساختمان (پنهان‌ها فقط با «نمایش سال‌های پنهان»)؛ این گزارش تک‌ساله می‌ماند
+  // سال‌های نمایان ساختمان (سال پنهان نه)؛ این گزارش تک‌ساله می‌ماند
   const years = visibleYears.length ? visibleYears : [now.year];
   const year = yearProp && years.includes(yearProp) ? yearProp : pickReportYear(years, billYears.filter((y) => years.includes(y)), now.year);
   const report = useMemo(() => yearlyReport(all ?? [], year, prefs.types), [all, year, prefs.types]);

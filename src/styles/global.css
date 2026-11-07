@@ -1534,7 +1534,7 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
 }
 .bottom-nav__item--home.is-active .bottom-nav__icon { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-/* ---------- ۱.۹.۰: قفل قبض (سال بسته / دورهٔ مدیریت بسته) ---------- */
+/* ---------- ۱.۹.۰: قفل قبض (دورهٔ مدیریت بسته) ---------- */
 .lock-chip {
   display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 800; padding: 1px 8px; border-radius: 20px;
   background: #eef1f6; color: #5b6479;
@@ -1593,6 +1593,35 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
 }
 .period-switch--top { border-color: #d8dfeb; }
 .period-note { font-size: 12.5px; color: var(--muted); line-height: 1.9; }
+/* ---------- ۱.۹.۱: سال‌های خودکار (فقط پنهان / نمایش) ---------- */
+.year-card { align-items: center; }
+.year-card.is-current { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(47, 116, 240, 0.1), var(--shadow-sm); }
+.year-card .period-card__title strong { font-size: 19px; font-weight: 900; }
+.period-card.year-card.is-hidden { opacity: 1; border-style: solid; }
+.year-eye {
+  flex-shrink: 0; min-width: 66px; display: inline-flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px;
+  border-radius: 12px; background: #eef2f8; border: 1px solid #e4e9f2; color: #3d4660; font-size: 11.5px; font-weight: 800;
+  line-height: 1.5; text-align: center; font-family: inherit;
+}
+.year-eye.is-show { background: #eaf1fe; border-color: #c7dafb; color: var(--primary); }
+.year-eye.is-fixed { background: #fff; border-style: dashed; color: #7a8398; font-weight: 600; }
+.hidden-years { background: #fff; border: 1.5px solid #e4e9f2; border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); overflow: hidden; }
+.hidden-years__head {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 14px 16px; background: transparent; color: #7a8398;
+  font-family: inherit; text-align: start;
+}
+.hidden-years__head strong { color: var(--text); font-size: 14.5px; font-weight: 800; }
+.hidden-years__count { margin-inline-start: auto; font-size: 12.5px; font-weight: 600; }
+.hidden-years__chev { transition: transform 0.18s ease; }
+.hidden-years.is-open .hidden-years__chev { transform: rotate(180deg); }
+.hidden-years__list { gap: 0; }
+.hidden-years__list .period-card { border: 0; border-top: 1px solid #e4e9f2; border-radius: 0; box-shadow: none; }
+.year-add__btn {
+  width: 100%; min-height: 52px; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 14px;
+  border: 1.5px dashed #9dbcf6; background: #eaf1fe; color: var(--primary); font-size: 15px; font-weight: 800; font-family: inherit;
+}
+.year-add__hint { text-align: center; color: var(--muted); font-size: 12px; line-height: 1.8; margin-top: 8px; }
+.year-hidden-hint { margin-top: -4px; }
 .manager-form { display: flex; flex-direction: column; gap: 4px; }
 .screen--periods .seg { margin-bottom: 4px; }
 

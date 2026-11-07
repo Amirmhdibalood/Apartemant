@@ -12,8 +12,8 @@ import { periodsRepository, PeriodRuleError, todayKeyNow } from '../src/storage/
 import { DEFAULT_BUILDING_ID } from '../src/storage/sqlite/schema';
 import { BACKUP_VERSION, createBackup, parseBackup, serializeBackup } from '../src/logic/backup';
 import {
-  billLockState, dayBefore, defaultBillYear, isPeriodClosed, managerDisplayName, planNewPeriod, yearEndKey,
-  yearRangeLines, yearShouldBeClosed, yearStartKey, type MgmtPeriod,
+  billLockState, dayBefore, isPeriodClosed, managerDisplayName, planNewPeriod, yearEndKey,
+  yearRangeLines, yearStartKey, type MgmtPeriod,
 } from '../src/logic/periods';
 import { newBillBlockers } from '../src/logic/billGate';
 import { filterBillsMulti, monthsHeading, multiSummary, normalizeStatuses } from '../src/logic/multiFilter';
@@ -58,17 +58,6 @@ describe('سال: شروع ۱ فروردین، پایان آخرین روز اس
     expect(yearRangeLines(1405)).toEqual({ start: 'تاریخ شروع: ۱۴۰۵/۰۱/۰۱', end: 'تاریخ پایان: ۱۴۰۵/۱۲/۲۹' });
     expect(yearRangeLines(1403).end).toBe('تاریخ پایان: ۱۴۰۳/۱۲/۳۰');
   });
-  it('پیشنهاد بستن فقط بعد از گذشتن پایان سال و فقط برای سال باز', () => {
-    expect(yearShouldBeClosed({ year: 1404, closedAt: null, hidden: false }, '1405-01-01')).toBe(true);
-    expect(yearShouldBeClosed({ year: 1404, closedAt: null, hidden: false }, '1404-12-29')).toBe(false);
-    expect(yearShouldBeClosed({ year: 1404, closedAt: '2026-01-01T00:00:00Z', hidden: false }, '1405-01-01')).toBe(false);
-  });
-  it('سال پیش‌فرض فرم قبض: پیش‌فرض باز ← امسال ← نزدیک‌ترین سال باز', () => {
-    const ys = [{ year: 1404, closedAt: null, hidden: false }, { year: 1405, closedAt: 'x', hidden: false }, { year: 1406, closedAt: null, hidden: false }];
-    expect(defaultBillYear(ys, 1406, 1405)).toBe(1406);
-    expect(defaultBillYear(ys, 1405, 1405)).toBe(1406); // ۱۴۰۵ بسته: نزدیک‌ترین (برابر) → جدیدتر
-    expect(defaultBillYear([{ year: 1405, closedAt: 'x', hidden: false }], null, 1405)).toBeNull();
-  });
 });
 
 describe('مدیر ساختمان: ثبت مدیر جدید دورهٔ قبلی را روز قبل می‌بندد', () => {
@@ -91,28 +80,27 @@ describe('مدیر ساختمان: ثبت مدیر جدید دورهٔ قبلی 
     expect(isPeriodClosed(P({ id: 'x', startDate: '1403-01-01', endDate: '1403-12-30' }), '1405-08-12')).toBe(true);
     expect(isPeriodClosed(P({ id: 'y', startDate: '1405-01-01' }), '1405-08-12')).toBe(false);
   });
-  it('دروازهٔ ثبت قبض: بدون سال باز، یا کلید مدیر روشن بدون مدیر فعال', () => {
-    const e = newBillBlockers({ openYears: [], mgmtEnabled: true, periods: [], todayKey: '1405-08-12' });
-    expect(e).toHaveLength(2);
-    expect(e[0].message).toContain('«دوره‌ها ← سال‌ها»');
-    expect(e[1].message).toContain('«دوره‌ها ← مدیر ساختمان»');
-    expect(newBillBlockers({ openYears: [1405], mgmtEnabled: false, periods: [], todayKey: '1405-08-12' })).toEqual([]);
+  it('دروازهٔ ثبت قبض: فقط کلید مدیر روشن بدون مدیر فعال (سال همیشه خودکار هست)', () => {
+    const e = newBillBlockers({ mgmtEnabled: true, periods: [], todayKey: '1405-08-12' });
+    expect(e).toHaveLength(1);
+    expect(e[0].message).toContain('«دوره‌ها ← مدیر ساختمان»');
+    expect(newBillBlockers({ mgmtEnabled: false, periods: [], todayKey: '1405-08-12' })).toEqual([]);
     for (const x of e) expect(x.message).not.toMatch(new RegExp([['دوره', 'مالی'].join(' '), 'سال مالی'].join('|')));
   });
 });
 
-describe('قفل قبض: سال بسته یا دورهٔ مدیریت بسته', () => {
+describe('قفل قبض: فقط دورهٔ مدیریت بسته (۱.۹.۱: سال قفل نمی‌کند)', () => {
   it('billLockState', () => {
     const closedP = P({ id: 'p0', startDate: '1400-01-01', endDate: '1400-12-29' });
     const openP = P({ id: 'p1', startDate: '1405-01-01' });
-    const ctx = { closedYears: new Set([1403]), periods: [closedP, openP], todayKey: '1405-08-12' };
-    expect(billLockState({ year: 1403, mgmtPeriodId: null }, ctx)).toMatchObject({ locked: true, reason: 'year' });
+    const ctx = { periods: [closedP, openP], todayKey: '1405-08-12' };
+    expect(billLockState({ year: 1403, mgmtPeriodId: null }, ctx)).toMatchObject({ locked: false, reason: null });
     expect(billLockState({ year: 1405, mgmtPeriodId: 'p0' }, ctx)).toMatchObject({ locked: true, reason: 'manager' });
     expect(billLockState({ year: 1405, mgmtPeriodId: 'p1' }, ctx).locked).toBe(false);
     expect(billLockState({ year: 1405, mgmtPeriodId: null }, ctx).locked).toBe(false);
   });
 
-  it('مخزن: قبض تازه خودکار به مدیر فعال وصل می‌شود؛ بستن دوره/سال قفل می‌کند', async () => {
+  it('مخزن: قبض تازه خودکار به مدیر فعال وصل می‌شود؛ بستن دوره قفل می‌کند', async () => {
     await setupBuilding();
     await periodsRepository.setMgmtEnabled(true);
     const pid = await periodsRepository.addManager({ managerUnit: 1, alias: '', startDate: shift(-30), endDate: null });
@@ -135,24 +123,17 @@ describe('قفل قبض: سال بسته یا دورهٔ مدیریت بسته',
     await expect(periodsRepository.editManager(pid, { managerUnit: 1, alias: '', endDate: null })).rejects.toThrow(PeriodRuleError);
   });
 
-  it('کلید مدیر خاموش: قبض بدون دوره و بی‌قفل؛ سال بسته قفل می‌کند و برداشتن سالِ دارای قبض ممکن نیست', async () => {
+  it('کلید مدیر خاموش: قبض بدون دوره و بی‌قفل؛ سالِ گذشته پنهان می‌شود ولی قفل نمی‌شود', async () => {
     await setupBuilding();
     expect((await periodsRepository.getState()).mgmtEnabled).toBe(false); // نصب تازه
     const b = bill('b', { year: 1404 });
     await billRepository.upsert(b.bill, b.units);
     expect(await withSqlite((db) => db.exec("SELECT mgmt_period_id FROM bills WHERE id='b'")[0].values[0][0])).toBeNull();
-    await periodsRepository.addYear(1404);
-    await expect(periodsRepository.removeYear(1404)).rejects.toThrow(PeriodRuleError);
-    await periodsRepository.addYear(1399);
-    await periodsRepository.removeYear(1399);
-    await periodsRepository.closeYear(1404);
-    expect(await periodsRepository.billLock('b')).toMatchObject({ locked: true, reason: 'year' });
     await periodsRepository.setYearHidden(1404, true);
+    expect((await periodsRepository.billLock('b')).locked).toBe(false);
     const s = await periodsRepository.getState();
     expect(s.years.find((y) => y.year === 1404)).toMatchObject({ hidden: true, billCount: 1 });
-    expect(s.years.some((y) => y.year === 1399)).toBe(false);
-    await expect(periodsRepository.setDefaultYear(1404)).rejects.toThrow(PeriodRuleError);
-    await expect(periodsRepository.setYearHidden(1405, true)).rejects.toThrow(PeriodRuleError); // فقط سال بسته
+    await expect(periodsRepository.setYearHidden(1405, true)).rejects.toThrow(PeriodRuleError); // سال جاری همیشه نمایان
   });
 });
 
@@ -199,21 +180,17 @@ describe('پشتیبان قالب ۱۲', () => {
   async function exportText() {
     return serializeBackup(createBackup(await backupRepository.collect(), '1.9.0', new Date('2026-11-03T08:00:00Z')));
   }
-  it('رفت‌وبرگشت: سال‌ها (بسته/پنهان/پیش‌فرض)، کلید مدیر، واحد مدیر و دورهٔ هر قبض', async () => {
+  it('رفت‌وبرگشت: سال‌های پنهان، کلید مدیر، واحد مدیر و دورهٔ هر قبض', async () => {
     expect(BACKUP_VERSION).toBe(12);
     await setupBuilding();
     await periodsRepository.setMgmtEnabled(true);
     const pid = await periodsRepository.addManager({ managerUnit: 3, alias: 'آقای رضایی', startDate: shift(-10), endDate: null });
     const a = bill('a'); await billRepository.upsert(a.bill, a.units);
     const c = bill('c', { year: 1404 }); await billRepository.upsert(c.bill, c.units);
-    await periodsRepository.addYear(1404);
-    await periodsRepository.closeYear(1404);
     await periodsRepository.setYearHidden(1404, true);
-    await periodsRepository.setDefaultYear(1405);
     await billRepository.flush();
     const text = await exportText();
     expect(JSON.parse(text).backupVersion).toBe(12);
-    const before = await periodsRepository.getState();
 
     await resetSqliteForTests(); billRepository._resetCache();
     const r = parseBackup(text);
@@ -221,14 +198,13 @@ describe('پشتیبان قالب ۱۲', () => {
     await backupRepository.replaceAll(r.backup.data);
     const after = await periodsRepository.getState();
     expect(after.mgmtEnabled).toBe(true);
-    expect(after.defaultYear).toBe(1405);
-    expect(after.years.find((y) => y.year === 1404)).toMatchObject({ hidden: true, closedAt: before.years.find((y) => y.year === 1404)!.closedAt });
+    expect(after.years.find((y) => y.year === 1404)).toMatchObject({ hidden: true, closedAt: null });
     expect(after.periods.find((p) => p.id === pid)).toMatchObject({ managerUnit: 3, managerLabel: 'آقای رضایی', endDate: '' });
     expect(await withSqlite((db) => db.exec("SELECT mgmt_period_id FROM bills WHERE id='a'")[0].values[0][0])).toBe(pid);
-    expect((await periodsRepository.billLock('c')).reason).toBe('year');
+    expect((await periodsRepository.billLock('c')).locked).toBe(false);
   });
 
-  it('پشتیبان قالب ۱۱ (و قدیمی‌تر) هنوز بازیابی می‌شود: کلید مدیر روشن، قبض‌ها با زمان ثبت وصل، سال‌ها از «سال‌های فعال»', async () => {
+  it('پشتیبان قالب ۱۱ (و قدیمی‌تر) هنوز بازیابی می‌شود: کلید مدیر روشن، قبض‌ها با زمان ثبت وصل، سال‌ها خودکار (سال جاری + سال‌های دارای قبض)', async () => {
     await setupBuilding();
     await buildingRepository.addManagementPeriod({ managerLabel: 'مدیر قدیم', startDate: shift(-40), endDate: shift(200), notes: null, endPreviousEarly: false });
     const a = bill('a'); await billRepository.upsert({ ...a.bill, mgmtPeriodId: null }, a.units);
@@ -246,7 +222,7 @@ describe('پشتیبان قالب ۱۲', () => {
     await backupRepository.replaceAll(r.backup.data);
     const s = await periodsRepository.getState();
     expect(s.mgmtEnabled).toBe(true);
-    expect(s.years.map((y) => y.year).sort()).toEqual([1405, 1406]);
+    expect(s.years.map((y) => y.year).sort()).toEqual([todayJalali().year]); // «سال‌های فعال» قدیمی دیگر سال خالی نمی‌سازد
     expect(await withSqlite((db) => db.exec("SELECT mgmt_period_id FROM bills WHERE id='a'")[0].values[0][0])).toBe(s.periods[0].id);
   });
 });

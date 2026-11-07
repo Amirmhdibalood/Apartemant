@@ -9,8 +9,7 @@ import { bannerFor, type DueAlert } from '../logic/dueAlerts';
 import type { NotifMode } from '../logic/notifMode';
 import { toPersianDigits } from '../logic/formatting';
 import { usePeriods } from '../hooks/usePeriods';
-import { activePeriod, defaultBillYear, managerDisplayName } from '../logic/periods';
-import { todayJalali } from '../logic/jalali';
+import { activePeriod, managerDisplayName } from '../logic/periods';
 import { todayKeyNow } from '../storage/periodsRepository';
 import { buildingRepository } from '../storage/buildingRepository';
 import { backupRepository } from '../storage/backupRepository';
@@ -45,8 +44,7 @@ function useHomeCards() {
   }, []);
   let periods = '';
   if (state) {
-    const y = defaultBillYear(state.years, state.defaultYear, todayJalali().year);
-    const parts = [y != null ? `سال ${toPersianDigits(y)}` : 'سال بازی نیست'];
+    const parts = [`سال ${toPersianDigits(state.currentYear)}`];
     if (state.mgmtEnabled) {
       const p = activePeriod(state.periods, todayKeyNow());
       parts.push(p ? `مدیر: ${managerDisplayName(p)}` : 'مدیر فعالی نیست');

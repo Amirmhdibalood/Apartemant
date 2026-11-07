@@ -25,7 +25,7 @@ import { todayJalali } from '../logic/jalali';
 import { typeInfo } from '../logic/billTypes';
 
 interface Props {
-  /** سال‌ها؛ نبودن = سال پیش‌فرض، [] = همهٔ سال‌های نمایان */
+  /** سال‌ها؛ نبودن = سال جاری (اگر نمایان)، [] = همهٔ سال‌های نمایان */
   years?: number[];
   /** ماه‌ها؛ نبودن/[] = همه */
   months?: number[];
@@ -68,9 +68,7 @@ export function RecordsScreen({ years: yearsProp, months: monthsProp, types: typ
     return () => { alive = false; offs.forEach((o) => o()); };
   }, []);
 
-  const defaultYear = state && state.defaultYear != null && visibleYears.includes(state.defaultYear)
-    ? state.defaultYear
-    : pickDefaultYear(visibleYears.length ? visibleYears : [now.year], now.year);
+  const defaultYear = pickDefaultYear(visibleYears.length ? visibleYears : [now.year], now.year);
   const filter: MultiRecordsFilter = {
     years: yearsProp === undefined ? [defaultYear] : normalizeYears(yearsProp).filter((y) => visibleYears.includes(y)),
     months: normalizeMonths(monthsProp),

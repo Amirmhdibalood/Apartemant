@@ -7,7 +7,7 @@ import { TAB_ROUTES } from './navigation';
 import { BottomNav, type TabId } from './components/BottomNav';
 import { useSettings } from './context/SettingsContext';
 import { currentJalali } from './logic/date';
-import { defaultBillYear, openYears } from './logic/periods';
+import { defaultBillYear } from './logic/periods';
 import { periodsRepository } from './storage/periodsRepository';
 import { PeriodsScreen } from './screens/PeriodsScreen';
 import { MeetingsScreen } from './screens/MeetingsScreen';
@@ -101,7 +101,6 @@ export default function App() {
     const todayKey = formatJalaliKey(todayJalali());
     const state = await periodsRepository.getState().catch(() => null);
     const blockers = newBillBlockers({
-      openYears: state ? openYears(state.years) : [],
       mgmtEnabled: state?.mgmtEnabled ?? false,
       periods: state?.periods ?? [],
       todayKey,
@@ -112,7 +111,7 @@ export default function App() {
     }
     // واحدها (تعداد، اسم مستعار و نفرات پیش‌فرض) از تنظیمات «ساختمان» وارد می‌شوند
     const building = await buildingRepository.get().catch(() => null);
-    const year = (state && defaultBillYear(state.years, state.defaultYear, now.year)) ?? now.year;
+    const year = defaultBillYear(state?.currentYear ?? now.year);
     setDraft(emptyDraft(year, now.month, building));
     push({ name: 'newBill' });
   };

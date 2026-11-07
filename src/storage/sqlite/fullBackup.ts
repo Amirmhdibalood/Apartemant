@@ -80,7 +80,7 @@ export interface FullBuilding {
   billTypes: BackupBillType[];
   /** کلید «مدیر ساختمان» (قالب ۱۲؛ قالب‌های قدیمی‌تر = روشن، چون کاربر قبلی است) */
   mgmtEnabled: boolean;
-  /** سال پیش‌فرض فرم قبض (قالب ۱۲) */
+  /** قالب ۱۲ (۱.۹.۰)؛ از ۱.۹.۱ همیشه null */
   defaultYear: number | null;
   /** سال‌های این ساختمان: بسته/پنهان (قالب ۱۲) */
   years: BuildingYear[];
@@ -124,7 +124,7 @@ export function readFullDomain(db: Database): FullDomain {
   const yearsByBuilding = new Map<string, BuildingYear[]>();
   for (const y of readYearRows(db)) {
     const list = yearsByBuilding.get(y.buildingId) ?? [];
-    list.push({ year: y.year, closedAt: y.closedAt, hidden: y.hidden });
+    list.push({ year: y.year, closedAt: null, hidden: y.hidden });
     yearsByBuilding.set(y.buildingId, list);
   }
   const buildings: FullBuilding[] = rows(db, 'SELECT * FROM buildings ORDER BY created_at, id').map((r) => ({
@@ -137,7 +137,7 @@ export function readFullDomain(db: Database): FullDomain {
     units: readUnitTemplates(db, String(r.id))?.units ?? [],
     billTypes: typesByBuilding.get(String(r.id)) ?? [],
     mgmtEnabled: Number(r.mgmt_enabled) === 1,
-    defaultYear: r.default_year == null ? null : Number(r.default_year),
+    defaultYear: null, // ۱.۹.۱: سال پیش‌فرض حذف شد
     years: yearsByBuilding.get(String(r.id)) ?? [],
   }));
   const bills = readAllBills(db);
@@ -204,7 +204,7 @@ export function replaceFullDomain(db: Database, full: FullDomain): void {
       VALUES (?,?,?,?,?,?,?,?)`, (s) => {
       for (const b of full.buildings) {
         s.run([b.id, b.name, b01(b.fundEnabled), fundTypesToJson(b.fundTypes ?? ['building']), b.createdAt, b.archivedAt ?? null,
-          b01(b.mgmtEnabled), b.defaultYear ?? null]);
+          b01(b.mgmtEnabled), null]);
       }
     });
     ensureDefaultBuilding(db);
@@ -214,7 +214,7 @@ export function replaceFullDomain(db: Database, full: FullDomain): void {
         for (const y of b.years ?? []) {
           if (seen.has(y.year)) continue;
           seen.add(y.year);
-          s.run([b.id, y.year, y.closedAt ?? null, b01(!!y.closedAt && y.hidden)]);
+          s.run([b.id, y.year, null, b01(y.hidden)]);
         }
       }
     });

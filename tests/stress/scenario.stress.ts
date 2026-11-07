@@ -254,7 +254,7 @@ describe.each(SIZES)('scenario timings: %i bills × 100 units (+ 2 small buildin
 /* ─── ۱.۹.۰: سال‌ها و مدیر ساختمان (قفل)، مهاجرت schema 7 → 8 در مقیاس، فیلترهای چندتایی ─── */
 import { exportCurrentBytes, openDetachedDatabase, replaceDatabaseWithBytes, withSqlite } from '../../src/storage/sqlite/db';
 import { periodsRepository, todayKeyNow } from '../../src/storage/periodsRepository';
-import { billLockState, closedYearSet, periodForCreatedAt } from '../../src/logic/periods';
+import { billLockState, periodForCreatedAt } from '../../src/logic/periods';
 import { filterBillsMulti, normalizeStatuses, type StatusPick } from '../../src/logic/multiFilter';
 import { monthlyTotals } from '../../src/logic/monthlyTotals';
 import { billPaymentReport, classifyBillPayment } from '../../src/logic/billPaymentReport';
@@ -323,7 +323,7 @@ describe.each(SIZES.slice(0, 1))('scenario 1.9: years & manager lock, schema-7 m
     expect(assigned).toBeGreaterThan(0);
     m.assignedBills = assigned;
 
-    // قفل: سال ۱۴۰۳ بسته (seed)، دورهٔ ۱۴۰۳ و ۱۴۰۴ تمام‌شده
+    // قفل (۱.۹.۱): فقط دوره‌های مدیریت تمام‌شده (۱۴۰۳ و ۱۴۰۴)؛ سال قفل نمی‌کند
     const want = await expectedLocked(ids[0]);
     const [lockedNow, tLock] = await time(() => periodsRepository.lockedIds(ids[0]));
     m.lockedIdsMs = tLock;
@@ -331,12 +331,11 @@ describe.each(SIZES.slice(0, 1))('scenario 1.9: years & manager lock, schema-7 m
     expect([...lockedNow].sort()).toEqual(want);
     expect(want.length).toBeGreaterThan(0);
     expect(want.length).toBeLessThan(nBills);
-    // بستن یک سال دیگر قفل را بیشتر می‌کند و دوباره با منطق خالص یکی است
-    await periodsRepository.closeYear(1404, ids[0]);
+    // پنهان کردن سال قفل را عوض نمی‌کند و دوباره با منطق خالص یکی است
+    await periodsRepository.setYearHidden(1404, true, ids[0]);
     const want2 = await expectedLocked(ids[0]);
-    expect(want2.length).toBeGreaterThan(want.length);
+    expect(want2).toEqual(want);
     expect([...(await periodsRepository.lockedIds(ids[0]))].sort()).toEqual(want2);
-    expect(closedYearSet((await periodsRepository.getState(ids[0])).years).has(1404)).toBe(true);
 
     // راه‌اندازی دوباره (ژورنال) و پشتیبان → پاک کردن → بازیابی: همان قفل و همان دوره‌ها
     const digest = await digestAllTables();

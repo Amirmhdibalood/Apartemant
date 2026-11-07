@@ -309,6 +309,14 @@
 :root[data-theme="dark"] .p-chip.is-hidden { background: #1a2641; color: #a2a8b7; }
 :root[data-theme="dark"] .period-switch { background: #151e33; border: 1px solid #1b2743; }
 :root[data-theme="dark"] .period-switch--top { border-color: #243458; }
+:root[data-theme="dark"] .year-card.is-current { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(71,132,242,0.1), var(--shadow-sm); }
+:root[data-theme="dark"] .year-eye { background: #1b2742; border: 1px solid #1f2d4c; color: #bec6d8; }
+:root[data-theme="dark"] .year-eye.is-show { background: #17243d; border-color: #1c2b46; color: var(--primary); }
+:root[data-theme="dark"] .year-eye.is-fixed { background: #151e33; color: #a2a8b7; }
+:root[data-theme="dark"] .hidden-years { background: #151e33; border: 1.5px solid #1f2d4c; }
+:root[data-theme="dark"] .hidden-years__head { color: #a2a8b7; }
+:root[data-theme="dark"] .hidden-years__list .period-card { border-top: 1px solid #1f2d4c; }
+:root[data-theme="dark"] .year-add__btn { border: 1.5px dashed #739ff2; background: #17243d; }
 :root[data-theme="dark"] .date-box.is-disabled { background: #1a2641; color: #8a93a8; }
 :root[data-theme="dark"] .date-box.is-disabled .year-picker__value { color: #8a93a8; }
 :root[data-theme="dark"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #2a3858; --sw-off-ring: #7a89ad; --sw-thumb: #aab4cf; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #7a89ad; --cb-on-border: #64df9e; --warn-border: #6b2f33; --warn-color: #ffb4ad; --warn-bg: #3a1f26; --ppm-border: #2c4a86; --badge-area-bg: #17423f; --badge-area-color: #7de3d3; }
@@ -560,6 +568,13 @@
 :root[data-theme="dark"][data-palette="charcoal"] .p-chip.is-hidden { background: #26282b; color: #a9abb0; }
 :root[data-theme="dark"][data-palette="charcoal"] .period-switch { background: #1d1e20; border: 1px solid #28292d; }
 :root[data-theme="dark"][data-palette="charcoal"] .period-switch--top { border-color: #36383d; }
+:root[data-theme="dark"][data-palette="charcoal"] .year-card.is-current { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(71,132,242,0.1), var(--shadow-sm); }
+:root[data-theme="dark"][data-palette="charcoal"] .year-eye { background: #27292c; border: 1px solid #2e3034; color: #c9cacd; }
+:root[data-theme="dark"][data-palette="charcoal"] .year-eye.is-show { background: #17243d; border-color: #1c2b46; color: var(--primary); }
+:root[data-theme="dark"][data-palette="charcoal"] .year-eye.is-fixed { background: #1d1e20; color: #a9abb0; }
+:root[data-theme="dark"][data-palette="charcoal"] .hidden-years { background: #1d1e20; border: 1.5px solid #2e3034; }
+:root[data-theme="dark"][data-palette="charcoal"] .hidden-years__head { color: #a9abb0; }
+:root[data-theme="dark"][data-palette="charcoal"] .hidden-years__list .period-card { border-top: 1px solid #2e3034; }
 :root[data-theme="dark"][data-palette="charcoal"] .date-box.is-disabled { background: #26282b; color: #95989d; }
 :root[data-theme="dark"][data-palette="charcoal"] .date-box.is-disabled .year-picker__value { color: #95989d; }
 :root[data-theme="dark"][data-palette="charcoal"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #2e3033; --sw-off-ring: #868a91; --sw-thumb: #b3b7bd; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #868a91; --cb-on-border: #64df9e; --warn-border: #6b3434; --warn-color: #ffb4ad; --warn-bg: #321f1f; --ppm-border: #33518f; --badge-area-bg: #17423f; --badge-area-color: #7de3d3; }
@@ -811,6 +826,13 @@
 :root[data-theme="dark"][data-palette="amoled"] .p-chip.is-hidden { background: #1a1a1a; color: #acacac; }
 :root[data-theme="dark"][data-palette="amoled"] .period-switch { background: #111111; border: 1px solid #1c1c1c; }
 :root[data-theme="dark"][data-palette="amoled"] .period-switch--top { border-color: #2b2b2b; }
+:root[data-theme="dark"][data-palette="amoled"] .year-card.is-current { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(71,132,242,0.1), var(--shadow-sm); }
+:root[data-theme="dark"][data-palette="amoled"] .year-eye { background: #1b1b1b; border: 1px solid #232323; color: #cbcbcb; }
+:root[data-theme="dark"][data-palette="amoled"] .year-eye.is-show { background: #17243d; border-color: #1c2b46; color: var(--primary); }
+:root[data-theme="dark"][data-palette="amoled"] .year-eye.is-fixed { background: #111111; color: #acacac; }
+:root[data-theme="dark"][data-palette="amoled"] .hidden-years { background: #111111; border: 1.5px solid #232323; }
+:root[data-theme="dark"][data-palette="amoled"] .hidden-years__head { color: #acacac; }
+:root[data-theme="dark"][data-palette="amoled"] .hidden-years__list .period-card { border-top: 1px solid #232323; }
 :root[data-theme="dark"][data-palette="amoled"] .date-box.is-disabled { background: #1a1a1a; color: #999999; }
 :root[data-theme="dark"][data-palette="amoled"] .date-box.is-disabled .year-picker__value { color: #999999; }
 :root[data-theme="dark"][data-palette="amoled"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #26272a; --sw-off-ring: #8a8d92; --sw-thumb: #b6b9be; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #8a8d92; --cb-on-border: #64df9e; --warn-border: #6b3434; --warn-color: #ffb4ad; --warn-bg: #2a1517; --ppm-border: #33518f; --badge-area-bg: #10312f; --badge-area-color: #7de3d3; }
@@ -1087,6 +1109,14 @@
 :root[data-theme="dark"][data-palette="warm"] .p-chip.is-hidden { background: #322c27; color: #b3aca6; }
 :root[data-theme="dark"][data-palette="warm"] .period-switch { background: #27221e; border: 1px solid #342e29; }
 :root[data-theme="dark"][data-palette="warm"] .period-switch--top { border-color: #443c36; }
+:root[data-theme="dark"][data-palette="warm"] .year-card.is-current { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(62,210,190,0.1), var(--shadow-sm); }
+:root[data-theme="dark"][data-palette="warm"] .year-eye { background: #332d28; border: 1px solid #3b342e; color: #cecbc8; }
+:root[data-theme="dark"][data-palette="warm"] .year-eye.is-show { background: #173d38; border-color: #1c4640; color: var(--primary); }
+:root[data-theme="dark"][data-palette="warm"] .year-eye.is-fixed { background: #27221e; color: #b3aca6; }
+:root[data-theme="dark"][data-palette="warm"] .hidden-years { background: #27221e; border: 1.5px solid #3b342e; }
+:root[data-theme="dark"][data-palette="warm"] .hidden-years__head { color: #b3aca6; }
+:root[data-theme="dark"][data-palette="warm"] .hidden-years__list .period-card { border-top: 1px solid #3b342e; }
+:root[data-theme="dark"][data-palette="warm"] .year-add__btn { border: 1.5px dashed #64d8c9; background: #173d38; }
 :root[data-theme="dark"][data-palette="warm"] .date-box.is-disabled { background: #322c27; color: #a19891; }
 :root[data-theme="dark"][data-palette="warm"] .date-box.is-disabled .year-picker__value { color: #a19891; }
 :root[data-theme="dark"][data-palette="warm"] { --primary-fill: #12806f; --primary-fill-press: #0f6b5d; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #3a332c; --sw-off-ring: #9b8f82; --sw-thumb: #c4b9ab; --sw-on-bg: #26b5a0; --sw-on-ring: #6fd6c4; --cb-ring: #9b8f82; --cb-on-border: #64df9e; --warn-border: #703a30; --warn-color: #ffb4ad; --warn-bg: #3a2420; --ppm-border: #2b6a60; --badge-area-bg: #143e38; --badge-area-color: #7de3d3; }

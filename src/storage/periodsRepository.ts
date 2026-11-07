@@ -1,24 +1,25 @@
 /**
  * «دوره‌ها»: سال‌ها و مدیر ساختمانِ هر ساختمان (SQLite، شِمای ۸) + قفل قبض‌ها.
+ * از ۱.۹.۱ سال‌ها خودکارند (سال جاری همیشه هست، فقط سال بعد اضافه می‌شود، فقط پنهان/نمایش)
+ * و قفل قبض فقط از دورهٔ مدیریتِ بسته می‌آید.
  */
 import type { BuildingYear, LockContext, MgmtPeriod } from '../logic/periods';
 import {
-  billLockState, closedYearSet, defaultBillYear, isPeriodClosed, mergeBuildingYears, planNewPeriod, validatePeriodEdit,
-  type BillLock,
+  billLockState, canHideYear, defaultBillYear, isPeriodClosed, mergeBuildingYears, planNewPeriod, staleYearRows, validatePeriodEdit,
+  visibleYears, type BillLock,
 } from '../logic/periods';
 import { jalaliIsoDate } from '../logic/date';
 import { todayJalali } from '../logic/jalali';
-import { withSqlite, withSqliteWrite, getMeta, setMeta } from './sqlite/db';
+import { withSqlite, withSqliteWrite } from './sqlite/db';
 import {
   endManagementPeriodEarly, getManagementPeriod, inTransaction, insertManagementPeriod, listBuildings, updateManagementPeriod,
 } from './sqlite/domain';
 import {
-  billCountForYear, billYearCounts, deleteYearRow, getDefaultYear, getMgmtEnabled, lockedBillIds, readPeriods, readYearRows,
-  setDefaultYear, setMgmtEnabled, upsertYearRow, YEARS_SEEDED_META,
+  anyBillYears, billYearCounts, clearClosedYears, deleteYearRow, getMgmtEnabled, hasClosedYearRows, lockedBillIds, readPeriods,
+  readYearRows, setMgmtEnabled, upsertYearRow,
 } from './sqlite/periodsSql';
 import { ensureMigrationDone } from './migration';
 import { activeBuildingStore } from './activeBuildingStore';
-import { settingsRepository } from './settingsRepository';
 import { readJson, writeJson } from './kvStore';
 
 const SHOW_HIDDEN_KEY = 'periodsShowHidden';
@@ -26,21 +27,26 @@ const SHOW_HIDDEN_KEY = 'periodsShowHidden';
 export interface YearInfo extends BuildingYear {
   /** تعداد قبض‌های حذف‌نشده */
   billCount: number;
-  /** هر قبضی (حذف‌شده هم) دارد → «برداشتن از فهرست» ممکن نیست */
-  hasAnyBill: boolean;
+  /** سال جاری */
+  isCurrent: boolean;
+  /** پنهان‌شدنی است؟ (سال جاری و سال بعد نه) */
+  canHide: boolean;
 }
 
 export interface PeriodsState {
   buildingId: string;
+  /** سال جاری (برای فهرست و فرم قبض) */
+  currentYear: number;
+  /** همهٔ سال‌های فهرست (پنهان‌ها هم)، نزولی */
   years: YearInfo[];
-  defaultYear: number | null;
   mgmtEnabled: boolean;
   periods: MgmtPeriod[];
   /** periodId → تعداد قبض‌ها */
   periodBillCounts: Map<string, number>;
 }
 
-export interface ShowHiddenPrefs { years: boolean; managers: boolean }
+/** فقط دوره‌های مدیریت؛ سال‌های پنهان از ۱.۹.۱ در بخش جمع‌شدهٔ «سال‌های پنهان» دیده می‌شوند */
+export interface ShowHiddenPrefs { managers: boolean }
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -55,43 +61,46 @@ async function activeId(buildingId?: string): Promise<string> {
   return buildingId ?? activeBuildingStore.getActiveId();
 }
 
-/** یک‌بار برای هر ساختمان: سال‌های فعالِ تنظیمات قدیمی به فهرست سال‌های ساختمان می‌آیند */
-async function ensureSeeded(buildingId: string): Promise<void> {
-  const seeded = await withSqlite((db) => {
-    try { return JSON.parse(getMeta(db, YEARS_SEEDED_META) ?? '[]') as string[]; } catch { return []; }
-  });
-  if (seeded.includes(buildingId)) return;
-  const settings = await settingsRepository.get();
-  const current = todayJalali().year;
-  await withSqliteWrite((db) => inTransaction(db, () => {
+/**
+ * سال‌های ساختمان را مرتب نگه می‌دارد (فقط اگر لازم باشد می‌نویسد):
+ * سال جاری ساخته می‌شود (مثلاً اول فروردین)، زمان بستنِ ۱.۹.۰ پاک می‌شود و سال‌های خالیِ
+ * قدیمی (قبل از سال جاری، بدون هیچ قبضی) یا دورتر از سال بعد از فهرست برداشته می‌شوند.
+ */
+async function ensureYears(buildingId: string, currentYear: number = todayJalali().year): Promise<void> {
+  const plan = await withSqlite((db) => {
     const rows = readYearRows(db, buildingId);
-    if (rows.length === 0) {
-      const years = new Set<number>(settings.activeYears);
-      if (years.size === 0) years.add(current);
-      for (const year of years) upsertYearRow(db, buildingId, { year, closedAt: null, hidden: false });
-    }
-    let list: string[] = [];
-    try { list = JSON.parse(getMeta(db, YEARS_SEEDED_META) ?? '[]') as string[]; } catch { /* ignore */ }
-    if (!list.includes(buildingId)) list.push(buildingId);
-    setMeta(db, YEARS_SEEDED_META, JSON.stringify(list));
+    const stale = staleYearRows(rows, anyBillYears(db, buildingId), currentYear);
+    const needCurrent = !rows.some((r) => r.year === currentYear);
+    const unhide = rows.filter((r) => r.hidden && !canHideYear(r.year, currentYear)).map((r) => r.year);
+    const closed = hasClosedYearRows(db, buildingId);
+    return { stale, needCurrent, unhide, closed };
+  });
+  if (!plan.needCurrent && plan.stale.length === 0 && plan.unhide.length === 0 && !plan.closed) return;
+  await withSqliteWrite((db) => inTransaction(db, () => {
+    if (plan.closed) clearClosedYears(db, buildingId);
+    for (const y of plan.stale) deleteYearRow(db, buildingId, y);
+    for (const y of plan.unhide) upsertYearRow(db, buildingId, { year: y, closedAt: null, hidden: false });
+    if (plan.needCurrent) upsertYearRow(db, buildingId, { year: currentYear, closedAt: null, hidden: false });
   }));
 }
 
 function readState(db: Parameters<typeof readPeriods>[0], buildingId: string): PeriodsState {
+  const currentYear = todayJalali().year;
   const counts = billYearCounts(db, buildingId);
-  const merged = mergeBuildingYears(readYearRows(db, buildingId), counts.keys());
+  const merged = mergeBuildingYears(readYearRows(db, buildingId), anyBillYears(db, buildingId), currentYear);
   const years: YearInfo[] = merged.map((y) => ({
     ...y,
     billCount: counts.get(y.year) ?? 0,
-    hasAnyBill: billCountForYear(db, buildingId, y.year) > 0,
+    isCurrent: y.year === currentYear,
+    canHide: canHideYear(y.year, currentYear),
   }));
   const periodBillCounts = new Map<string, number>();
   const r = db.exec('SELECT mgmt_period_id, count(*) FROM bills WHERE building_id = ? AND deleted_at IS NULL AND mgmt_period_id IS NOT NULL GROUP BY mgmt_period_id', [buildingId]);
   for (const row of r[0]?.values ?? []) periodBillCounts.set(String(row[0]), Number(row[1]));
   return {
     buildingId,
+    currentYear,
     years,
-    defaultYear: getDefaultYear(db, buildingId),
     mgmtEnabled: getMgmtEnabled(db, buildingId),
     periods: readPeriods(db, buildingId),
     periodBillCounts,
@@ -100,7 +109,7 @@ function readState(db: Parameters<typeof readPeriods>[0], buildingId: string): P
 
 async function write<T>(buildingId: string | undefined, fn: (db: Parameters<typeof readPeriods>[0], bid: string) => T): Promise<T> {
   const bid = await activeId(buildingId);
-  await ensureSeeded(bid);
+  await ensureYears(bid);
   const out = await withSqliteWrite((db) => inTransaction(db, () => fn(db, bid)));
   notify();
   return out;
@@ -111,7 +120,7 @@ export class PeriodRuleError extends Error {}
 export const periodsRepository = {
   async getState(buildingId?: string): Promise<PeriodsState> {
     const bid = await activeId(buildingId);
-    await ensureSeeded(bid);
+    await ensureYears(bid);
     return withSqlite((db) => readState(db, bid));
   },
 
@@ -120,53 +129,28 @@ export const periodsRepository = {
     return (await this.getState(buildingId)).years;
   },
 
-  /** سال پیش‌فرض فرم قبض تازه (null = هیچ سال بازی نیست) */
-  async defaultYearForNewBill(buildingId?: string): Promise<number | null> {
+  /** سال قبض تازه: سال جاری */
+  async defaultYearForNewBill(buildingId?: string): Promise<number> {
     const s = await this.getState(buildingId);
-    return defaultBillYear(s.years, s.defaultYear, todayJalali().year);
+    return defaultBillYear(s.currentYear);
   },
 
-  async addYear(year: number, buildingId?: string): Promise<void> {
-    if (!Number.isInteger(year) || year < 1300 || year > 1700) throw new PeriodRuleError('سال نامعتبر است.');
+  /** «افزودن سال N»: فقط سال بعد از سال جاری (برای قبض‌های پیش از نوروز) */
+  async addNextYear(buildingId?: string): Promise<number> {
+    const next = todayJalali().year + 1;
     await write(buildingId, (db, bid) => {
-      if (readYearRows(db, bid).some((y) => y.year === year)) return;
-      upsertYearRow(db, bid, { year, closedAt: null, hidden: false });
+      if (readYearRows(db, bid).some((y) => y.year === next)) return;
+      upsertYearRow(db, bid, { year: next, closedAt: null, hidden: false });
     });
+    return next;
   },
 
-  /** «برداشتن از فهرست»: فقط سالی که هیچ قبضی ندارد */
-  async removeYear(year: number, buildingId?: string): Promise<void> {
-    await write(buildingId, (db, bid) => {
-      if (billCountForYear(db, bid, year) > 0) throw new PeriodRuleError('این سال قبض دارد و از فهرست برداشته نمی‌شود؛ می‌توانید آن را ببندید.');
-      deleteYearRow(db, bid, year);
-      if (getDefaultYear(db, bid) === year) setDefaultYear(db, bid, null);
-    });
-  },
-
-  /** «بستن سال»: برگشت ندارد */
-  async closeYear(year: number, buildingId?: string, now: Date = new Date()): Promise<void> {
-    await write(buildingId, (db, bid) => {
-      const cur = readYearRows(db, bid).find((y) => y.year === year);
-      if (cur?.closedAt) return;
-      upsertYearRow(db, bid, { year, closedAt: now.toISOString(), hidden: false });
-      if (getDefaultYear(db, bid) === year) setDefaultYear(db, bid, null);
-    });
-  },
-
+  /** پنهان / نمایش سال (سال جاری و سال بعد پنهان نمی‌شوند) */
   async setYearHidden(year: number, hidden: boolean, buildingId?: string): Promise<void> {
+    const current = todayJalali().year;
+    if (hidden && !canHideYear(year, current)) throw new PeriodRuleError('سال جاری همیشه نمایان است و پنهان نمی‌شود.');
     await write(buildingId, (db, bid) => {
-      const cur = readYearRows(db, bid).find((y) => y.year === year);
-      if (!cur?.closedAt) throw new PeriodRuleError('فقط سال بسته پنهان می‌شود.');
-      upsertYearRow(db, bid, { ...cur, hidden });
-    });
-  },
-
-  async setDefaultYear(year: number, buildingId?: string): Promise<void> {
-    await write(buildingId, (db, bid) => {
-      const cur = readYearRows(db, bid).find((y) => y.year === year);
-      if (cur?.closedAt) throw new PeriodRuleError('سال بسته نمی‌تواند پیش‌فرض باشد.');
-      if (!cur) upsertYearRow(db, bid, { year, closedAt: null, hidden: false });
-      setDefaultYear(db, bid, year);
+      upsertYearRow(db, bid, { year, closedAt: null, hidden });
     });
   },
 
@@ -227,10 +211,10 @@ export const periodsRepository = {
   /** زمینهٔ قفل قبض‌های یک ساختمان */
   async lockContext(buildingId?: string): Promise<LockContext> {
     const s = await this.getState(buildingId);
-    return { closedYears: closedYearSet(s.years), periods: s.periods, todayKey: todayKeyNow() };
+    return { periods: s.periods, todayKey: todayKeyNow() };
   },
 
-  /** وضعیت قفل یک قبض (از روی SQLite: سال بسته یا دورهٔ بسته) */
+  /** وضعیت قفل یک قبض (از روی SQLite: دورهٔ مدیریتِ بسته) */
   async billLock(billId: string): Promise<BillLock> {
     await ensureMigrationDone();
     const row = await withSqlite((db) => {
@@ -246,14 +230,14 @@ export const periodsRepository = {
   /** id قبض‌های قفل ساختمان فعال */
   async lockedIds(buildingId?: string): Promise<Set<string>> {
     const bid = await activeId(buildingId);
-    await ensureSeeded(bid);
+    await ensureYears(bid);
     const today = todayKeyNow();
     return withSqlite((db) => lockedBillIds(db, bid, today, (p) => isPeriodClosed(p, today)));
   },
 
   async getShowHidden(): Promise<ShowHiddenPrefs> {
     const v = await readJson<Partial<ShowHiddenPrefs> | null>(SHOW_HIDDEN_KEY, null);
-    return { years: v?.years === true, managers: v?.managers === true };
+    return { managers: v?.managers === true };
   },
 
   async setShowHidden(patch: Partial<ShowHiddenPrefs>): Promise<void> {
@@ -262,10 +246,9 @@ export const periodsRepository = {
     notify();
   },
 
-  /** سال‌هایی که فیلترها و گزارش‌ها نشان می‌دهند (پنهان‌ها فقط با «نمایش سال‌های پنهان») */
+  /** سال‌هایی که فیلترها و گزارش‌ها نشان می‌دهند (سال پنهان نه) — صعودی */
   async filterYears(buildingId?: string): Promise<number[]> {
-    const [s, show] = await Promise.all([this.getState(buildingId), this.getShowHidden()]);
-    return s.years.filter((y) => show.years || !y.hidden).map((y) => y.year).sort((a, b) => a - b);
+    return visibleYears((await this.getState(buildingId)).years);
   },
 
   async buildingIds(): Promise<string[]> {

@@ -50,9 +50,9 @@ export const BACKUP_APP_ID = 'apartemant';
  *    ساختمان‌ها را دارد؛ پس در استفادهٔ عادی «نوع ناشناخته» پیش نمی‌آید. فقط برای فایل دستکاری‌شده/خراب: قبضی که نوعش نه
  *    داخلی است نه سفارشیِ تعریف‌شدهٔ ساختمانِ خودش، رد نمی‌شود و «متفرقه» بازیابی می‌شود (`summary.remappedBills`).
  *    قالب‌های ۱ تا ۱۰ نوع سفارشی ندارند.
- * ۱۲: نسخه ۱.۹ (+ سال‌ها و مدیر ساختمان): `buildings[].mgmtEnabled` (کلید مدیر ساختمان)، `buildings[].defaultYear`،
- *    `buildings[].years[]` (سال‌های بسته/پنهان)، `managementPeriods[].managerUnit/hidden` (پایان خالی = بدون تاریخ پایان)
- *    و `bills[].mgmtPeriodId` (دورهٔ مدیریتِ قبض). قالب‌های ۹ تا ۱۱: کلید مدیر روشن، سالی بسته نیست و دورهٔ هر قبض
+ * ۱۲: نسخه ۱.۹ (+ سال‌ها و مدیر ساختمان): `buildings[].mgmtEnabled` (کلید مدیر ساختمان)، `buildings[].defaultYear` (از ۱.۹.۱ همیشه null و نادیده)،
+ *    `buildings[].years[]` (سال‌های پنهان؛ `closedAt` از ۱.۹.۱ همیشه null است و هنگام بازیابی نادیده گرفته می‌شود)، `managementPeriods[].managerUnit/hidden` (پایان خالی = بدون تاریخ پایان)
+ *    و `bills[].mgmtPeriodId` (دورهٔ مدیریتِ قبض). قالب‌های ۹ تا ۱۱: کلید مدیر روشن و دورهٔ هر قبض
  *    مثل مهاجرت از روی تاریخ ثبت تعیین می‌شود. قالب‌های ۱ تا ۸ هم هنگام ذخیره همین‌طور به دوره‌های موجود وصل می‌شوند.
  * همه قالب‌های قدیمی‌تر (۱ تا ۷) قابل بازیابی‌اند (قبض بدون splitMethod = بر اساس نفرات، بدون billPaid = پرداخت‌نشده،
  * بدون dueDate = بدون مهلت پرداخت، بدون deletedAt = حذف‌نشده).
@@ -108,7 +108,7 @@ export interface BackupBuilding {
   billTypes: BackupBillType[];
   /** قالب ۱۲: کلید «مدیر ساختمان» (قالب‌های ۹ تا ۱۱ = روشن) */
   mgmtEnabled: boolean;
-  /** قالب ۱۲: سال پیش‌فرض فرم قبض */
+  /** قالب ۱۲ (۱.۹.۰)؛ از ۱.۹.۱ استفاده نمی‌شود و همیشه null است */
   defaultYear: number | null;
   /** قالب ۱۲: سال‌های ساختمان (بسته/پنهان) */
   years: BuildingYear[];
@@ -487,8 +487,8 @@ function parseBuildings(raw: unknown, version: number): BackupBuilding[] {
     if (version >= 12) {
       if (typeof b.mgmtEnabled !== 'boolean') bad(`کلید مدیر ساختمان ${nth(i)} نامعتبر است.`);
       mgmtEnabled = b.mgmtEnabled as boolean;
-      if (b.defaultYear != null && !isInt(b.defaultYear, 1300, 1700)) bad(`سال پیش‌فرض ساختمان ${nth(i)} نامعتبر است.`);
-      defaultYear = (b.defaultYear as number | null | undefined) ?? null;
+      if (b.defaultYear != null && !isInt(b.defaultYear, 1300, 1700)) bad(`سال‌های ساختمان ${nth(i)} نامعتبر است.`);
+      defaultYear = null;
       years = parseBuildingYears(b.years, i);
     }
     return {
@@ -499,7 +499,7 @@ function parseBuildings(raw: unknown, version: number): BackupBuilding[] {
   });
 }
 
-/** سال‌های یک ساختمان (قالب ۱۲): سال یکتا، زمان بستن معتبر یا null، پنهان فقط برای سال بسته */
+/** سال‌های یک ساختمان (قالب ۱۲): سال یکتا و پنهان/نمایان (زمان بستنِ پشتیبان ۱.۹.۰ فقط اعتبارسنجی و نادیده گرفته می‌شود) */
 function parseBuildingYears(raw: unknown, bi: number): BuildingYear[] {
   const list = arrayOf(raw ?? [], 'سال‌ها', 200);
   const seen = new Set<number>();
@@ -509,8 +509,8 @@ function parseBuildingYears(raw: unknown, bi: number): BuildingYear[] {
     }
     if (seen.has(y.year as number)) bad(`سال تکراری در ساختمان ${nth(bi)}.`);
     seen.add(y.year as number);
-    const closedAt = (y.closedAt as string | null | undefined) ?? null;
-    return { year: y.year as number, closedAt, hidden: !!closedAt && y.hidden === true };
+    // ۱.۹.۱: بستن سال حذف شد → زمان بستن نادیده گرفته می‌شود و فقط «پنهان» می‌ماند
+    return { year: y.year as number, closedAt: null, hidden: y.hidden === true };
   });
 }
 

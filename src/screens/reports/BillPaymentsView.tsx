@@ -33,7 +33,7 @@ export function BillPaymentsView({ all, year: yearProp, type = null, onChange, o
   const billYears = useMemo(() => Array.from(new Set((all ?? []).map((b) => b.bill.year))), [all]);
   const years = visibleYears.length ? visibleYears : [today.year];
   const initialYear = yearProp && years.includes(yearProp) ? yearProp : pickReportYear(years, billYears.filter((y) => years.includes(y)), today.year);
-  // ۱.۹: سال و نوع چندتایی؛ خالی = همه (سال‌های پنهان فقط با «نمایش سال‌های پنهان»)
+  // ۱.۹: سال و نوع چندتایی؛ خالی = همه (سال پنهان نمی‌آید)
   const [yearSel, setYearSel] = useState<number[] | null>(null);
   const [typeSel, setTypeSel] = useState<ExpenseType[] | null>(null);
   const selYears = (yearSel ?? [initialYear]).filter((y) => years.includes(y));

@@ -11,7 +11,7 @@ export type Route =
   | { name: 'settings'; focus?: string }
   /** پشتیبانی (۱.۷.۷): زبانهٔ «سؤال‌های رایج» یا «تماس با ما» */
   | { name: 'support'; tab?: 'faq' | 'contact' }
-  /** سوابق (۱.۹ چندتایی): years نبودن = سال پیش‌فرض؛ [] یا نبودنِ بقیه = «همه»؛ statuses خالی = بدون حذف‌شده‌ها */
+  /** سوابق (۱.۹ چندتایی): years نبودن = سال جاری (اگر نمایان)؛ [] یا نبودنِ بقیه = «همه»؛ statuses خالی = بدون حذف‌شده‌ها */
   | { name: 'records'; years?: number[]; months?: number[]; types?: ExpenseType[]; statuses?: StatusPick[] }
   /** «دوره‌ها» (۱.۹): سال‌ها و مدیر ساختمان */
   | { name: 'periods'; tab?: 'years' | 'manager' }

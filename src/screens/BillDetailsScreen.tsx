@@ -44,7 +44,7 @@ export function BillDetailsScreen({ billId, onBack, onEdit }: Props) {
   const [data, setData] = useState<BillWithUnits | null | undefined>(undefined);
   const [payUnit, setPayUnit] = useState<Unit | null>(null);
   const [dueEdit, setDueEdit] = useState<string | null | undefined>(undefined);
-  // ۱.۹: قفل سال بسته / دورهٔ مدیریت بسته (از SQLite)
+  // ۱.۹.۱: قفل فقط از دورهٔ مدیریت بسته (از SQLite)
   const [lock, setLock] = useState<BillLock>(UNLOCKED);
 
   useEffect(() => {
