@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">آپارتمانت</string>
+    <string name="title_activity_main">آپارتمانت</string>
+    <string name="package_name">ir.buildingcharge.app</string>
+    <string name="custom_url_scheme">ir.buildingcharge.app</string>
+</resources>

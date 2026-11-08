@@ -7,7 +7,7 @@ dist-ssr/
 *.tsbuildinfo
 
 # Capacitor native platforms (generated with `npx cap add android`)
-/android/
+# /android/ is tracked (android/.gitignore excludes generated files)
 /ios/
 
 # APK / build artifacts
