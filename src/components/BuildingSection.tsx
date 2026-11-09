@@ -32,7 +32,7 @@ const fromRows = (rows: Row[], prev: BuildingSettings | null): BuildingSettings 
 });
 
 /**
- * بخش «ساختمان» در تنظیمات (از نسخه ۱.۶.۰): تعداد واحدها + اسم مستعار و نفرات پیش‌فرض هر واحد.
+ * بخش «ساختمان‌ها» در تنظیمات (از نسخه ۱.۶.۰): تعداد واحدها + اسم مستعار و نفرات پیش‌فرض هر واحد.
  * فقط پیش‌فرض قبض‌های جدید است؛ قبض‌های ثبت‌شده عکس لحظه‌ای خودشان را دارند.
  */
 export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
@@ -96,14 +96,15 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
 
   return (
     <div className="building-card">
+      <h3 className="settings-sub">تنظیمات واحدها</h3>
       <p className="card__hint">
-        واحدهای پیش‌فرض قبض جدید. در فرم قبض هم می‌توانید واحد اضافه/حذف کنید یا نفرات را تغییر دهید (فقط برای همان قبض).
-        تغییر این تنظیمات روی قبض‌های ثبت‌شده، گزارش‌ها و بدهی‌ها اثری ندارد.
+        واحدهای پیش‌فرض قبض جدید. تغییر این تنظیمات روی قبض‌های ثبت‌شده اثری ندارد.
       </p>
 
       <div className="setting-row building-count">
         <span className="setting-row__text">
           <span className="setting-row__label">تعداد واحدها</span>
+          <span className="setting-row__hint">چند واحد در قبض‌های تازه پیش‌فرض می‌آید.</span>
         </span>
         <div className="stepper" role="group" aria-label="تعداد واحدها">
           <button type="button" className="stepper__btn" aria-label="کم کردن واحد" onClick={() => void setCount(rows.length - 1)} disabled={rows.length <= 1}>
@@ -216,9 +217,7 @@ export function BuildingSection({ reloadKey = 0 }: { reloadKey?: number }) {
           </div>
         ))}
       </div>
-      <p className="building-note-small">متراژ (اعشار مجاز مثل ۷۵٫۵؛ پیش‌فرض هر واحد ۱) فقط برای تقسیم «بر اساس متراژ» به‌کار می‌رود و در فرم قبض پیش‌فرض می‌شود؛ ظاهر آن را در «نحوه نمایش متراژ» پایین‌تر انتخاب کنید.</p>
-      <p className="building-note-small">شماره تلفن اختیاری است؛ برای تماس و پیامک از بخش «جلسه» به‌کار می‌رود.</p>
-      <p className="building-note-small">واحد «خالی» در قبض‌های جدید از محاسبه کنار گذاشته می‌شود (در هیچ‌کدام از سه روش تقسیم سهمی ندارد و در بدهکاران نمی‌آید)؛ در فرم قبض می‌توانید برای همان قبض تغییرش دهید. نام واحد بدون اسم مستعار: «واحد ۱»، «واحد ۲»، ...</p>
+      <p className="building-note-small">اسم مستعار اختیاری · نفرات/متراژ پیش‌فرض تقسیم · خالی بدون سهم · تلفن برای جلسه</p>
     </div>
   );
 }

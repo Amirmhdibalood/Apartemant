@@ -1,6 +1,6 @@
 /**
- * ۱.۹.۱ — سال‌های خودکار: سال جاری همیشه هست، فقط سال بعد اضافه می‌شود، فقط پنهان/نمایش،
- * بدون بستن سال و بدون سال پیش‌فرض؛ مهاجرت از ۱.۹.۰ (پاک شدن زمان بستن، پاک شدن سال‌های خالی قدیمی).
+ * ۱.۹.۱ / ۱.۹.۲ — سال‌های خودکار: سال جاری همیشه هست؛ فقط پنهان/نمایش؛ بدون افزودن سال بعد؛
+ * بدون بستن سال و بدون سال پیش‌فرض؛ مهاجرت پاک‌کردن سال‌های آیندهٔ خالی؛ impliedBillYear.
  */
 import { beforeEach, describe, expect, it } from 'vitest';
 import { resetIdbForTests } from '../src/storage/idb';
@@ -12,7 +12,7 @@ import { periodsRepository, PeriodRuleError } from '../src/storage/periodsReposi
 import { DEFAULT_BUILDING_ID } from '../src/storage/sqlite/schema';
 import { createBackup, parseBackup, serializeBackup } from '../src/logic/backup';
 import {
-  canHideYear, defaultBillYear, mergeBuildingYears, nextAddableYear, selectableBillYears, staleYearRows, visibleYears, yearRangeLines,
+  canHideYear, defaultBillYear, impliedBillYear, mergeBuildingYears, nextAddableYear, selectableBillYears, staleYearRows, visibleYears, yearRangeLines,
 } from '../src/logic/periods';
 import { todayJalali } from '../src/logic/jalali';
 import { HELP_TOPICS } from '../src/content/help';
@@ -42,33 +42,40 @@ async function setup() {
 }
 
 describe('منطق خالص سال‌ها', () => {
-  it('فهرست: سال‌های دارای قبض ∪ ذخیره‌شده ∪ سال جاری، از اولین سالِ دارای قبض؛ بدون سال خالی قدیمی', () => {
-    // ردیف‌های قدیمی ۱۳۹۳ تا ۱۴۰۷ (باگ پنجرهٔ قدیمی «افزودن سال») بدون قبض
+  it('فهرست: سال‌های دارای قبض ∪ ذخیره‌شده ∪ سال جاری، از اولین سالِ دارای قبض؛ بدون سال آینده', () => {
+    // ردیف‌های قدیمی ۱۳۹۳ تا ۱۴۰۷ بدون قبض — سال آینده حذف
     const rows = Array.from({ length: 15 }, (_, i) => Y(1393 + i));
-    expect(mergeBuildingYears(rows, [], 1405).map((y) => y.year)).toEqual([1406, 1405]);
-    expect(mergeBuildingYears(rows, [1403, 1405], 1405).map((y) => y.year)).toEqual([1406, 1405, 1404, 1403]);
+    expect(mergeBuildingYears(rows, [], 1405).map((y) => y.year)).toEqual([1405]);
+    expect(mergeBuildingYears(rows, [1403, 1405], 1405).map((y) => y.year)).toEqual([1405, 1404, 1403]);
     expect(mergeBuildingYears([], [1401], 1405).map((y) => y.year)).toEqual([1405, 1401]);
     expect(mergeBuildingYears([], [], 1405)).toEqual([Y(1405)]);
   });
-  it('سال جاری و بعد از آن هیچ‌وقت پنهان نیستند', () => {
+  it('سال جاری هیچ‌وقت پنهان نیست؛ سال آینده در فهرست نمی‌آید', () => {
     const m = mergeBuildingYears([Y(1404, true), Y(1405, true), Y(1406, true)], [1404], 1405);
-    expect(m).toEqual([Y(1406), Y(1405), Y(1404, true)]);
+    expect(m).toEqual([Y(1405), Y(1404, true)]);
     expect(canHideYear(1404, 1405)).toBe(true);
     expect(canHideYear(1405, 1405)).toBe(false);
     expect(canHideYear(1406, 1405)).toBe(false);
   });
-  it('فقط «سال بعد» اضافه می‌شود و وقتی هست دکمه نیست', () => {
-    expect(nextAddableYear([Y(1405)], 1405)).toBe(1406);
+  it('افزودن سال بعد حذف شده (همیشه null)', () => {
+    expect(nextAddableYear([Y(1405)], 1405)).toBeNull();
     expect(nextAddableYear([Y(1406), Y(1405)], 1405)).toBeNull();
   });
-  it('فیلترها سال پنهان را ندارند؛ فرم قبض دارد؛ قبض تازه سال جاری را می‌گیرد', () => {
+  it('فیلترها سال پنهان را ندارند؛ فرم قبض تازه فقط سال جاری؛ گزارش همه', () => {
     const ys = [Y(1405), Y(1404, true), Y(1403)];
     expect(visibleYears(ys)).toEqual([1403, 1405]);
-    expect(selectableBillYears(ys)).toEqual([1403, 1404, 1405]);
+    expect(selectableBillYears(ys)).toEqual([1403, 1404, 1405]); // سازگاری گزارش/فیلتر
+    expect(selectableBillYears([], 1405)).toEqual([1405]);
+    expect(selectableBillYears([], 1405, [1404])).toEqual([1404, 1405]);
     expect(defaultBillYear(1405)).toBe(1405);
   });
-  it('پاک‌سازی: سال خالیِ قبل از سال جاری یا دورتر از سال بعد', () => {
-    expect(staleYearRows([Y(1393), Y(1403), Y(1405), Y(1406), Y(1407)], new Set([1403]), 1405)).toEqual([1393, 1407]);
+  it('impliedBillYear: ماه جلوتر از امروز → سال قبل', () => {
+    expect(impliedBillYear(1405, 12, 1405, 1)).toBe(1404);
+    expect(impliedBillYear(1405, 1, 1405, 1)).toBe(1405);
+    expect(impliedBillYear(1404, 12, 1405, 1)).toBe(1404);
+  });
+  it('پاک‌سازی: سال خالیِ غیرجاری (گذشته یا آینده)', () => {
+    expect(staleYearRows([Y(1393), Y(1403), Y(1405), Y(1406), Y(1407)], new Set([1403]), 1405)).toEqual([1393, 1406, 1407]);
   });
   it('تاریخ شروع و پایان با رقم فارسی (۳۰ اسفند در سال کبیسه)', () => {
     expect(yearRangeLines(1406)).toEqual({ start: 'تاریخ شروع: ۱۴۰۶/۰۱/۰۱', end: 'تاریخ پایان: ۱۴۰۶/۱۲/۲۹' });
@@ -77,17 +84,15 @@ describe('منطق خالص سال‌ها', () => {
 });
 
 describe('مخزن سال‌ها', () => {
-  it('نصب تازه: فقط سال جاری، پنهان نمی‌شود؛ «افزودن سال» فقط سال بعد', async () => {
+  it('نصب تازه: فقط سال جاری، پنهان نمی‌شود؛ افزودن سال بعد no-op', async () => {
     await setup();
     let s = await periodsRepository.getState();
     expect(s.currentYear).toBe(CUR);
     expect(s.years.map((y) => [y.year, y.isCurrent, y.canHide])).toEqual([[CUR, true, false]]);
-    expect(await periodsRepository.addNextYear()).toBe(CUR + 1);
-    await periodsRepository.addNextYear(); // دوباره زدن تکراری نمی‌سازد
+    expect(await periodsRepository.addNextYear()).toBe(CUR); // no-op
     s = await periodsRepository.getState();
-    expect(s.years.map((y) => y.year)).toEqual([CUR + 1, CUR]);
+    expect(s.years.map((y) => y.year)).toEqual([CUR]);
     await expect(periodsRepository.setYearHidden(CUR, true)).rejects.toThrow(PeriodRuleError);
-    await expect(periodsRepository.setYearHidden(CUR + 1, true)).rejects.toThrow(PeriodRuleError);
     expect(await periodsRepository.defaultYearForNewBill()).toBe(CUR);
   });
 
@@ -159,7 +164,8 @@ describe('راهنما: سال‌ها', () => {
     expect(all).not.toMatch(/بستن سال|سال بسته|سال پیش‌فرض|برداشتن از فهرست|نمایش سال‌های پنهان/);
     expect(all).not.toContain(['دوره', 'مالی'].join(' '));
     expect(all).toMatch(/سال‌های پنهان/);
-    expect(all).toMatch(/افزودن سال/);
+    expect(all).toMatch(/افزودن سال بعد/); // ذکر حذف دکمه
     expect(all).toMatch(/همیشه نمایان/);
+    expect(all).toMatch(/تغییر سال|ثبت در همین سال/);
   });
 });

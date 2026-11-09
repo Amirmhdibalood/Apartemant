@@ -13,6 +13,7 @@ import { ExpenseTypePicker } from '../components/ExpenseTypePicker';
 import { AmountInput } from '../components/AmountInput';
 import { UnitsEditor } from '../components/UnitsEditor';
 import { usePeriods } from '../hooks/usePeriods';
+import { impliedBillYear, selectableBillYears } from '../logic/periods';
 import { useFeedback } from '../context/FeedbackContext';
 import { validateDraft } from '../logic/validation';
 import { Errors } from '../logic/errors';
@@ -58,7 +59,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
     if (next !== draft.splitMethod) setDraft({ ...draft, splitMethod: next });
   }, [prefs, draft.splitMethod, draft.editingBillId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // پیش‌فرض واحدها از تنظیمات «ساختمان» (فقط قبض جدید)
+  // پیش‌فرض واحدها از تنظیمات «ساختمان‌ها» (فقط قبض جدید)
   const [building, setBuilding] = useState<BuildingSettings | null>(null);
   useEffect(() => {
     if (draft.editingBillId) return;
@@ -97,16 +98,43 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
     }
   };
 
-  // ۱.۹.۱: همهٔ سال‌های ساختمان (سال پنهان هم قابل انتخاب است، با یادآوری کوچک)؛ سال قبض فعلی همیشه هست
+  // ۱.۹.۲: پیش‌فرض فقط سال جاری؛ بعد از هشدار «تغییر سال» سال قبض هم اضافه می‌شود
   const today = todayJalali();
-  const { billYears, hiddenYears } = usePeriods();
-  const years = Array.from(new Set([...billYears, draft.year])).sort((a, b) => a - b);
+  const { hiddenYears, state: periodsState } = usePeriods();
+  const currentYear = periodsState?.currentYear ?? today.year;
+  const [extraYears, setExtraYears] = useState<number[]>([]);
+  const years = selectableBillYears(
+    [],
+    currentYear,
+    [...extraYears, ...(draft.editingBillId || draft.year !== currentYear ? [draft.year] : [])],
+  );
   const yearHidden = hiddenYears.includes(draft.year);
 
   const submit = () => {
     const res = validateDraft(draft);
     if (!res.ok) {
       showErrors(res.errors);
+      return;
+    }
+    const implied = impliedBillYear(draft.year, draft.month, today.year, today.month);
+    if (implied !== draft.year) {
+      void (async () => {
+        const change = await confirmDanger({
+          title: 'هشدار سال قبض',
+          text: `این قبض برای سال ${toPersianDigits(implied)} است؛ بهتر است در همان سال ثبت شود.`,
+          confirmLabel: 'تغییر سال',
+          cancelLabel: 'ثبت در همین سال',
+          tone: 'warning',
+        });
+        if (change) {
+          setExtraYears((xs) => (xs.includes(implied) ? xs : [...xs, implied]));
+          // باز کردن انتخابگر سال بدون ذخیره
+          window.setTimeout(() => document.getElementById('year')?.click(), 0);
+          return;
+        }
+        // ثبت در همین سال (سال جاری فرم)
+        onCalculated();
+      })();
       return;
     }
     onCalculated();
@@ -220,7 +248,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
           </div>
           )}
           {perArea && (
-            <p className="split-hint">قیمت هر مترمربع = مبلغ قبض ÷ مجموع متراژ واحدهای غیرخالی؛ سهم هر واحد = متراژ × قیمت هر مترمربع. متراژ از «تنظیمات ← ساختمان» پر می‌شود و برای همین قبض قابل ویرایش است (نفرات اثری ندارد).</p>
+            <p className="split-hint">قیمت هر مترمربع = مبلغ قبض ÷ مجموع متراژ واحدهای غیرخالی؛ سهم هر واحد = متراژ × قیمت هر مترمربع. متراژ از «تنظیمات ← ساختمان‌ها» پر می‌شود و برای همین قبض قابل ویرایش است (نفرات اثری ندارد).</p>
           )}
           {perArea && missingAreas.length > 0 && (
             <div className="area-warn" role="alert">
@@ -239,7 +267,7 @@ export function NewBillScreen({ draft, setDraft, onBack, onCalculated }: Props) 
           <div className="prefill-note building-note" role="status">
             <p className="prefill-note__text">
               {matches
-                ? <>واحدها از «تنظیمات ← ساختمان» وارد شد (<span className="num">{building.units.filter((u) => !u.vacant).length}</span> واحد{building.units.some((u) => u.vacant) && <> + <span className="num">{building.units.filter((u) => u.vacant).length}</span> خالی</>}).</>
+                ? <>واحدها از «تنظیمات ← ساختمان‌ها» وارد شد (<span className="num">{building.units.filter((u) => !u.vacant).length}</span> واحد{building.units.some((u) => u.vacant) && <> + <span className="num">{building.units.filter((u) => u.vacant).length}</span> خالی</>}).</>
                 : <>واحدهای این قبض با پیش‌فرض ساختمان فرق دارد؛ تغییرات فقط روی همین قبض اثر دارد.</>}
             </p>
             {!matches && (

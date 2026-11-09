@@ -19,7 +19,7 @@ import { todayJalali, parseJalaliKey } from '../logic/jalali';
 import { unitLabel } from '../logic/building';
 import {
   activePeriod, effectiveEnd, hasOpenEnd, isPeriodActive, isPeriodClosed, keyToSlash,
-  managerDisplayName, nextAddableYear, yearRangeLines, type MgmtPeriod,
+  managerDisplayName, yearRangeLines, type MgmtPeriod,
 } from '../logic/periods';
 import type { BuildingSettings } from '../models/types';
 
@@ -58,8 +58,6 @@ function YearsTab() {
   const current = state.currentYear;
   const shown = state.years.filter((y) => !y.hidden);
   const hidden = state.years.filter((y) => y.hidden);
-  const next = nextAddableYear(state.years, current);
-
   const run = async (fn: () => Promise<unknown>, ok: string) => {
     try { await fn(); toast(ok); } catch (e) {
       showErrors(e instanceof PeriodRuleError ? Errors.backupInvalid(e.message) : Errors.storageFailed());
@@ -76,7 +74,7 @@ function YearsTab() {
         <IconCalendarCheck size={22} />
         <div>
           <strong>سال جاری: {fa(current)}</strong>
-          <p>سال‌ها خودکار ساخته می‌شوند. هر سال از ۱ فروردین تا آخر اسفند است و سال بعد، اول فروردین خودش اضافه می‌شود.</p>
+          <p>سال‌ها خودکار ساخته می‌شوند. هر سال از ۱ فروردین تا آخر اسفند است و سال تازه، اول فروردین خودش اضافه و انتخاب می‌شود.</p>
         </div>
       </div>
       <p className="card__hint">سالی که لازم ندارید را پنهان کنید تا در فیلترهای «سوابق» و «گزارش‌ها» نیاید. قبض‌هایش پاک نمی‌شود و هر وقت بخواهید دوباره نمایانش می‌کنید.</p>
@@ -96,14 +94,6 @@ function YearsTab() {
               {hidden.map((y) => <YearCard key={y.year} y={y} current={current} onToggle={toggle} />)}
             </ul>
           )}
-        </div>
-      )}
-      {next != null && (
-        <div className="year-add">
-          <button type="button" className="year-add__btn" onClick={() => void run(() => periodsRepository.addNextYear(), `سال ${fa(next)} اضافه شد.`)}>
-            <IconPlus size={20} /> افزودن سال {fa(next)}
-          </button>
-          <p className="year-add__hint">فقط سال بعد اضافه می‌شود (برای ثبت قبض‌های پیش از نوروز).<br />اگر هم نزنید، ۱ فروردین {fa(next)} خودش ساخته می‌شود.</p>
         </div>
       )}
     </section>
@@ -188,6 +178,7 @@ function ManagerTab({ onNew, onEdit }: { onNew: () => void; onEdit: (p: MgmtPeri
         <Switch id="mgmt-enabled" label="مدیر ساختمان در این ساختمان" checked={state.mgmtEnabled} onChange={(v) => void run(() => periodsRepository.setMgmtEnabled(v), v ? 'مدیر ساختمان روشن شد.' : 'مدیر ساختمان خاموش شد.')} />
       </div>
       {state.mgmtEnabled && (
+        <>
         <div className={'period-info' + (active ? '' : ' is-warn')}>
           {active ? <IconUser size={22} /> : <IconAlertTriangle size={22} />}
           <div>
@@ -195,7 +186,6 @@ function ManagerTab({ onNew, onEdit }: { onNew: () => void; onEdit: (p: MgmtPeri
             <p>{active ? 'قبض‌های تازه خودکار به نام این مدیر ثبت می‌شوند.' : 'تا مدیر جدید ثبت نشود، قبض تازه ثبت نمی‌شود.'}</p>
           </div>
         </div>
-      )}
       {list.length === 0 && <p className="card__hint">هنوز مدیری ثبت نشده است.</p>}
       <ul className="period-list">
         {list.map((p) => {
@@ -239,6 +229,8 @@ function ManagerTab({ onNew, onEdit }: { onNew: () => void; onEdit: (p: MgmtPeri
         </div>
         <Switch id="show-hidden-managers" label="نمایش دوره‌های پنهان" checked={show.managers} onChange={(v) => void periodsRepository.setShowHidden({ managers: v })} />
       </div>
+        </>
+      )}
     </section>
   );
 }

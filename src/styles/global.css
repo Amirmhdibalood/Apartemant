@@ -407,7 +407,7 @@ h1, h2, h3, p { margin: 0; }
 .dialog__list { text-align: right; font-size: 14px; line-height: 1.9; color: var(--text-2); margin: 0 0 8px; padding-right: 18px; }
 .dialog__dont-show { margin: 12px auto 4px; font-size: 14px; color: var(--text-2); }
 .dialog__actions { display: flex; gap: 12px; margin-top: 18px; }
-.dialog__actions .btn { flex: 1; }
+.dialog__actions .btn { flex: 1; min-width: 0; white-space: nowrap; padding: 0 10px; font-size: 14px; }
 .dialog--error .dialog__title { color: var(--text); }
 
 /* ---------- Toast ---------- */
@@ -831,6 +831,7 @@ h1, h2, h3, p { margin: 0; }
 .units-row__vacant { width: 46px; flex: 0 0 46px; display: inline-flex; align-items: center; justify-content: center; font-size: 12.5px; }
 .units-row--head .units-row__vacant { font-weight: 700; color: var(--text-2); }
 .table--result tr.is-vacant td { color: #a3abbd; }
+.building-card { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
 .building-note-small { margin-top: 10px; font-size: 12px; line-height: 1.8; color: var(--muted); }
 
 /* ---------- ۱.۶.۲: انتخابگرهای تک‌گزینه‌ای با ظاهر «سال‌های فعال» (OptionPicker) ---------- */

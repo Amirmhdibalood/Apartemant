@@ -14,8 +14,8 @@ import { addJalaliDays, formatJalaliKey, jalaliMonthLength, parseJalaliKey } fro
 /* ─── سال‌ها ─── */
 
 /**
- * سال‌های هر ساختمان (از ۱.۹.۱): خودکار. سال جاری همیشه هست (اول فروردین خودش ساخته می‌شود)،
- * فقط «سال بعد» را می‌شود زودتر اضافه کرد و تنها کار روی هر سال «پنهان / نمایش» است.
+ * سال‌های هر ساختمان (از ۱.۹.۲): خودکار. سال جاری همیشه هست (اول فروردین خودش ساخته و انتخاب می‌شود).
+ * سال بعد قبل از رسیدن دیده/اضافه نمی‌شود. تنها کار روی هر سال «پنهان / نمایش» است.
  * سال بسته نمی‌شود و قبض را قفل نمی‌کند (قفل فقط از دورهٔ مدیریتِ بسته می‌آید).
  */
 export interface BuildingYear {
@@ -46,15 +46,14 @@ export function yearRangeLines(year: number): { start: string; end: string } {
   return { start: `تاریخ شروع: ${keyToSlash(yearStartKey(year))}`, end: `تاریخ پایان: ${keyToSlash(yearEndKey(year))}` };
 }
 
-/** سال جاری و سال بعد (اگر زودتر اضافه شده) پنهان نمی‌شوند */
+/** سال جاری پنهان نمی‌شود */
 export function canHideYear(year: number, currentYear: number): boolean {
   return year < currentYear;
 }
 
-/** سالی که دکمهٔ «افزودن سال» اضافه می‌کند (فقط سال بعد)؛ null = سال بعد از قبل در فهرست است */
-export function nextAddableYear(years: readonly Pick<BuildingYear, 'year'>[], currentYear: number): number | null {
-  const next = currentYear + 1;
-  return years.some((y) => y.year === next) ? null : next;
+/** @deprecated از ۱.۹.۲ افزودن سال بعد حذف شد؛ همیشه null */
+export function nextAddableYear(_years: readonly Pick<BuildingYear, 'year'>[], _currentYear: number): number | null {
+  return null;
 }
 
 /** سال‌هایی که در فیلترهای سوابق و گزارش‌ها دیده می‌شوند (پنهان‌ها نه) — صعودی */
@@ -62,9 +61,21 @@ export function visibleYears(years: readonly BuildingYear[]): number[] {
   return years.filter((y) => !y.hidden).map((y) => y.year).sort((a, b) => a - b);
 }
 
-/** سال‌های قابل انتخاب در فرم قبض (همهٔ سال‌های فهرست، پنهان‌ها هم) — صعودی */
-export function selectableBillYears(years: readonly BuildingYear[]): number[] {
-  return years.map((y) => y.year).sort((a, b) => a - b);
+/** سال‌های قابل انتخاب در فرم قبض: پیش‌فرض فقط سال جاری؛ `extra` سال‌های مجازِ اضافه (مثلاً بعد از هشدار تاریخ). */
+export function selectableBillYears(years: readonly BuildingYear[], currentYear?: number, extra: readonly number[] = []): number[] {
+  if (currentYear == null && extra.length === 0) {
+    // سازگاری با تست‌های ۱.۹.۱: همهٔ سال‌های فهرست
+    return years.map((y) => y.year).sort((a, b) => a - b);
+  }
+  const cur = currentYear ?? Math.max(0, ...years.map((y) => y.year), 0);
+  const set = new Set<number>([cur, ...extra]);
+  return [...set].filter((y) => Number.isInteger(y) && y > 0).sort((a, b) => a - b);
+}
+
+/** اگر ماه انتخابی از ماه جاری جلوتر است، احتمالاً قبض مال سال قبل است (مثلاً اسفند در فروردین). */
+export function impliedBillYear(draftYear: number, draftMonth: number, todayYear: number, todayMonth: number): number {
+  if (draftYear === todayYear && draftMonth > todayMonth) return todayYear - 1;
+  return draftYear;
 }
 
 /** سال قبض تازه: سال جاری (سال تاریخ امروز) */
@@ -74,15 +85,15 @@ export function defaultBillYear(currentYear: number): number {
 
 /**
  * فهرست سال‌های ساختمان = سال‌های دارای قبض ∪ سال‌های ذخیره‌شده ∪ سال جاری،
- * از اولین سالِ دارای قبض (یا سال جاری) به بعد؛ سال ذخیره‌شدهٔ خالی دورتر از «سال بعد» هم نمی‌آید.
- * سال جاری و بعد از آن هیچ‌وقت پنهان نیستند. مرتب نزولی (جدیدترین بالا).
+ * از اولین سالِ دارای قبض (یا سال جاری) تا سال جاری؛ سال خالیِ آینده نمی‌آید.
+ * سال جاری هیچ‌وقت پنهان نیست. مرتب نزولی (جدیدترین بالا).
  */
 export function mergeBuildingYears(rows: readonly BuildingYear[], billYears: Iterable<number>, currentYear: number): BuildingYear[] {
   const withBills = new Set<number>(billYears);
-  const first = Math.min(currentYear, ...withBills);
+  const first = withBills.size ? Math.min(currentYear, ...withBills) : currentYear;
   const map = new Map<number, BuildingYear>();
   for (const r of rows) {
-    if (!withBills.has(r.year) && (r.year < first || r.year > currentYear + 1)) continue;
+    if (!withBills.has(r.year) && (r.year < first || r.year > currentYear)) continue;
     map.set(r.year, { year: r.year, closedAt: null, hidden: r.hidden && canHideYear(r.year, currentYear) });
   }
   for (const y of withBills) if (!map.has(y)) map.set(y, { year: y, closedAt: null, hidden: false });
@@ -90,9 +101,9 @@ export function mergeBuildingYears(rows: readonly BuildingYear[], billYears: Ite
   return [...map.values()].sort((a, b) => b.year - a.year);
 }
 
-/** ردیف‌های ذخیره‌شده‌ای که باید پاک شوند: سال خالیِ قبل از سال جاری یا بعد از «سال بعد» */
+/** ردیف‌های ذخیره‌شده‌ای که باید پاک شوند: سال خالیِ قبل از اولین قبض/جاری، یا سال آیندهٔ بدون قبض */
 export function staleYearRows(rows: readonly Pick<BuildingYear, 'year'>[], anyBillYears: ReadonlySet<number>, currentYear: number): number[] {
-  return rows.filter((r) => !anyBillYears.has(r.year) && (r.year < currentYear || r.year > currentYear + 1)).map((r) => r.year);
+  return rows.filter((r) => !anyBillYears.has(r.year) && (r.year < currentYear || r.year > currentYear)).map((r) => r.year);
 }
 
 /* ─── دوره‌های مدیریت ─── */

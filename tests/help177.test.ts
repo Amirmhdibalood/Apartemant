@@ -278,7 +278,8 @@ describe('۱.۹.۰ — آموزش و سؤال‌های رایج برای دور�
     expect(years).toMatch(/۳۰/);
     const home = topicById('home')!.steps.join(' ');
     expect(home).toMatch(/«سوابق»، «گزارش‌ها»، «خانه» \(دکمهٔ وسط و برجسته\)، «آموزش» و «تنظیمات»/);
-    for (const c of ['«دوره‌ها»', '«جلسه»', '«پشتیبان‌گیری»']) expect(home).toContain(c);
+    for (const c of ['«دوره‌ها»', '«جلسه»']) expect(home).toContain(c);
+    expect(home).not.toContain('«پشتیبان‌گیری»');
     const lock = textsOf(topicById('lock')!).join(' ');
     for (const w of ['ویرایش', 'حذف', 'پرداخت شد', 'مهلت', 'لغو این پرداخت', 'پرداخت واحدها']) expect(lock).toContain(w);
     expect(textsOf(topicById('records')!).join(' ')).toContain('۲ ماه (مهر، آبان)');

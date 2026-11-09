@@ -593,8 +593,8 @@ describe('QA 1.7.1 — هم‌خوانی متن راهنما با رفتار', (
       expect(src(f)).not.toContain('از یک روز قبل');
     }
   });
-  it('توضیح واحد خالی از «سه» روش تقسیم می‌گوید و هیچ نویسهٔ خراب (U+FFFD) در متن‌ها نیست', () => {
-    expect(src('components/BuildingSection.tsx')).toContain('هیچ‌کدام از سه روش تقسیم');
+  it('توضیح واحد خالی به روش‌های تقسیم اشاره می‌کند و هیچ نویسهٔ خراب (U+FFFD) در متن‌ها نیست', () => {
+    expect(src('components/BuildingSection.tsx')).toContain('خالی بدون سهم');
     for (const f of ['content/help.ts', 'screens/TutorialScreen.tsx', 'components/BuildingSection.tsx', 'screens/NewBillScreen.tsx', 'screens/BillDetailsScreen.tsx']) expect(src(f)).not.toContain('\uFFFD');
   });
 });

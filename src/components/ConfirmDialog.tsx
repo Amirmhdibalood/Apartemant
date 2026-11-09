@@ -6,13 +6,15 @@ interface Props {
   title: string;
   text: string;
   confirmLabel: string;
+  /** برچسب دکمهٔ انصراف/گزینهٔ دوم (پیش‌فرض: انصراف) */
+  cancelLabel?: string;
   onResult: (ok: boolean) => void;
   /** «warning»: آیکون هشدار و دکمه آبی (برای تأییدهای غیرحذفی) */
   tone?: 'danger' | 'warning';
 }
 
 /** تأیید عملیات حذف (قرمز) */
-export function ConfirmDialog({ open, title, text, confirmLabel, onResult, tone = 'danger' }: Props) {
+export function ConfirmDialog({ open, title, text, confirmLabel, cancelLabel = 'انصراف', onResult, tone = 'danger' }: Props) {
   return (
     <Dialog open={open} onClose={() => onResult(false)} labelledBy="confirm-title">
       {tone === 'warning' ? (
@@ -24,7 +26,7 @@ export function ConfirmDialog({ open, title, text, confirmLabel, onResult, tone 
       <p className="dialog__text dialog__text--pre">{text}</p>
       <div className="dialog__actions dialog__actions--two">
         <button type="button" className={tone === 'warning' ? 'btn btn--primary' : 'btn btn--danger'} onClick={() => onResult(true)}>{confirmLabel}</button>
-        <button type="button" className="btn btn--muted" onClick={() => onResult(false)}>انصراف</button>
+        <button type="button" className="btn btn--muted" onClick={() => onResult(false)}>{cancelLabel}</button>
       </div>
     </Dialog>
   );

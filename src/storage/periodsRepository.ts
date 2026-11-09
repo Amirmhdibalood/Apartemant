@@ -64,7 +64,7 @@ async function activeId(buildingId?: string): Promise<string> {
 /**
  * سال‌های ساختمان را مرتب نگه می‌دارد (فقط اگر لازم باشد می‌نویسد):
  * سال جاری ساخته می‌شود (مثلاً اول فروردین)، زمان بستنِ ۱.۹.۰ پاک می‌شود و سال‌های خالیِ
- * قدیمی (قبل از سال جاری، بدون هیچ قبضی) یا دورتر از سال بعد از فهرست برداشته می‌شوند.
+ * قدیمی (قبل از سال جاری، بدون هیچ قبضی) یا سال آیندهٔ خالی از فهرست برداشته می‌شوند.
  */
 async function ensureYears(buildingId: string, currentYear: number = todayJalali().year): Promise<void> {
   const plan = await withSqlite((db) => {
@@ -135,17 +135,13 @@ export const periodsRepository = {
     return defaultBillYear(s.currentYear);
   },
 
-  /** «افزودن سال N»: فقط سال بعد از سال جاری (برای قبض‌های پیش از نوروز) */
+  /** @deprecated از ۱.۹.۲ افزودن سال بعد حذف شد — no-op، سال جاری را برمی‌گرداند */
   async addNextYear(buildingId?: string): Promise<number> {
-    const next = todayJalali().year + 1;
-    await write(buildingId, (db, bid) => {
-      if (readYearRows(db, bid).some((y) => y.year === next)) return;
-      upsertYearRow(db, bid, { year: next, closedAt: null, hidden: false });
-    });
-    return next;
+    const s = await this.getState(buildingId);
+    return s.currentYear;
   },
 
-  /** پنهان / نمایش سال (سال جاری و سال بعد پنهان نمی‌شوند) */
+  /** پنهان / نمایش سال (سال جاری پنهان نمی‌شود) */
   async setYearHidden(year: number, hidden: boolean, buildingId?: string): Promise<void> {
     const current = todayJalali().year;
     if (hidden && !canHideYear(year, current)) throw new PeriodRuleError('سال جاری همیشه نمایان است و پنهان نمی‌شود.');

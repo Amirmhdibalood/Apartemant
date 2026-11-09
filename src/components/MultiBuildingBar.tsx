@@ -7,9 +7,9 @@ import { toPersianDigits } from '../logic/formatting';
 import { OptionPicker } from './OptionPicker';
 
 /**
- * فهرست ساختمان‌ها وقتی سوییچ «چند ساختمان» (روی عنوان آکاردئون) روشن است.
+ * فهرست ساختمان‌ها وقتی سوییچ «چندساختمانی» (داخل بخش ساختمان‌ها) روشن است.
  * انتخاب ساختمان فعال با همان کشوی OptionPicker / year-picker (تیک کنار گزینهٔ فعال).
- * خودِ سوییچ اینجا نیست — کنار عنوان «ساختمان‌ها» در Settings است.
+ * خودِ سوییچ اینجا نیست — بالای همین بخش در Settings است.
  */
 export function MultiBuildingBar({ reloadKey = 0, onBuildingChange }: { reloadKey?: number; onBuildingChange?: () => void }) {
   const { toast, showErrors, confirmDanger } = useFeedback();
