@@ -17,12 +17,13 @@ describe('۱.۹.۴ میان‌بر مسدودکننده', () => {
     expect(block).not.toMatch(/setMgmtEnabled/);
   });
 
-  it('پیام مسدودکننده به دکمهٔ مفرد اشاره می‌کند', () => {
+  it('پیام مسدودکننده راهنمای رفتن به مدیر ساختمان را دارد', () => {
     const errs = newBillBlockers({ mgmtEnabled: true, periods: [], todayKey: '1405-08-19' });
     expect(errs).toHaveLength(1);
     expect(errs[0].message).toContain('برای این تاریخ مدیر فعالی ثبت نشده است');
-    expect(errs[0].message).toContain('دکمهٔ زیر');
-    expect(errs[0].message).not.toContain('دکمه‌های زیر');
+    expect(errs[0].message).toContain('به «مدیر ساختمان» بروید و مدیر جدید انتخاب کنید');
+    expect(errs[0].message).toContain('کلید «مدیر ساختمان» را خاموش کنید');
+    expect(errs[0].message).not.toContain('دکمهٔ زیر');
   });
 
   it('آموزش دیگر دو میان‌بر یا میان‌بر «مدیر جدید» در این دیالوگ را نمی‌گوید', () => {
