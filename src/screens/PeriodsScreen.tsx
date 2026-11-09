@@ -18,7 +18,7 @@ import { toPersianDigits } from '../logic/formatting';
 import { todayJalali, parseJalaliKey } from '../logic/jalali';
 import { unitLabel } from '../logic/building';
 import {
-  activePeriod, effectiveEnd, hasOpenEnd, isPeriodActive, isPeriodClosed, keyToSlash,
+  activePeriod, defaultNewManagerDates, effectiveEnd, hasOpenEnd, isPeriodActive, isPeriodClosed, keyToSlash,
   managerDisplayName, yearRangeLines, type MgmtPeriod,
 } from '../logic/periods';
 import type { BuildingSettings } from '../models/types';
@@ -27,12 +27,17 @@ interface Props {
   tab?: 'years' | 'manager';
   onTab: (t: 'years' | 'manager') => void;
   onBack: () => void;
+  /** باز کردن مستقیم فرم «مدیر جدید» */
+  openNewManager?: boolean;
 }
 
 const fa = toPersianDigits;
 
-export function PeriodsScreen({ tab = 'years', onTab, onBack }: Props) {
-  const [form, setForm] = useState<{ edit: MgmtPeriod | null } | null>(null);
+export function PeriodsScreen({ tab = 'years', onTab, onBack, openNewManager = false }: Props) {
+  const [form, setForm] = useState<{ edit: MgmtPeriod | null } | null>(openNewManager ? { edit: null } : null);
+  useEffect(() => {
+    if (openNewManager) setForm({ edit: null });
+  }, [openNewManager]);
   if (form) return <ManagerForm edit={form.edit} onDone={() => setForm(null)} />;
   return (
     <>
@@ -240,12 +245,13 @@ function ManagerTab({ onNew, onEdit }: { onNew: () => void; onEdit: (p: MgmtPeri
 function ManagerForm({ edit, onDone }: { edit: MgmtPeriod | null; onDone: () => void }) {
   const { toast, showErrors, confirmDanger } = useFeedback();
   const today = todayJalali();
+  const defaults = defaultNewManagerDates(todayKeyNow());
   const [building, setBuilding] = useState<BuildingSettings | null>(null);
   const [unit, setUnit] = useState<number>(edit?.managerUnit ?? 0);
   const [alias, setAlias] = useState(edit?.managerLabel ?? '');
-  const [start, setStart] = useState<string | null>(edit?.startDate ?? todayKeyNow());
-  const [noEnd, setNoEnd] = useState(edit ? hasOpenEnd(edit) : true);
-  const [end, setEnd] = useState<string | null>(edit && !hasOpenEnd(edit) ? edit.endDate : null);
+  const [start, setStart] = useState<string | null>(edit?.startDate ?? defaults.startDate);
+  const [noEnd, setNoEnd] = useState(edit ? hasOpenEnd(edit) : false);
+  const [end, setEnd] = useState<string | null>(edit ? (hasOpenEnd(edit) ? null : edit.endDate) : defaults.endDate);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => { void buildingRepository.get().then(setBuilding).catch(() => undefined); }, []);
@@ -254,25 +260,28 @@ function ManagerForm({ edit, onDone }: { edit: MgmtPeriod | null; onDone: () => 
   const startD = parseJalaliKey(start) ?? today;
 
   const save = async () => {
+    const name = alias.trim();
+    if (!name) { showErrors(Errors.backupInvalid('نام مدیر را بنویسید.')); return; }
     const managerUnit = unit > 0 ? unit : null;
-    const endDate = noEnd ? null : end;
-    if (!noEnd && !end) { showErrors(Errors.backupInvalid('تاریخ پایان را انتخاب کنید یا «بدون تاریخ پایان» را روشن کنید.')); return; }
+    const startDate = start || defaults.startDate;
+    const endDate = noEnd ? null : (end || defaults.endDate);
+    if (!noEnd && !endDate) { showErrors(Errors.backupInvalid('تاریخ پایان را انتخاب کنید یا «بدون تاریخ پایان» را روشن کنید.')); return; }
     setBusy(true);
     try {
       if (edit) {
-        await periodsRepository.editManager(edit.id, { managerUnit, alias, endDate });
+        await periodsRepository.editManager(edit.id, { managerUnit, alias: name, endDate });
         toast('دوره ویرایش شد.');
         onDone();
         return;
       }
-      const plan = await periodsRepository.planNewManager({ managerUnit, startDate: start ?? '', endDate });
+      const plan = await periodsRepository.planNewManager({ managerUnit, startDate, endDate });
       if (!plan.ok) { showErrors(Errors.backupInvalid(plan.error)); return; }
       if (plan.closes.length > 0) {
         const text = plan.closes.map((c) => `دورهٔ «${c.name}» در ${keyToSlash(c.endDate)} (روز قبل از شروع مدیر جدید) بسته می‌شود.`).join('\n')
           + '\nبعد از آن، قبض‌های آن دوره قفل می‌شوند. این کار برگشت ندارد.';
         if (!(await confirmDanger({ title: 'تعویض مدیر', text, confirmLabel: 'ثبت مدیر جدید', tone: 'warning' }))) return;
       }
-      await periodsRepository.addManager({ managerUnit, alias, startDate: start ?? '', endDate });
+      await periodsRepository.addManager({ managerUnit, alias: name, startDate, endDate });
       toast('مدیر جدید ثبت شد.');
       onDone();
     } catch (e) {
@@ -297,8 +306,8 @@ function ManagerForm({ edit, onDone }: { edit: MgmtPeriod | null; onDone: () => 
             />
           </div>
           <label className="field">
-            <span className="field__label">نام نمایشی <span className="field__optional">(اختیاری)</span></span>
-            <input className="input" value={alias} maxLength={80} onChange={(e) => setAlias(e.target.value)} placeholder="مثلاً آقای احمدی" />
+            <span className="field__label">نام مدیر</span>
+            <input className="input" value={alias} maxLength={80} onChange={(e) => setAlias(e.target.value)} placeholder="مثلاً آقای احمدی" required />
           </label>
           {edit ? (
             <div className="field">
@@ -324,7 +333,7 @@ function ManagerForm({ edit, onDone }: { edit: MgmtPeriod | null; onDone: () => 
               <strong>بدون تاریخ پایان</strong>
               <p>تا وقتی خودتان ببندید یا مدیر بعدی را ثبت کنید باز می‌ماند.</p>
             </div>
-            <Switch id="mgr-no-end" label="بدون تاریخ پایان" checked={noEnd} onChange={(v) => { setNoEnd(v); if (!v && !end) setEnd(null); }} />
+            <Switch id="mgr-no-end" label="بدون تاریخ پایان" checked={noEnd} onChange={(v) => { setNoEnd(v); if (!v && !end) setEnd(defaults.endDate); }} />
           </div>
           {noEnd && (
             <p className="period-note">توجه: دورهٔ بدون پایان خودبه‌خود بسته نمی‌شود. تا بسته نشود، قبض‌های این مدیر قابل ویرایش و حذف می‌مانند. وقتی مدیر بعدی را ثبت کنید، این دوره روز قبل از شروع او بسته می‌شود.</p>

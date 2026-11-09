@@ -8,7 +8,7 @@ import { createContext, useCallback, useContext, useRef, useState, type ReactNod
 import type { WarningId } from '../models/types';
 import type { AppError } from '../logic/errors';
 import { WARNINGS, dismissWarning, shouldShowWarning, type AppWarning } from '../logic/warnings';
-import { ErrorDialog } from '../components/ErrorDialog';
+import { ErrorDialog, type ErrorAction } from '../components/ErrorDialog';
 import { WarningDialog } from '../components/WarningDialog';
 import { LockedDialog } from '../components/LockedDialog';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -18,7 +18,7 @@ import { useSettings } from './SettingsContext';
 interface ConfirmOpts { title: string; text: string; confirmLabel: string; cancelLabel?: string; tone?: 'danger' | 'warning' }
 
 interface FeedbackCtx {
-  showErrors: (errors: AppError | AppError[]) => void;
+  showErrors: (errors: AppError | AppError[], actions?: ErrorAction[]) => void;
   confirmWarning: (id: WarningId) => Promise<boolean>;
   showLocked: () => void;
   confirmDanger: (opts: ConfirmOpts) => Promise<boolean>;
@@ -30,6 +30,7 @@ const Ctx = createContext<FeedbackCtx | null>(null);
 export function FeedbackProvider({ children }: { children: ReactNode }) {
   const { settings, updateSettings } = useSettings();
   const [errors, setErrors] = useState<AppError[] | null>(null);
+  const [errorActions, setErrorActions] = useState<ErrorAction[] | null>(null);
   const [warning, setWarning] = useState<AppWarning | null>(null);
   const warningResolve = useRef<((v: boolean) => void) | null>(null);
   const [locked, setLocked] = useState(false);
@@ -40,8 +41,9 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
 
-  const showErrors = useCallback((e: AppError | AppError[]) => {
+  const showErrors = useCallback((e: AppError | AppError[], actions?: ErrorAction[]) => {
     setErrors(Array.isArray(e) ? e : [e]);
+    setErrorActions(actions && actions.length ? actions : null);
   }, []);
 
   const confirmWarning = useCallback((id: WarningId) => {
@@ -78,7 +80,11 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={{ showErrors, confirmWarning, showLocked, confirmDanger, toast }}>
       {children}
-      <ErrorDialog errors={errors} onClose={() => setErrors(null)} />
+      <ErrorDialog
+        errors={errors}
+        actions={errorActions ?? undefined}
+        onClose={() => { setErrors(null); setErrorActions(null); }}
+      />
       <WarningDialog warning={warning} onResult={onWarningResult} />
       <LockedDialog open={locked} onClose={() => setLocked(false)} />
       <ConfirmDialog

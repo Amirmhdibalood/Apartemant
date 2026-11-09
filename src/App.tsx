@@ -106,7 +106,10 @@ export default function App() {
       todayKey,
     });
     if (blockers.length) {
-      showErrors(blockers);
+      showErrors(blockers, [
+        { label: 'رفتن به «مدیر ساختمان»', onClick: () => push({ name: 'periods', tab: 'manager' }) },
+        { label: 'مدیر جدید', onClick: () => push({ name: 'periods', tab: 'manager', openNewManager: true }) },
+      ]);
       return;
     }
     // واحدها (تعداد، اسم مستعار و نفرات پیش‌فرض) از تنظیمات «ساختمان» وارد می‌شوند
@@ -255,7 +258,7 @@ export default function App() {
       screen = <SupportScreen key={route.tab ?? 'faq'} initialTab={route.tab} onBack={back} onOpenTopic={openTopic} />;
       break;
     case 'periods':
-      screen = <PeriodsScreen tab={route.tab} onTab={(tab) => replaceTop({ name: 'periods', tab })} onBack={back} />;
+      screen = <PeriodsScreen tab={route.tab} openNewManager={route.openNewManager} onTab={(tab) => replaceTop({ name: 'periods', tab })} onBack={back} />;
       break;
     case 'meetings':
       screen = <MeetingsScreen onBack={back} />;

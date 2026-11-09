@@ -9,6 +9,7 @@ import { withSqlite, withSqliteWrite } from './sqlite/db';
 import {
   addFundEntry,
   archiveBuilding,
+  unarchiveBuilding,
   createBuilding,
   endManagementPeriodEarly,
   ensureDefaultBuilding,
@@ -108,6 +109,16 @@ export const buildingRepository = {
     const active = await this.getActiveId();
     await withSqliteWrite((db) => { archiveBuilding(db, id); });
     if (active === id) await this.setActiveId(DEFAULT_BUILDING_ID);
+  },
+
+  async listArchived(): Promise<BuildingRow[]> {
+    await ensureMigrationDone();
+    return withSqlite((db) => listBuildings(db, { includeArchived: true }).filter((b) => !!b.archivedAt));
+  },
+
+  async unarchive(id: string): Promise<void> {
+    await ensureMigrationDone();
+    await withSqliteWrite((db) => { unarchiveBuilding(db, id); });
   },
 
   async getName(id?: string): Promise<string> {

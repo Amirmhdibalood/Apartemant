@@ -5,7 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 import { introArtFor } from './introArt';
 
 /** مدت نمایش صفحه ورود (میلی‌ثانیه) و مدت محوشدن */
-export const INTRO_DURATION_MS = 1800;
+export const INTRO_DURATION_MS = 1400;
 const FADE_MS = 350;
 
 interface Props {
@@ -14,7 +14,7 @@ interface Props {
 
 /**
  * صفحه ورود (اسپلش داخل برنامه): تصویر آسمان و ساختمان‌ها (طرح ۱) با عنوان و نام برنامه.
- * حدود ۱٫۸ ثانیه نمایش داده می‌شود و سپس به خانه می‌رود؛ با لمس صفحه زودتر رد می‌شود.
+ * حدود ۱٫۴ ثانیه نمایش داده می‌شود و سپس به خانه می‌رود؛ با لمس صفحه زودتر رد می‌شود.
  * کاملاً آفلاین: تصویر و فونت داخل بسته برنامه هستند.
  */
 export function IntroScreen({ onDone }: Props) {
@@ -47,10 +47,13 @@ export function IntroScreen({ onDone }: Props) {
       onClick={finish}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') finish(); }}
     >
-      <picture>
-        <source media="(orientation: landscape)" srcSet={art.landscape} />
-        <img className="intro-art" src={art.portrait} alt="" draggable={false} />
-      </picture>
+      <span className="intro-sun-glow" aria-hidden="true" />
+      <div className="intro-art-wrap">
+        <picture>
+          <source media="(orientation: landscape)" srcSet={art.landscape} />
+          <img className="intro-art" src={art.portrait} alt="" draggable={false} />
+        </picture>
+      </div>
       <div className="intro-text">
         <h1 className="intro-title">محاسبه شارژ ساختمان</h1>
         <span className="intro-bar" aria-hidden="true" />

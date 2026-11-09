@@ -72,14 +72,16 @@ describe('۱.۸.۰ — UI آفلاین (چندساختمان / صندوق / دو
 });
 
 describe('۱.۸.۰ — ظاهر انتخاب ساختمان', () => {
-  it('MultiBuildingBar از OptionPicker/year-picker استفاده می‌کند نه تراشه seg', async () => {
+  it('MultiBuildingBar از year-picker/Popover با ردیف ویرایش استفاده می‌کند نه تراشه seg', async () => {
     const { readFileSync } = await import('node:fs');
     const src = readFileSync('src/components/MultiBuildingBar.tsx', 'utf8');
-    expect(src).toContain('OptionPicker');
+    expect(src).toContain('year-picker');
+    expect(src).toContain('building-pick-row');
+    expect(src).toContain('ویرایش');
+    expect(src).toContain('Popover');
     expect(src).not.toMatch(/seg__btn|className=['"]seg\b/);
-    const picker = readFileSync('src/components/OptionPicker.tsx', 'utf8');
-    expect(picker).toContain('year-row__box');
-    expect(picker).toContain('IconCheck');
+    expect(src).toContain('year-row__box');
+    expect(src).toContain('IconCheck');
   });
 });
 

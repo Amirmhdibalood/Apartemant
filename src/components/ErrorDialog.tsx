@@ -3,10 +3,16 @@ import { ERROR_TITLE } from '../logic/errors';
 import { Dialog } from './Dialog';
 import { IconErrorCircle } from './Icons';
 
+export interface ErrorAction {
+  label: string;
+  onClick: () => void;
+}
+
 /**
  * نمایش خطا (Error): آیکون قرمز، بدون گزینه «دیگر این پیام را نمایش نده»
+ * دکمهٔ میان‌بر اختیاری (مثلاً رفتن به «مدیر جدید»).
  */
-export function ErrorDialog({ errors, onClose }: { errors: AppError[] | null; onClose: () => void }) {
+export function ErrorDialog({ errors, onClose, actions }: { errors: AppError[] | null; onClose: () => void; actions?: ErrorAction[] }) {
   const open = !!errors && errors.length > 0;
   return (
     <Dialog open={open} onClose={onClose} labelledBy="error-title" variant="error">
@@ -17,6 +23,20 @@ export function ErrorDialog({ errors, onClose }: { errors: AppError[] | null; on
         <ul className="dialog__list">
           {errors.map((e, i) => <li key={i}>{e.message}</li>)}
         </ul>
+      )}
+      {actions && actions.length > 0 && (
+        <div className="dialog__actions dialog__actions--stack" style={{ marginTop: 12 }}>
+          {actions.map((a) => (
+            <button
+              key={a.label}
+              type="button"
+              className="btn btn--soft btn--block"
+              onClick={() => { onClose(); a.onClick(); }}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
       )}
       <div className="dialog__actions">
         <button type="button" className="btn btn--primary btn--block" onClick={onClose} autoFocus>متوجه شدم</button>

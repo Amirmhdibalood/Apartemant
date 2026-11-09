@@ -65,6 +65,7 @@
 :root[data-theme="dark"] .toast { background: #151e33; box-shadow: 0 10px 30px rgba(0,0,0,0.48); border: 1px solid #26352d; }
 :root[data-theme="dark"] .toast__close { color: #9098ab; }
 :root[data-theme="dark"] .intro { background: #162543; }
+:root[data-theme="dark"] .intro-sun-glow { background: radial-gradient(circle, rgba(255,214,102,0.55) 0%, rgba(255,214,102,0) 70%); }
 :root[data-theme="dark"] .intro-title { color: #ccd2e0; text-shadow: 0 2px 12px rgba(21,30,51,0.7); }
 :root[data-theme="dark"] .intro-bar { background: #467fed; }
 :root[data-theme="dark"] .intro-subtitle { color: #467fed; }
@@ -282,7 +283,7 @@
 :root[data-theme="dark"] .multi-picker.is-open { border-color: var(--primary); }
 :root[data-theme="dark"] .year-row--all { border-bottom: 1px solid #1f2d4c; }
 :root[data-theme="dark"] .year-row--exclusive { border-top: 1px dashed #243458; }
-:root[data-theme="dark"] .home-card { background: #151e33; border: 1px solid #1b2743; }
+:root[data-theme="dark"] .home-card { background: #151e33; border: 1px solid #25355a; box-shadow: 0 4px 14px rgba(0,0,0,0.3), 0 1px 0 rgba(0,0,0,0.12); }
 :root[data-theme="dark"] .home-card__icon.is-purple { background: #23173d; color: #8c60e9; }
 :root[data-theme="dark"] .home-card__icon.is-green { background: #21362b; color: #64df9e; }
 :root[data-theme="dark"] .home-card__icon.is-blue { background: #17243d; color: #4784f2; }
@@ -319,6 +320,10 @@
 :root[data-theme="dark"] .year-add__btn { border: 1.5px dashed #739ff2; background: #17243d; }
 :root[data-theme="dark"] .date-box.is-disabled { background: #1a2641; color: #8a93a8; }
 :root[data-theme="dark"] .date-box.is-disabled .year-picker__value { color: #8a93a8; }
+:root[data-theme="dark"] .extra-fields { background: #151e33; }
+:root[data-theme="dark"] .extra-fields__chev { color: #8a93a8; }
+:root[data-theme="dark"] .extra-fields.is-open .extra-fields__chev { color: var(--primary); }
+:root[data-theme="dark"] .extra-fields__body { border-top: 1px solid #1b2742; }
 :root[data-theme="dark"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #2a3858; --sw-off-ring: #7a89ad; --sw-thumb: #aab4cf; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #7a89ad; --cb-on-border: #64df9e; --warn-border: #6b2f33; --warn-color: #ffb4ad; --warn-bg: #3a1f26; --ppm-border: #2c4a86; --badge-area-bg: #17423f; --badge-area-color: #7de3d3; }
 
 /* ---- پالت charcoal: زغالی خنثی (فقط تفاوت‌ها با سرمه‌ای) ---- */
@@ -546,7 +551,7 @@
 :root[data-theme="dark"][data-palette="charcoal"] .multi-picker.is-open { border-color: var(--primary); }
 :root[data-theme="dark"][data-palette="charcoal"] .year-row--all { border-bottom: 1px solid #2e3034; }
 :root[data-theme="dark"][data-palette="charcoal"] .year-row--exclusive { border-top: 1px dashed #36383d; }
-:root[data-theme="dark"][data-palette="charcoal"] .home-card { background: #1d1e20; border: 1px solid #28292d; }
+:root[data-theme="dark"][data-palette="charcoal"] .home-card { background: #1d1e20; border: 1px solid #37393e; }
 :root[data-theme="dark"][data-palette="charcoal"] .home-card__icon.is-purple { background: #23173d; color: #8c60e9; }
 :root[data-theme="dark"][data-palette="charcoal"] .home-card__icon.is-green { background: #21362b; color: #64df9e; }
 :root[data-theme="dark"][data-palette="charcoal"] .home-card__icon.is-blue { background: #17243d; color: #4784f2; }
@@ -577,6 +582,10 @@
 :root[data-theme="dark"][data-palette="charcoal"] .hidden-years__list .period-card { border-top: 1px solid #2e3034; }
 :root[data-theme="dark"][data-palette="charcoal"] .date-box.is-disabled { background: #26282b; color: #95989d; }
 :root[data-theme="dark"][data-palette="charcoal"] .date-box.is-disabled .year-picker__value { color: #95989d; }
+:root[data-theme="dark"][data-palette="charcoal"] .extra-fields { background: #1d1e20; }
+:root[data-theme="dark"][data-palette="charcoal"] .extra-fields__chev { color: #95989d; }
+:root[data-theme="dark"][data-palette="charcoal"] .extra-fields.is-open .extra-fields__chev { color: var(--primary); }
+:root[data-theme="dark"][data-palette="charcoal"] .extra-fields__body { border-top: 1px solid #27292c; }
 :root[data-theme="dark"][data-palette="charcoal"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #2e3033; --sw-off-ring: #868a91; --sw-thumb: #b3b7bd; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #868a91; --cb-on-border: #64df9e; --warn-border: #6b3434; --warn-color: #ffb4ad; --warn-bg: #321f1f; --ppm-border: #33518f; --badge-area-bg: #17423f; --badge-area-color: #7de3d3; }
 
 /* ---- پالت amoled: مشکی AMOLED (فقط تفاوت‌ها با سرمه‌ای) ---- */
@@ -804,7 +813,7 @@
 :root[data-theme="dark"][data-palette="amoled"] .multi-picker.is-open { border-color: var(--primary); }
 :root[data-theme="dark"][data-palette="amoled"] .year-row--all { border-bottom: 1px solid #232323; }
 :root[data-theme="dark"][data-palette="amoled"] .year-row--exclusive { border-top: 1px dashed #2b2b2b; }
-:root[data-theme="dark"][data-palette="amoled"] .home-card { background: #111111; border: 1px solid #1c1c1c; }
+:root[data-theme="dark"][data-palette="amoled"] .home-card { background: #111111; border: 1px solid #2c2c2c; }
 :root[data-theme="dark"][data-palette="amoled"] .home-card__icon.is-purple { background: #23173d; color: #8c60e9; }
 :root[data-theme="dark"][data-palette="amoled"] .home-card__icon.is-green { background: #21362b; color: #64df9e; }
 :root[data-theme="dark"][data-palette="amoled"] .home-card__icon.is-blue { background: #17243d; color: #4784f2; }
@@ -835,6 +844,10 @@
 :root[data-theme="dark"][data-palette="amoled"] .hidden-years__list .period-card { border-top: 1px solid #232323; }
 :root[data-theme="dark"][data-palette="amoled"] .date-box.is-disabled { background: #1a1a1a; color: #999999; }
 :root[data-theme="dark"][data-palette="amoled"] .date-box.is-disabled .year-picker__value { color: #999999; }
+:root[data-theme="dark"][data-palette="amoled"] .extra-fields { background: #111111; }
+:root[data-theme="dark"][data-palette="amoled"] .extra-fields__chev { color: #999999; }
+:root[data-theme="dark"][data-palette="amoled"] .extra-fields.is-open .extra-fields__chev { color: var(--primary); }
+:root[data-theme="dark"][data-palette="amoled"] .extra-fields__body { border-top: 1px solid #1b1b1b; }
 :root[data-theme="dark"][data-palette="amoled"] { --primary-fill: #2e68d6; --primary-fill-press: #2658bd; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #26272a; --sw-off-ring: #8a8d92; --sw-thumb: #b6b9be; --sw-on-bg: #4d8bff; --sw-on-ring: #7fa6f5; --cb-ring: #8a8d92; --cb-on-border: #64df9e; --warn-border: #6b3434; --warn-color: #ffb4ad; --warn-bg: #2a1517; --ppm-border: #33518f; --badge-area-bg: #10312f; --badge-area-color: #7de3d3; }
 
 /* ---- پالت warm: قهوه‌ای گرم (فقط تفاوت‌ها با سرمه‌ای) ---- */
@@ -1086,7 +1099,7 @@
 :root[data-theme="dark"][data-palette="warm"] .multi-picker.is-open { border-color: var(--primary); }
 :root[data-theme="dark"][data-palette="warm"] .year-row--all { border-bottom: 1px solid #3b342e; }
 :root[data-theme="dark"][data-palette="warm"] .year-row--exclusive { border-top: 1px dashed #443c36; }
-:root[data-theme="dark"][data-palette="warm"] .home-card { background: #27221e; border: 1px solid #342e29; }
+:root[data-theme="dark"][data-palette="warm"] .home-card { background: #27221e; border: 1px solid #453d36; }
 :root[data-theme="dark"][data-palette="warm"] .home-card__icon.is-purple { background: #23173d; color: #8c60e9; }
 :root[data-theme="dark"][data-palette="warm"] .home-card__icon.is-green { background: #21362b; color: #64df9e; }
 :root[data-theme="dark"][data-palette="warm"] .home-card__icon.is-blue { background: #173d38; color: #3ed2be; }
@@ -1119,4 +1132,8 @@
 :root[data-theme="dark"][data-palette="warm"] .year-add__btn { border: 1.5px dashed #64d8c9; background: #173d38; }
 :root[data-theme="dark"][data-palette="warm"] .date-box.is-disabled { background: #322c27; color: #a19891; }
 :root[data-theme="dark"][data-palette="warm"] .date-box.is-disabled .year-picker__value { color: #a19891; }
+:root[data-theme="dark"][data-palette="warm"] .extra-fields { background: #27221e; }
+:root[data-theme="dark"][data-palette="warm"] .extra-fields__chev { color: #a19891; }
+:root[data-theme="dark"][data-palette="warm"] .extra-fields.is-open .extra-fields__chev { color: var(--primary); }
+:root[data-theme="dark"][data-palette="warm"] .extra-fields__body { border-top: 1px solid #332d28; }
 :root[data-theme="dark"][data-palette="warm"] { --primary-fill: #12806f; --primary-fill-press: #0f6b5d; --success-fill: #1c7f4f; --success-fill-press: #166b42; --danger-fill: #c93838; --sw-off-bg: #3a332c; --sw-off-ring: #9b8f82; --sw-thumb: #c4b9ab; --sw-on-bg: #26b5a0; --sw-on-ring: #6fd6c4; --cb-ring: #9b8f82; --cb-on-border: #64df9e; --warn-border: #703a30; --warn-color: #ffb4ad; --warn-bg: #3a2420; --ppm-border: #2b6a60; --badge-area-bg: #143e38; --badge-area-color: #7de3d3; }

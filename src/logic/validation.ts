@@ -81,3 +81,18 @@ export function validateDraft(draft: BillDraft): ValidationResult {
   if (errors.length > 0) return { ok: false, errors };
   return { ok: true, value: { totalAmount, personCounts, vacant, areas: draft.personCounts.map((_, i) => parseAreaInput(draft.unitAreas?.[i] ?? '')) } };
 }
+
+/** قدم ۱ فرم قبض: سال، ماه، نوع هزینه */
+export function validateBillStep1(draft: BillDraft): { ok: true } | { ok: false; errors: AppError[] } {
+  const errors: AppError[] = [];
+  if (!draft.year) errors.push(Errors.requiredMissing('سال'));
+  if (!draft.month || draft.month < 1 || draft.month > 12) errors.push(Errors.requiredMissing('ماه'));
+  if (!draft.expenseType) errors.push(Errors.requiredMissing('نوع هزینه'));
+  return errors.length ? { ok: false, errors } : { ok: true };
+}
+
+/** آیا خطا مربوط به قدم ۱ است؟ */
+export function isStep1BillError(e: AppError): boolean {
+  if (e.code === 'REQUIRED_MISSING') return /سال|ماه|نوع هزینه/.test(e.message);
+  return false;
+}

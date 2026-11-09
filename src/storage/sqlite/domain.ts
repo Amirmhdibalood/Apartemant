@@ -553,6 +553,10 @@ export function archiveBuilding(db: Database, id: string): void {
   db.run('UPDATE buildings SET archived_at = ? WHERE id = ?', [new Date().toISOString(), id]);
 }
 
+export function unarchiveBuilding(db: Database, id: string): void {
+  db.run('UPDATE buildings SET archived_at = NULL WHERE id = ?', [id]);
+}
+
 export function getBuildingName(db: Database, id: string): string | null {
   const stmt = db.prepare('SELECT name FROM buildings WHERE id = ?');
   stmt.bind([id]);

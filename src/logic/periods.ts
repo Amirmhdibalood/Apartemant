@@ -36,6 +36,12 @@ export function yearEndKey(year: number): string {
   return `${year}-12-${String(jalaliMonthLength(year, 12)).padStart(2, '0')}`;
 }
 
+/** پیش‌فرض تاریخ‌های مدیر جدید: شروع = امروز، پایان = آخر اسفند همان سال */
+export function defaultNewManagerDates(todayKey: string): { startDate: string; endDate: string } {
+  const year = Number(todayKey.slice(0, 4));
+  return { startDate: todayKey, endDate: yearEndKey(year) };
+}
+
 /** «۱۴۰۵/۰۱/۰۱» از کلید "1405-01-01" */
 export function keyToSlash(key: string): string {
   return toPersianDigits(key.replace(/-/g, '/'));

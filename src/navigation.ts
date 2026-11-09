@@ -14,7 +14,7 @@ export type Route =
   /** سوابق (۱.۹ چندتایی): years نبودن = سال جاری (اگر نمایان)؛ [] یا نبودنِ بقیه = «همه»؛ statuses خالی = بدون حذف‌شده‌ها */
   | { name: 'records'; years?: number[]; months?: number[]; types?: ExpenseType[]; statuses?: StatusPick[] }
   /** «دوره‌ها» (۱.۹): سال‌ها و مدیر ساختمان */
-  | { name: 'periods'; tab?: 'years' | 'manager' }
+  | { name: 'periods'; tab?: 'years' | 'manager'; openNewManager?: boolean }
   /** جلسه‌ها (۱.۹: از تنظیمات به صفحهٔ خودش آمد) */
   | { name: 'meetings' }
   /** پشتیبان‌گیری (۱.۹: کارت صفحهٔ اصلی؛ همان بخش تنظیمات) */

@@ -71,7 +71,7 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
     <>
       <AppHeader title="تنظیمات" onBack={canGoBack ? onBack : undefined} onSupport={onSupport} />
       <main className="screen screen--settings">
-        <Accordion id="building" onTopic={help('building')} title="ساختمان‌ها">
+        <Accordion id="building" onTopic={help('building')} title="تنظیمات ساختمان">
           <div className="setting-row">
             <label htmlFor="sw-multi-building" className="setting-row__text">
               <span className="setting-row__label">چندساختمانی</span>
@@ -159,7 +159,7 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
 
           <div className="settings-group" role="group" aria-labelledby="area-mode-title">
             <h3 className="settings-sub" id="area-mode-title">نحوه نمایش متراژ</h3>
-            <p className="card__hint">شکل ورودی و نمایش متراژ واحدها در «ساختمان‌ها»، فرم قبض، نتیجه و جزئیات قبض (برای تقسیم «بر اساس متراژ»).</p>
+            <p className="card__hint">شکل ورودی و نمایش متراژ واحدها در «تنظیمات ساختمان»، فرم قبض، نتیجه و جزئیات قبض (برای تقسیم «بر اساس متراژ»).</p>
             <div className="seg" role="radiogroup" aria-label="نحوه نمایش متراژ">
               {AREA_MODES.map((m) => (
                 <button
@@ -200,7 +200,7 @@ export function SettingsScreen({ onBack, canGoBack, onSupport, onOpenTopic, focu
 
           <div className="settings-group" role="group" aria-labelledby="area-icon-title">
             <h3 className="settings-sub" id="area-icon-title">نماد متراژ</h3>
-            <p className="card__hint">نشانی که در حالت «بر اساس متراژ» کنار سرستون متراژ (فرم قبض و تنظیمات ← ساختمان‌ها) می‌آید.</p>
+            <p className="card__hint">نشانی که در حالت «بر اساس متراژ» کنار سرستون متراژ (فرم قبض و تنظیمات ساختمان) می‌آید.</p>
             <div className="icon-grid" role="radiogroup" aria-label="نماد متراژ">
               {AREA_ICONS.map((o) => (
                 <button

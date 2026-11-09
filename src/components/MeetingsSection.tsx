@@ -213,7 +213,7 @@ export function MeetingsSection({ reloadKey = 0 }: { reloadKey?: number }) {
         </p>
         <p className="card__hint">جلوی هر واحد یکی را بزنید. تا انتخاب نشود، وضعیت نامشخص می‌ماند.</p>
         {units.length === 0 ? (
-          <p className="card__hint">اول در «ساختمان‌ها» واحدها را تعریف کنید.</p>
+          <p className="card__hint">اول در «تنظیمات ساختمان» واحدها را تعریف کنید.</p>
         ) : (
           <ul className="meet-units">
             {units.map((u) => {
