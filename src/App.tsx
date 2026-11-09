@@ -106,9 +106,18 @@ export default function App() {
       todayKey,
     });
     if (blockers.length) {
+      // فقط ناوبری؛ هرگز کلید مدیر یا تنظیمات را عوض نکن
       showErrors(blockers, [
         { label: 'رفتن به «مدیر ساختمان»', onClick: () => push({ name: 'periods', tab: 'manager' }) },
-        { label: 'مدیر جدید', onClick: () => push({ name: 'periods', tab: 'manager', openNewManager: true }) },
+        {
+          label: 'مدیر جدید',
+          onClick: () => {
+            // اگر کلید خاموش باشد فقط زبانهٔ مدیر را باز کن (فرم وقتی کلید روشن است معنا دارد)
+            void periodsRepository.getState().then((s) => {
+              push({ name: 'periods', tab: 'manager', openNewManager: !!s?.mgmtEnabled });
+            }).catch(() => push({ name: 'periods', tab: 'manager' }));
+          },
+        },
       ]);
       return;
     }

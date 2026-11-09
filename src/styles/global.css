@@ -395,9 +395,10 @@ h1, h2, h3, p { margin: 0; }
   animation: fade-in 0.15s ease-out;
 }
 .dialog {
-  width: 100%; max-width: 360px; background: #fff; border-radius: 20px; padding: 26px 22px 20px;
+  width: 100%; max-width: 360px; background: var(--card, #fff); border-radius: 20px; padding: 26px 22px 20px;
   text-align: center; box-shadow: 0 20px 50px rgba(20, 30, 60, 0.25);
   animation: pop-in 0.18s ease-out;
+  opacity: 1; /* کارت هرگز شفاف نباشد (برخلاف انیمیشن قدیمی opacity) */
 }
 .dialog__icon { display: flex; justify-content: center; margin-bottom: 12px; }
 .dialog__icon--lock { color: var(--danger); }
@@ -423,7 +424,7 @@ h1, h2, h3, p { margin: 0; }
 .toast__close { color: #9aa2b3; display: inline-flex; padding: 4px; }
 
 @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes pop-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+@keyframes pop-in { from { transform: scale(0.96); } to { transform: none; } }
 @keyframes toast-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
 /* ---------- Intro (صفحه ورود) ---------- */
@@ -443,7 +444,8 @@ h1, h2, h3, p { margin: 0; }
   position: absolute;
   inset: 0;
   overflow: hidden;
-  animation: intro-scene-rise 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform;
+  animation: intro-scene-rise 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .intro-art {
   position: absolute;
@@ -454,7 +456,7 @@ h1, h2, h3, p { margin: 0; }
   object-position: 50% 100%;
   user-select: none;
   pointer-events: none;
-  animation: intro-art-fade 1.15s ease-out both;
+  animation: intro-art-fade 1.05s ease-out both;
 }
 .intro-sun-glow {
   position: absolute;
@@ -466,7 +468,7 @@ h1, h2, h3, p { margin: 0; }
   pointer-events: none;
   z-index: 1;
   background: radial-gradient(circle, rgba(255, 224, 138, 0.55) 0%, rgba(255, 224, 138, 0) 70%);
-  animation: intro-sun-down 1.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: intro-sun-down 1.05s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .intro-text {
   position: absolute;
@@ -509,11 +511,11 @@ h1, h2, h3, p { margin: 0; }
 @keyframes intro-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes intro-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 @keyframes intro-scene-rise {
-  from { transform: translateY(36px); opacity: 0.75; }
-  to { transform: none; opacity: 1; }
+  from { transform: translateY(22px); }
+  to { transform: none; }
 }
 @keyframes intro-sun-down {
-  from { transform: translate(-50%, -28px); opacity: 0; }
+  from { transform: translate(-50%, -36px); opacity: 0; }
   to { transform: translate(-50%, 0); opacity: 1; }
 }
 @keyframes intro-art-fade {

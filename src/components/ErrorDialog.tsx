@@ -39,7 +39,7 @@ export function ErrorDialog({ errors, onClose, actions }: { errors: AppError[] |
         </div>
       )}
       <div className="dialog__actions">
-        <button type="button" className="btn btn--primary btn--block" onClick={onClose} autoFocus>متوجه شدم</button>
+        <button type="button" className="btn btn--primary btn--block" onClick={onClose}>متوجه شدم</button>
       </div>
     </Dialog>
   );

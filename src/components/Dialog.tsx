@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 interface Props {
   open: boolean;
@@ -8,7 +9,7 @@ interface Props {
   variant?: 'default' | 'error' | 'warning' | 'lock';
 }
 
-/** پایه همه Dialogها: پس‌زمینه تیره، کارت سفید گرد وسط صفحه */
+/** پایه همه Dialogها: پس‌زمینه تیره روی body، کارت سفید گرد وسط صفحه (portal تا داخل آکاردئون گیر نکند) */
 export function Dialog({ open, onClose, children, labelledBy, variant = 'default' }: Props) {
   useEffect(() => {
     if (!open) return;
@@ -19,7 +20,7 @@ export function Dialog({ open, onClose, children, labelledBy, variant = 'default
   }, [open, onClose]);
 
   if (!open) return null;
-  return (
+  return createPortal(
     <div className="dialog-backdrop" onClick={onClose}>
       <div
         className={`dialog dialog--${variant}`}
@@ -30,6 +31,7 @@ export function Dialog({ open, onClose, children, labelledBy, variant = 'default
       >
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

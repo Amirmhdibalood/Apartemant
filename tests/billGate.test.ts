@@ -16,10 +16,10 @@ describe('دروازه ثبت قبض جدید (۱.۹.۱: فقط مدیر فعا�
     expect(hasOpenManagementPeriod([open], '1404-08-15')).toBe(true);
   });
 
-  it('بدون مدیر فعال فقط یک مانع می‌آید و مسیر «دوره‌ها ← مدیر ساختمان» را نشان می‌دهد (مانع سال دیگر نیست)', () => {
+  it('بدون مدیر فعال فقط یک مانع کوتاه می‌آید (مانع سال دیگر نیست؛ میان‌برها در UI هستند)', () => {
     const errs = newBillBlockers({ mgmtEnabled: true, periods: [], todayKey: '1405-01-10' });
     expect(errs).toHaveLength(1);
-    expect(errs[0].message).toMatch(/دوره‌ها ← مدیر ساختمان/);
+    expect(errs[0].message).toMatch(/برای این تاریخ مدیر فعالی ثبت نشده است/);
     for (const e of errs) expect(e.message).not.toMatch(new RegExp(['تنظیمات', ['دوره', 'مالی'].join(' '), 'سال مالی'].join('|')));
   });
 

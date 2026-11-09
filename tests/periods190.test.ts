@@ -83,7 +83,7 @@ describe('مدیر ساختمان: ثبت مدیر جدید دورهٔ قبلی 
   it('دروازهٔ ثبت قبض: فقط کلید مدیر روشن بدون مدیر فعال (سال همیشه خودکار هست)', () => {
     const e = newBillBlockers({ mgmtEnabled: true, periods: [], todayKey: '1405-08-12' });
     expect(e).toHaveLength(1);
-    expect(e[0].message).toContain('«دوره‌ها ← مدیر ساختمان»');
+    expect(e[0].message).toContain('برای این تاریخ مدیر فعالی ثبت نشده است');
     expect(newBillBlockers({ mgmtEnabled: false, periods: [], todayKey: '1405-08-12' })).toEqual([]);
     for (const x of e) expect(x.message).not.toMatch(new RegExp([['دوره', 'مالی'].join(' '), 'سال مالی'].join('|')));
   });
