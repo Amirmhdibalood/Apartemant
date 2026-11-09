@@ -109,7 +109,7 @@ export function readBillPeriodId(db: Database, billId: string): { exists: boolea
   return { exists: true, periodId: (r.mgmt_period_id as string | null) ?? null };
 }
 
-/** دورهٔ قبضی تازه (وقتی کلید مدیر ساختمان روشن است) بر اساس زمان ثبت */
+/** دورهٔ قبضی تازه (وقتی کلید مدیریت ساختمان روشن است) بر اساس زمان ثبت */
 export function assignPeriodForNewBill(db: Database, buildingId: string, createdAtIso: string): string | null {
   if (!getMgmtEnabled(db, buildingId)) return null;
   return periodForCreatedAt(readPeriods(db, buildingId), createdAtIso)?.id ?? null;
@@ -148,7 +148,7 @@ export function backfillBillPeriods(db: Database, onlyIds?: ReadonlySet<string>)
 
 /**
  * مهاجرت دادهٔ شِمای ۸ برای دیتابیس موجود (بعد از replay ژورنال اجرا می‌شود):
- * کلید مدیر ساختمان برای همهٔ ساختمان‌های موجود روشن، و قبض‌های قدیمی به دوره‌ها وصل می‌شوند.
+ * کلید مدیریت ساختمان برای همهٔ ساختمان‌های موجود روشن، و قبض‌های قدیمی به دوره‌ها وصل می‌شوند.
  */
 export function migrateSchema8Data(db: Database): void {
   db.run('UPDATE buildings SET mgmt_enabled = 1');

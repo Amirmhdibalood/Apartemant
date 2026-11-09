@@ -133,7 +133,7 @@ export async function seedScenario(specs: BuildingSpec[], seed = 7): Promise<str
         notes: p % 2 ? 'یادداشت دوره' : null, endPreviousEarly: p > 0,
       }, id);
     }
-    // ۱.۹.۱: سال‌ها خودکارند (فقط پنهان/نمایش) و مدیر ساختمان (کلید + مدیر از واحدها)
+    // ۱.۹.۱: سال‌ها خودکارند (فقط پنهان/نمایش) و مدیریت ساختمان (کلید + مدیر از واحدها)
     if (i % 2 === 0) await periodsRepository.setYearHidden(1403, true, id);
     if (i === 0) {
       await periodsRepository.setMgmtEnabled(true, id);

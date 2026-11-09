@@ -1,5 +1,5 @@
 /**
- * «دوره‌ها» (۱.۹، از کارت صفحهٔ اصلی): زبانه‌های «سال‌ها» و «مدیر ساختمان» برای ساختمان فعال.
+ * «دوره‌ها» (۱.۹، از کارت صفحهٔ اصلی): زبانه‌های «سال‌ها» و «مدیریت ساختمان» برای ساختمان فعال.
  * سال‌ها (۱.۹.۱) خودکارند و فقط پنهان/نمایش دارند. بستن دورهٔ مدیریت برگشت ندارد و قبض‌های دورهٔ بسته قفل می‌شوند
  * (ویرایش، حذف، تیک «پرداخت شد» و مهلت پرداخت)، ولی ثبت پرداخت واحدها همچنان ممکن است.
  */
@@ -45,7 +45,7 @@ export function PeriodsScreen({ tab = 'years', onTab, onBack, openNewManager = f
       <main className="screen screen--periods">
         <div className="seg" role="tablist" aria-label="دوره‌ها">
           <button type="button" role="tab" aria-selected={tab === 'years'} className={'seg__btn' + (tab === 'years' ? ' is-active' : '')} onClick={() => onTab('years')}>سال‌ها</button>
-          <button type="button" role="tab" aria-selected={tab === 'manager'} className={'seg__btn' + (tab === 'manager' ? ' is-active' : '')} onClick={() => onTab('manager')}>مدیر ساختمان</button>
+          <button type="button" role="tab" aria-selected={tab === 'manager'} className={'seg__btn' + (tab === 'manager' ? ' is-active' : '')} onClick={() => onTab('manager')}>مدیریت ساختمان</button>
         </div>
         {tab === 'years' ? <YearsTab /> : <ManagerTab onNew={() => setForm({ edit: null })} onEdit={(p) => setForm({ edit: p })} />}
       </main>
@@ -142,7 +142,7 @@ function YearCard({ y, current, onToggle }: { y: YearInfo; current: number; onTo
   );
 }
 
-/* ─── مدیر ساختمان ─── */
+/* ─── مدیریت ساختمان ─── */
 
 function periodRange(p: MgmtPeriod): string {
   const start = `از ${keyToSlash(p.startDate)}`;
@@ -177,10 +177,10 @@ function ManagerTab({ onNew, onEdit }: { onNew: () => void; onEdit: (p: MgmtPeri
     <section className="periods">
       <div className="period-switch period-switch--top">
         <div>
-          <strong>مدیر ساختمان در این ساختمان</strong>
+          <strong>مدیریت ساختمان در این ساختمان</strong>
           <p>{state.mgmtEnabled ? 'روشن: هر قبض تازه به مدیر فعال وصل می‌شود.' : 'خاموش: قبض‌ها بدون مدیر ثبت می‌شوند و دوره‌ای لازم نیست.'}</p>
         </div>
-        <Switch id="mgmt-enabled" label="مدیر ساختمان در این ساختمان" checked={state.mgmtEnabled} onChange={(v) => void run(() => periodsRepository.setMgmtEnabled(v), v ? 'مدیر ساختمان روشن شد.' : 'مدیر ساختمان خاموش شد.')} />
+        <Switch id="mgmt-enabled" label="مدیریت ساختمان در این ساختمان" checked={state.mgmtEnabled} onChange={(v) => void run(() => periodsRepository.setMgmtEnabled(v), v ? 'مدیریت ساختمان روشن شد.' : 'مدیریت ساختمان خاموش شد.')} />
       </div>
       {state.mgmtEnabled && (
         <>

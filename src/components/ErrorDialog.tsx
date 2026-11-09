@@ -10,7 +10,7 @@ export interface ErrorAction {
 
 /**
  * نمایش خطا (Error): آیکون قرمز، بدون گزینه «دیگر این پیام را نمایش نده»
- * دکمهٔ میان‌بر اختیاری (مثلاً رفتن به «مدیر ساختمان»).
+ * دکمهٔ میان‌بر اختیاری (مثلاً رفتن به «مدیریت ساختمان»).
  */
 export function ErrorDialog({ errors, onClose, actions }: { errors: AppError[] | null; onClose: () => void; actions?: ErrorAction[] }) {
   const open = !!errors && errors.length > 0;

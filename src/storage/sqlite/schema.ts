@@ -1,7 +1,7 @@
 /**
  * SQLite DDL for Apartemant domain DB.
  * 7 = per-building custom bill types; 8 = سال‌های هر ساختمان (building_years)، مدیر از واحدها،
- * کلید «مدیر ساختمان» هر ساختمان و دورهٔ مدیریتِ هر قبض (bills.mgmt_period_id).
+ * کلید «مدیریت ساختمان» هر ساختمان و دورهٔ مدیریتِ هر قبض (bills.mgmt_period_id).
  */
 export const SQLITE_SCHEMA_VERSION = 8;
 

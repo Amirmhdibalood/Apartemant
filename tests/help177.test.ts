@@ -292,6 +292,7 @@ describe('۱.۹.۰ — آموزش و سؤال‌های رایج برای دور�
     expect(searchFaq('قفل', WITH_SUPPORT).some((x) => x.topicId === 'lock')).toBe(true);
     expect(searchTopics('سال‌های پنهان', WITH_SUPPORT)[0]?.id).toBe('years');
     expect(searchTopics('افزودن سال', WITH_SUPPORT)[0]?.id).toBe('years');
+    expect(searchTopics('مدیریت ساختمان', WITH_SUPPORT)[0]?.id).toBe('management');
     expect(searchTopics('مدیر ساختمان', WITH_SUPPORT)[0]?.id).toBe('management');
   });
 });

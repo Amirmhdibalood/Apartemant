@@ -236,7 +236,7 @@ export function readAllUnits(db: Database): Unit[] {
 /**
  * Insert/update one bill row. `mgmt_period_id` is assigned once: a new row gets `bill.mgmtPeriodId`
  * when given (restore of a v12 backup, null included), otherwise the period covering its created_at
- * (only when the building's «مدیر ساختمان» switch is on). An update never changes or clears it.
+ * (only when the building's «مدیریت ساختمان» switch is on). An update never changes or clears it.
  */
 export function upsertBillRow(db: Database, bill: Bill, buildingId: string): void {
   const b = migrateBill(bill);
@@ -543,7 +543,7 @@ export function createBuilding(db: Database, name: string, templates?: BuildingS
   );
   const units = templates ?? { units: [{ alias: null, defaultPersons: 1 }] };
   replaceUnitTemplates(db, id, units);
-  // ساختمان تازه کلید «مدیر ساختمان» را از ساختمان اصلی به ارث می‌برد (کاربر قدیمی = روشن، نصب تازه = خاموش)
+  // ساختمان تازه کلید «مدیریت ساختمان» را از ساختمان اصلی به ارث می‌برد (کاربر قدیمی = روشن، نصب تازه = خاموش)
   setMgmtEnabled(db, id, getMgmtEnabled(db, DEFAULT_BUILDING_ID));
   return id;
 }

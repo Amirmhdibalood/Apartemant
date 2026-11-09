@@ -60,7 +60,7 @@ describe('سال: شروع ۱ فروردین، پایان آخرین روز اس
   });
 });
 
-describe('مدیر ساختمان: ثبت مدیر جدید دورهٔ قبلی را روز قبل می‌بندد', () => {
+describe('مدیریت ساختمان: ثبت مدیر جدید دورهٔ قبلی را روز قبل می‌بندد', () => {
   it('دورهٔ باز قبلی ← پایان = روز قبل از شروع جدید', () => {
     const plan = planNewPeriod([P({ id: 'a', startDate: '1404-01-01' })], { startDate: '1405-08-01', endDate: null, managerUnit: 2 }, '1405-08-12');
     expect(plan).toEqual({ ok: true, closes: [{ id: 'a', name: 'واحد ۱', endDate: '1405-07-30' }] });
@@ -83,7 +83,7 @@ describe('مدیر ساختمان: ثبت مدیر جدید دورهٔ قبلی 
   it('دروازهٔ ثبت قبض: فقط کلید مدیر روشن بدون مدیر فعال (سال همیشه خودکار هست)', () => {
     const e = newBillBlockers({ mgmtEnabled: true, periods: [], todayKey: '1405-08-12' });
     expect(e).toHaveLength(1);
-    expect(e[0].message).toContain('برای این تاریخ مدیر فعالی ثبت نشده است');
+    expect(e[0].message).toContain('در حال حاضر مدیر فعالی ثبت نشده است');
     expect(newBillBlockers({ mgmtEnabled: false, periods: [], todayKey: '1405-08-12' })).toEqual([]);
     for (const x of e) expect(x.message).not.toMatch(new RegExp([['دوره', 'مالی'].join(' '), 'سال مالی'].join('|')));
   });

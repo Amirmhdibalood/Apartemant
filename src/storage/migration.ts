@@ -140,7 +140,7 @@ export async function ensureMigrated(): Promise<{ bills: Bill[]; units: Unit[]; 
     replaceAllDomain(db, DEFAULT_BUILDING_ID, source.bills, source.units);
     if (building) replaceUnitTemplates(db, DEFAULT_BUILDING_ID, building as BuildingSettings);
     markSqliteMigrationDone(db, source.bills.length, source.units.length);
-    // ۱.۹: کاربر قدیمی (دادهٔ IndexedDB دارد) ← کلید «مدیر ساختمان» روشن، مثل ارتقای SQLite
+    // ۱.۹: کاربر قدیمی (دادهٔ IndexedDB دارد) ← کلید «مدیریت ساختمان» روشن، مثل ارتقای SQLite
     if (source.bills.length > 0) setMgmtEnabled(db, DEFAULT_BUILDING_ID, true);
   });
 

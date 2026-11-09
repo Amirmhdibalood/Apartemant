@@ -108,7 +108,7 @@ export default function App() {
     if (blockers.length) {
       // فقط ناوبری؛ هرگز کلید مدیر یا تنظیمات را عوض نکن
       showErrors(blockers, [
-        { label: 'رفتن به «مدیر ساختمان»', onClick: () => push({ name: 'periods', tab: 'manager' }) },
+        { label: 'رفتن به «مدیریت ساختمان»', onClick: () => push({ name: 'periods', tab: 'manager' }) },
       ]);
       return;
     }

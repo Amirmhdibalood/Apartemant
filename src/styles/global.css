@@ -1584,7 +1584,7 @@ button.bp-summary__item.is-selected.is-unpaid { border-color: #2f74f0; box-shado
 .bill-paid-card__check.is-locked { opacity: 0.6; }
 .up-undo.is-locked { display: inline-flex; align-items: center; gap: 3px; color: #7a8398; cursor: default; text-decoration: none; }
 
-/* ---------- ۱.۹.۰: صفحهٔ «دوره‌ها» (سال‌ها و مدیر ساختمان) ---------- */
+/* ---------- ۱.۹.۰: صفحهٔ «دوره‌ها» (سال‌ها و مدیریت ساختمان) ---------- */
 .periods { display: flex; flex-direction: column; gap: 12px; }
 .period-info {
   display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; border-radius: var(--radius-lg);

@@ -22,8 +22,8 @@ describe('۱.۹.۳b دیالوگ و مسدودکننده', () => {
   it('پیام مسدودکننده کوتاه است و کلید مدیر را عوض نمی‌کند', () => {
     const errs = newBillBlockers({ mgmtEnabled: true, periods: [], todayKey: '1405-08-19' });
     expect(errs).toHaveLength(1);
-    expect(errs[0].message.length).toBeLessThan(160);
-    expect(errs[0].message).toContain('برای این تاریخ مدیر فعالی ثبت نشده است');
+    expect(errs[0].message.length).toBeLessThan(200);
+    expect(errs[0].message).toContain('در حال حاضر مدیر فعالی ثبت نشده است');
     const app = readFileSync('src/App.tsx', 'utf8');
     const block = app.slice(app.indexOf('if (blockers.length)'), app.indexOf('setDraft(emptyDraft'));
     expect(block).not.toMatch(/setMgmtEnabled/);

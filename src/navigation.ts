@@ -13,7 +13,7 @@ export type Route =
   | { name: 'support'; tab?: 'faq' | 'contact' }
   /** سوابق (۱.۹ چندتایی): years نبودن = سال جاری (اگر نمایان)؛ [] یا نبودنِ بقیه = «همه»؛ statuses خالی = بدون حذف‌شده‌ها */
   | { name: 'records'; years?: number[]; months?: number[]; types?: ExpenseType[]; statuses?: StatusPick[] }
-  /** «دوره‌ها» (۱.۹): سال‌ها و مدیر ساختمان */
+  /** «دوره‌ها» (۱.۹): سال‌ها و مدیریت ساختمان */
   | { name: 'periods'; tab?: 'years' | 'manager'; openNewManager?: boolean }
   /** جلسه‌ها (۱.۹: از تنظیمات به صفحهٔ خودش آمد) */
   | { name: 'meetings' }

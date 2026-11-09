@@ -251,7 +251,7 @@ describe.each(SIZES)('scenario timings: %i bills × 100 units (+ 2 small buildin
   }, 30 * 60_000);
 });
 
-/* ─── ۱.۹.۰: سال‌ها و مدیر ساختمان (قفل)، مهاجرت schema 7 → 8 در مقیاس، فیلترهای چندتایی ─── */
+/* ─── ۱.۹.۰: سال‌ها و مدیریت ساختمان (قفل)، مهاجرت schema 7 → 8 در مقیاس، فیلترهای چندتایی ─── */
 import { exportCurrentBytes, openDetachedDatabase, replaceDatabaseWithBytes, withSqlite } from '../../src/storage/sqlite/db';
 import { periodsRepository, todayKeyNow } from '../../src/storage/periodsRepository';
 import { billLockState, periodForCreatedAt } from '../../src/logic/periods';

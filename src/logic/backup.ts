@@ -50,7 +50,7 @@ export const BACKUP_APP_ID = 'apartemant';
  *    ساختمان‌ها را دارد؛ پس در استفادهٔ عادی «نوع ناشناخته» پیش نمی‌آید. فقط برای فایل دستکاری‌شده/خراب: قبضی که نوعش نه
  *    داخلی است نه سفارشیِ تعریف‌شدهٔ ساختمانِ خودش، رد نمی‌شود و «متفرقه» بازیابی می‌شود (`summary.remappedBills`).
  *    قالب‌های ۱ تا ۱۰ نوع سفارشی ندارند.
- * ۱۲: نسخه ۱.۹ (+ سال‌ها و مدیر ساختمان): `buildings[].mgmtEnabled` (کلید مدیر ساختمان)، `buildings[].defaultYear` (از ۱.۹.۱ همیشه null و نادیده)،
+ * ۱۲: نسخه ۱.۹ (+ سال‌ها و مدیریت ساختمان): `buildings[].mgmtEnabled` (کلید مدیریت ساختمان)، `buildings[].defaultYear` (از ۱.۹.۱ همیشه null و نادیده)،
  *    `buildings[].years[]` (سال‌های پنهان؛ `closedAt` از ۱.۹.۱ همیشه null است و هنگام بازیابی نادیده گرفته می‌شود)، `managementPeriods[].managerUnit/hidden` (پایان خالی = بدون تاریخ پایان)
  *    و `bills[].mgmtPeriodId` (دورهٔ مدیریتِ قبض). قالب‌های ۹ تا ۱۱: کلید مدیر روشن و دورهٔ هر قبض
  *    مثل مهاجرت از روی تاریخ ثبت تعیین می‌شود. قالب‌های ۱ تا ۸ هم هنگام ذخیره همین‌طور به دوره‌های موجود وصل می‌شوند.
@@ -106,7 +106,7 @@ export interface BackupBuilding {
   units: BuildingSettings['units'];
   /** قالب ۱۱: نوع‌های قبض سفارشی این ساختمان (نبودن = هیچ) */
   billTypes: BackupBillType[];
-  /** قالب ۱۲: کلید «مدیر ساختمان» (قالب‌های ۹ تا ۱۱ = روشن) */
+  /** قالب ۱۲: کلید «مدیریت ساختمان» (قالب‌های ۹ تا ۱۱ = روشن) */
   mgmtEnabled: boolean;
   /** قالب ۱۲ (۱.۹.۰)؛ از ۱.۹.۱ استفاده نمی‌شود و همیشه null است */
   defaultYear: number | null;
@@ -485,7 +485,7 @@ function parseBuildings(raw: unknown, version: number): BackupBuilding[] {
     let defaultYear: number | null = null;
     let years: BuildingYear[] = [];
     if (version >= 12) {
-      if (typeof b.mgmtEnabled !== 'boolean') bad(`کلید مدیر ساختمان ${nth(i)} نامعتبر است.`);
+      if (typeof b.mgmtEnabled !== 'boolean') bad(`کلید مدیریت ساختمان ${nth(i)} نامعتبر است.`);
       mgmtEnabled = b.mgmtEnabled as boolean;
       if (b.defaultYear != null && !isInt(b.defaultYear, 1300, 1700)) bad(`سال‌های ساختمان ${nth(i)} نامعتبر است.`);
       defaultYear = null;

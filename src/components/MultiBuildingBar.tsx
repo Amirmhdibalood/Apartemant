@@ -186,7 +186,7 @@ export function MultiBuildingBar({ reloadKey = 0, onBuildingChange }: { reloadKe
         </div>
       )}
 
-      <p className="card__hint">واحدها، قبض‌ها، صندوق و مدیر ساختمان مربوط به ساختمانی است که اینجا انتخاب می‌کنید.</p>
+      <p className="card__hint">واحدها، قبض‌ها، صندوق و مدیریت ساختمان مربوط به ساختمانی است که اینجا انتخاب می‌کنید.</p>
 
       <Dialog open={!!edit} onClose={() => setEdit(null)} labelledBy="building-edit-title">
         <h2 id="building-edit-title" className="dialog__title">ویرایش ساختمان</h2>
